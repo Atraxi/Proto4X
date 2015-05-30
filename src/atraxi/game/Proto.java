@@ -19,8 +19,8 @@ public class Proto extends JFrame
     public Proto(ArrayList<Player> players)
     {
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-        final int screen_Width = dim.width;
-        final int screen_Height = dim.height;
+        screen_Width = dim.width;
+        screen_Height = dim.height;
         
         if(debug)
         {

@@ -16,7 +16,7 @@ public abstract class Entity
     public Entity(String name, int x, int y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
     {
         this.name = name;
-        image = new ImageIcon("resources/"+this.name+".png").getImage();
+        image = new ImageIcon("resources/"+this.name+".png").getImage();//TODO: initialize to singular instance via resource loader, clone as needed to do damage modeling
         this.x=x;
         this.y=y;
         velocity = 0;
