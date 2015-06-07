@@ -8,9 +8,9 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
+import factions.Human;
+import factions.Player;
 import atraxi.game.Game;
-import atraxi.game.Human;
-import atraxi.game.Player;
 
 public class DebugKeyIntercept implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {

@@ -11,6 +11,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
 import entities.Entity;
+import factions.Human;
+import factions.Player;
 
 public class Game extends JPanel implements Runnable
 {

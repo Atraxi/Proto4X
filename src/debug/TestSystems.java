@@ -2,8 +2,8 @@ package debug;
 
 import java.util.ArrayList;
 
-import atraxi.game.Human;
-import atraxi.game.Player;
+import factions.Human;
+import factions.Player;
 
 /**
  * @author Atraxi

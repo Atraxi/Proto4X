@@ -1,14 +1,15 @@
-package atraxi.game;
+package factions;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
+import atraxi.game.World;
 import entities.Entity;
 
 public abstract class Player
 {
     protected Selection selection = new Selection();
-    
+    public int metal = 0, money = 0;
     /**
      * Attempt to select an entity within the given area (left click for human)
      */
@@ -19,9 +20,6 @@ public abstract class Player
         System.out.println("Selected:"+selection.toString());
     }
     
-    /**
-     * 
-     */
     protected void issueMoveToSelected(int x, int y)
     {
         if(selection.getSelection().length > 0)

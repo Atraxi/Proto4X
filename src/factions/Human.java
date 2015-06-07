@@ -1,4 +1,4 @@
-package atraxi.game;
+package factions;
 
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
@@ -8,6 +8,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+
+import atraxi.game.Game;
 
 public class Human extends Player implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {

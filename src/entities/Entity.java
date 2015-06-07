@@ -9,14 +9,14 @@ import javax.swing.ImageIcon;
 public abstract class Entity
 {
     private Image image;
-    private String name;
+    private String type;
     protected double x, y, velocity, orientation;
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
     
-    public Entity(String name, int x, int y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
+    public Entity(String type, int x, int y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
     {
-        this.name = name;
-        image = new ImageIcon("resources/"+this.name+".png").getImage();
+        this.type = type;
+        image = new ImageIcon("resources/"+this.type+".png").getImage();
         this.x=x;
         this.y=y;
         velocity = 0;
@@ -35,9 +35,9 @@ public abstract class Entity
         }
     }
     
-    public Entity(String name, int x, int y)
+    public Entity(String type, int x, int y)
     {
-        this(name, x, y, 0, 0, 0, 0);
+        this(type, x, y, 0, 0, 0, 0);
     }
     
     public void rightClickCommand(double d, double e){}
@@ -52,7 +52,7 @@ public abstract class Entity
     @Override
     public String toString()
     {
-        return "["+name + " Pos:"+x+","+y+" Orientation:"+orientation+"]";
+        return "["+type + " Pos:"+x+","+y+" Orientation:"+orientation+"]";
     }
     
     public boolean boundsTest(Rectangle selectionArea)

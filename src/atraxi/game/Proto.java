@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import javax.swing.JFrame;
 
 import debug.TestSystems;
+import factions.Human;
+import factions.Player;
 
 public class Proto extends JFrame
 {
