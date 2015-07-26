@@ -8,64 +8,63 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 
-import factions.Human;
 import factions.Player;
 import atraxi.game.Game;
+import atraxi.game.UserInterfaceHandler;
 
-public class DebugKeyIntercept implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
+public class DebugKeyIntercept extends UserInterfaceHandler
 {
-    private Human human;
-    public DebugKeyIntercept(Human human)
+    public DebugKeyIntercept(Player user)
     {
-        this.human = human;
+        super(user);
     }
 
     @Override
     public void mouseDragged(MouseEvent arg0)
     {
-        human.mouseDragged(arg0);
+        super.mouseDragged(arg0);
     }
 
     @Override
     public void mouseMoved(MouseEvent arg0)
     {
-        human.mouseMoved(arg0);
+        super.mouseMoved(arg0);
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent arg0)
     {
-        human.mouseWheelMoved(arg0);
+        super.mouseWheelMoved(arg0);
     }
 
     @Override
     public void mouseClicked(MouseEvent arg0)
     {
-        human.mouseClicked(arg0);
+        super.mouseClicked(arg0);
     }
 
     @Override
     public void mouseEntered(MouseEvent arg0)
     {
-        human.mouseEntered(arg0);
+        super.mouseEntered(arg0);
     }
 
     @Override
     public void mouseExited(MouseEvent arg0)
     {
-        human.mouseExited(arg0);
+        super.mouseExited(arg0);
     }
 
     @Override
     public void mousePressed(MouseEvent arg0)
     {
-        human.mousePressed(arg0);
+        super.mousePressed(arg0);
     }
 
     @Override
     public void mouseReleased(MouseEvent arg0)
     {
-        human.mouseReleased(arg0);
+        super.mouseReleased(arg0);
     }
 
     @Override
@@ -86,18 +85,18 @@ public class DebugKeyIntercept implements KeyListener, MouseListener, MouseWheel
                 System.out.println("Game Resumed.");
             }
         }
-        human.keyPressed(paramKeyEvent);
+        super.keyPressed(paramKeyEvent);
     }
 
     @Override
     public void keyReleased(KeyEvent arg0)
     {
-        human.keyReleased(arg0);
+        super.keyReleased(arg0);
     }
 
     @Override
     public void keyTyped(KeyEvent arg0)
     {
-        human.keyTyped(arg0);
+        super.keyTyped(arg0);
     }
 }

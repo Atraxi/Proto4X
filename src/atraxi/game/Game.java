@@ -5,13 +5,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
 import entities.Entity;
-import factions.Human;
 import factions.Player;
 
 public class Game extends JPanel implements Runnable
@@ -19,25 +19,25 @@ public class Game extends JPanel implements Runnable
     private static final long serialVersionUID = 1L;
     public static final long DELAY = 16;
     private Thread animator;
-    private static ArrayList<Player> players;// = new ArrayList<Player>();
+    private static ArrayList<Player> players;
     private Image mapImage;
     public static boolean paused;
-    private World world;
-    public static UserInterfaceHandler uiHandler;
+    private static UserInterfaceHandler uiHandler;
     
-    public Game(ArrayList<Player> players)
+    public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
         Game.players = players;
-        uiHandler = new UserInterfaceHandler();
-        world = new World();
+        Game.uiHandler = uiHandler;
+        new World();
         mapImage = new ImageIcon("resources/background.jpg").getImage();
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
         setDoubleBuffered(true);
         paused = false;
         
-        addMouseMotionListener((Human)players.get(0));
-        addMouseListener((Human)players.get(0));
-        addMouseWheelListener((Human)players.get(0));
+        addKeyListener(uiHandler);
+        addMouseMotionListener(uiHandler);
+        addMouseListener(uiHandler);
+        addMouseWheelListener(uiHandler);
     }
     
     @Override

@@ -5,13 +5,10 @@ import java.util.ArrayList;
 
 import entities.Entity;
 import entities.Ship;
-import factions.Neutral;
-import factions.Player;
 
 public class World
 {
     private static ArrayList<Entity> entities = new ArrayList<Entity>();
-    private static Player neutralFaction = new Neutral();
     
     public World()
     {
@@ -40,10 +37,5 @@ public class World
     public static ArrayList<Entity> getEntityList()
     {
         return entities;
-    }
-    
-    public static Player getNeutralPlayer()
-    {
-        return neutralFaction;
     }
 }

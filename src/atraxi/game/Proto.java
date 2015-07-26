@@ -7,8 +7,7 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
-import debug.TestSystems;
-import factions.Human;
+import debug.DebugKeyIntercept;
 import factions.Player;
 
 public class Proto extends JFrame
@@ -16,25 +15,40 @@ public class Proto extends JFrame
     private static final long serialVersionUID = 1L;
     public static int screen_Width;
     public static int screen_Height;
-    private static boolean debug = false;
+    private static boolean debug;
 
-    public Proto(ArrayList<Player> players)
+    public Proto(String[] args)
     {
+        //Future: compiler flags for debug build
+        if(args.length>0 && args[0].equals("-debug"))
+        {
+            System.out.println("Debug enabled");
+            debug = true;
+        }
+        else
+        {
+            debug = false;
+        }
+        
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         final int screen_Width = dim.width;
         final int screen_Height = dim.height;
         
+        Player user = new Player();
+        ArrayList<Player> players = new ArrayList<Player>();
+        players.add(user);
+        UserInterfaceHandler ui;
         if(debug)
         {
-            addKeyListener(new TestSystems(players).getDebugKeyIntercept());
+            ui = new DebugKeyIntercept(user);
         }
         else
         {
-            addKeyListener((Human)players.get(0));
+            ui = new UserInterfaceHandler(user);
         }
         
         //add a JPanel to this JFrame
-        add(new Game(players));
+        add(new Game(players, ui));
         
         setFocusable(true);
         //TODO:toggle windowed mode, add resizing
@@ -48,23 +62,12 @@ public class Proto extends JFrame
     
     public static void main(String[] args)
     {
-        //Future: compiler flags for debug build
-        if(args.length>0 && args[0].equals("debug"))
-        {
-            System.out.println("Debug enabled");
-            debug=true;
-        }
-        
-        Human human = new Human();
-        ArrayList<Player> players = new ArrayList<Player>();
-        players.add(human);
-        
         EventQueue.invokeLater(new Runnable()
         {
             @Override
             public void run()
             {
-                Proto frame = new Proto(players);
+                Proto frame = new Proto(args);
                 frame.setVisible(true);
             }
         });

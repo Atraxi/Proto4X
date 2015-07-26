@@ -25,12 +25,13 @@ public class DebugUtil
                 result += "\n\t" + f.toString() + ":";
                 try
                 {
+                    boolean wasAccessible = f.isAccessible();
                     if(setAccessible)
                     {
                         f.setAccessible(true);
                     }
                     result += f.get(f).toString();
-                    if(setAccessible)
+                    if(setAccessible && !wasAccessible)
                     {
                         f.setAccessible(false);
                     }
