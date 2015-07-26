@@ -7,7 +7,7 @@ public class Ship extends Entity
     private static final double MAXROTATIONSPEED = 0.05;
     private static final double MAXTRAVELSPEED   = 2.0;
     
-    public Ship(String type, int x, int y)
+    public Ship(String type, double x, double y)
     {
         super(type, x, y);
         targetX = x;

@@ -42,7 +42,7 @@ public class Game extends JPanel implements Runnable
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.drawImage(mapImage, 0, 0, null);
-        for( Entity entity : world.getEntityList())
+        for( Entity entity : World.getEntityList())
         {
             g2d.drawImage(entity.getImage(), entity.getTransform(), null);
         }
@@ -53,7 +53,7 @@ public class Game extends JPanel implements Runnable
     
     private void gameLoop(long timeDiff)
     {
-        for(Entity entity : world.getEntityList())
+        for(Entity entity : World.getEntityList())
         {
             entity.doWork(timeDiff, paused);
         }

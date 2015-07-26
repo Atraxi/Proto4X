@@ -1,5 +1,6 @@
 package entities;
 
+import atraxi.game.World;
 import factions.Player;
 
 public class Structure extends Entity
@@ -19,13 +20,21 @@ public class Structure extends Entity
         //TODO: rally point. needs to support complex commands, patrol assist etc
     }
     
-    public void performAction()
+    public void performAction(Actions action)
     {
-        
+        switch (action)
+        {
+            case BUILDSHIP1:
+                World.getEntityList().add(new Ship("basicShipClass",x,y));
+                break;
+            case SUICIDE:
+                World.getEntityList().remove(this);//TEST:This will probably cause problems, need a removal state
+                break;
+        }
     }
     
-    public class Action
+    public enum Actions
     {
-        
+        BUILDSHIP1, SUICIDE
     }
 }

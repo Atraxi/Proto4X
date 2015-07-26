@@ -20,15 +20,23 @@ public class DebugKeyIntercept extends UserInterfaceHandler
     }
 
     @Override
-    public void mouseDragged(MouseEvent arg0)
+    public void mouseDragged(MouseEvent paramMouseEvent)
     {
-        super.mouseDragged(arg0);
+        if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
+        {
+            if(DebugUtil.accessSuperclassBoolean(this, "dragSelect"))
+            {
+                System.out.println("Drag to x:"+DebugUtil.accessSuperclassInt(this, "dragSelectEndX")+" y:"+DebugUtil.accessSuperclassInt(this, "dragSelectEndY")
+                        +"\n\tStarted, x:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartX")+" y:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartY"));
+            }
+        }
+        super.mouseDragged(paramMouseEvent);
     }
 
     @Override
-    public void mouseMoved(MouseEvent arg0)
+    public void mouseMoved(MouseEvent paramMouseEvent)
     {
-        super.mouseMoved(arg0);
+        super.mouseMoved(paramMouseEvent);
     }
 
     @Override
@@ -56,15 +64,30 @@ public class DebugKeyIntercept extends UserInterfaceHandler
     }
 
     @Override
-    public void mousePressed(MouseEvent arg0)
+    public void mousePressed(MouseEvent paramMouseEvent)
     {
-        super.mousePressed(arg0);
+        super.mousePressed(paramMouseEvent);
+        if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
+        {
+            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            {
+                System.out.println("DragSelectStarted, x:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartX")+" y:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartY"));
+            }
+        }
     }
 
     @Override
-    public void mouseReleased(MouseEvent arg0)
+    public void mouseReleased(MouseEvent paramMouseEvent)
     {
-        super.mouseReleased(arg0);
+        if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
+        {
+            if(DebugUtil.accessSuperclassBoolean(this, "dragSelect"))
+            {
+                System.out.println("Drag Ended, x:"+DebugUtil.accessSuperclassInt(this, "dragSelectEndX")+" y:"+DebugUtil.accessSuperclassInt(this, "dragSelectEndY")
+                        +"\n\tStarted, x:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartX")+" y:"+DebugUtil.accessSuperclassInt(this, "dragSelectStartY"));
+            }
+        }
+        super.mouseReleased(paramMouseEvent);
     }
 
     @Override

@@ -17,7 +17,7 @@ import factions.Player;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
-    Player user;
+    private Player user;
     private Rectangle selectionArea = null;
     private static Area playableArea;
     
@@ -59,13 +59,17 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void keyPressed(KeyEvent paramKeyEvent)
     {
-        if(paramKeyEvent.getKeyCode()==KeyEvent.VK_ESCAPE)
+        switch (paramKeyEvent.getKeyCode())
         {
-            System.exit(0);
-        }
-        else if(paramKeyEvent.getKeyCode()==KeyEvent.VK_PAUSE)
-        {
-            Game.paused=!Game.paused;
+            case KeyEvent.VK_B:
+                //TODO!!!half done, tell selected building(s) to build something
+                break;
+            case KeyEvent.VK_PAUSE:
+                Game.paused=!Game.paused;
+                break;
+            case KeyEvent.VK_ESCAPE:
+                System.exit(0);
+                break;
         }
     }
 
@@ -82,7 +86,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
                 dragSelect=true;
-                System.out.println("DragSelectStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
             }
         }
     }
@@ -92,23 +95,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
-            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            if(dragSelect)
             {
-                if(dragSelect)
-                {
-                    dragSelectEndX=paramMouseEvent.getX();
-                    dragSelectEndY=paramMouseEvent.getY();
-                    System.out.println("Drag to x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
-                    /* Rectangle must processed as if drawn from top left corner with positive width&height.
-                     * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
-                     */
-                    Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                            dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                            Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
-                            Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                    user.selectEntity(selectionArea);
-                    setSelectionArea(selectionArea);
-                }
+                dragSelectEndX=paramMouseEvent.getX();
+                dragSelectEndY=paramMouseEvent.getY();
+                /* Rectangle must processed as if drawn from top left corner with positive width&height.
+                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                 */
+                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
+                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
+                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
+                user.selectEntity(selectionArea);
+                setSelectionArea(selectionArea);
             }
         }
     }
@@ -127,24 +126,20 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
-            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            if(dragSelect)
             {
-                if(dragSelect)
-                {
-                    dragSelectEndX=paramMouseEvent.getX();
-                    dragSelectEndY=paramMouseEvent.getY();
-                    dragSelect=false;
-                    System.out.println("Drag Ended, x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
-                    /* Rectangle must be drawn from top left corner with positive width&height.
-                     * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
-                     */
-                    Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                            dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                            Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
-                            Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                    user.selectEntity(selectionArea);
-                    setSelectionArea(null);
-                }
+                dragSelectEndX=paramMouseEvent.getX();
+                dragSelectEndY=paramMouseEvent.getY();
+                dragSelect=false;
+                /* Rectangle must be drawn from top left corner with positive width&height.
+                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                 */
+                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
+                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
+                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
+                user.selectEntity(selectionArea);
+                setSelectionArea(null);
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)

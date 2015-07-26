@@ -8,7 +8,7 @@ import entities.Entity;
 
 public class Player
 {
-    protected Selection selection = new Selection();
+    private Selection selection = new Selection();
     public int metal = 0, money = 0;
     
     /**
@@ -18,7 +18,7 @@ public class Player
     {
         selection = new Selection();
         selection.add(World.getEntityArrayWithin(selectionArea));
-        System.out.println("Selected:"+selection.toString());
+        System.out.println("Selected:\n"+selection.toString());
     }
     
     public void issueMoveToSelected(int x, int y)
@@ -84,7 +84,7 @@ public class Player
         @Override
         public String toString()
         {
-            String entityList = "Ship List\n{\n";
+            String entityList = "Entity List\n{\n";
             for(Entity e : selected)
             {
                 entityList+=e+"\n";

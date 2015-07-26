@@ -72,4 +72,68 @@ public class DebugUtil
         }
         return result + "\n}";
     }
+    
+    public static boolean accessSuperclassBoolean(Object o, String fieldName)
+    {
+        try
+        {
+            Field[] fields = o.getClass().getSuperclass().getDeclaredFields();
+            for(Field f : fields)
+            {
+                if(f.getName().equals(fieldName))
+                {
+                    f.setAccessible(true);
+                    return f.getBoolean(o);
+                }
+            }
+        }
+        catch (IllegalArgumentException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch (IllegalAccessException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch (SecurityException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    public static double accessSuperclassInt(Object o, String fieldName)
+    {
+        try
+        {
+            Field[] fields = o.getClass().getSuperclass().getDeclaredFields();
+            for(Field f : fields)
+            {
+                if(f.getName().equals(fieldName))
+                {
+                    f.setAccessible(true);
+                    return f.getInt(o);
+                }
+            }
+        }
+        catch (IllegalArgumentException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch (IllegalAccessException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch (SecurityException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

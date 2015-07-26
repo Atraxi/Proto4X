@@ -13,7 +13,7 @@ public abstract class Entity
     protected double x, y, velocity, orientation;
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
     
-    public Entity(String type, int x, int y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
+    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
     {
         this.type = type;
         image = new ImageIcon("resources/"+this.type+".png").getImage();
@@ -35,7 +35,7 @@ public abstract class Entity
         }
     }
     
-    public Entity(String type, int x, int y)
+    public Entity(String type, double x, double y)
     {
         this(type, x, y, 0, 0, 0, 0);
     }
