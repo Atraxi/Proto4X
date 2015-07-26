@@ -45,11 +45,11 @@ public class Menu extends JPanel implements MouseListener
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.drawImage(menuBackground, 0, 0, null);
-        for( Entity entity : World.getEntityList())
-        {
-            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
-        }
-        Toolkit.getDefaultToolkit().sync();
+//        for( Entity entity : World.getEntityList())
+//        {
+//            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
+//        }
+//        Toolkit.getDefaultToolkit().sync();
         g.dispose();
     }
     

@@ -20,6 +20,7 @@ public class Game extends JPanel implements Runnable
     public static final long DELAY = 16;
     private Thread animator;
     private static ArrayList<Player> players;
+    private World world;
     private Image mapImage;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
@@ -28,16 +29,11 @@ public class Game extends JPanel implements Runnable
     {
         Game.players = players;
         Game.uiHandler = uiHandler;
-        new World();
+        world = new World();
         mapImage = new ImageIcon("resources/background.jpg").getImage();
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
         setDoubleBuffered(true);
         paused = false;
-        
-        addKeyListener(uiHandler);
-        addMouseMotionListener(uiHandler);
-        addMouseListener(uiHandler);
-        addMouseWheelListener(uiHandler);
     }
     
     @Override
@@ -46,7 +42,7 @@ public class Game extends JPanel implements Runnable
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.drawImage(mapImage, 0, 0, null);
-        for( Entity entity : World.getEntityList())
+        for( Entity entity : world.getEntityList())
         {
             g2d.drawImage(entity.getImage(), entity.getTransform(), null);
         }
@@ -57,7 +53,7 @@ public class Game extends JPanel implements Runnable
     
     private void gameLoop(long timeDiff)
     {
-        for(Entity entity : World.getEntityList())
+        for(Entity entity : world.getEntityList())
         {
             entity.doWork(timeDiff, paused);
         }

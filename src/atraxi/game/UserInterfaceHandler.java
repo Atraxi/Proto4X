@@ -77,10 +77,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
-            dragSelectStartX = paramMouseEvent.getX();
-            dragSelectStartY = paramMouseEvent.getY();
-            dragSelect=true;
-            System.out.println("DragSelectStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
+            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            {
+                dragSelectStartX = paramMouseEvent.getX();
+                dragSelectStartY = paramMouseEvent.getY();
+                dragSelect=true;
+                System.out.println("DragSelectStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
+            }
         }
     }
     
@@ -89,20 +92,23 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
-            if(dragSelect)
+            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
             {
-                dragSelectEndX=paramMouseEvent.getX();
-                dragSelectEndY=paramMouseEvent.getY();
-                System.out.println("Drag to x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
-                /* Rectangle must processed as if drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
-                 */
-                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
-                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea);
-                setSelectionArea(selectionArea);
+                if(dragSelect)
+                {
+                    dragSelectEndX=paramMouseEvent.getX();
+                    dragSelectEndY=paramMouseEvent.getY();
+                    System.out.println("Drag to x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
+                    /* Rectangle must processed as if drawn from top left corner with positive width&height.
+                     * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                     */
+                    Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
+                            dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
+                            Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                            Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
+                    user.selectEntity(selectionArea);
+                    setSelectionArea(selectionArea);
+                }
             }
         }
     }
@@ -121,27 +127,33 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
-            if(dragSelect)
+            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
             {
-                dragSelectEndX=paramMouseEvent.getX();
-                dragSelectEndY=paramMouseEvent.getY();
-                dragSelect=false;
-                System.out.println("Drag Ended, x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
-                /* Rectangle must be drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
-                 */
-                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
-                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea);
-                setSelectionArea(null);
+                if(dragSelect)
+                {
+                    dragSelectEndX=paramMouseEvent.getX();
+                    dragSelectEndY=paramMouseEvent.getY();
+                    dragSelect=false;
+                    System.out.println("Drag Ended, x:"+dragSelectEndX+" y:"+dragSelectEndY+"\n\tStarted, x:"+dragSelectStartX+" y:"+dragSelectStartY);
+                    /* Rectangle must be drawn from top left corner with positive width&height.
+                     * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                     */
+                    Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
+                            dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
+                            Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                            Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
+                    user.selectEntity(selectionArea);
+                    setSelectionArea(null);
+                }
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
         {
-            //TODO: refactor to allow drag for target orientation
-            user.issueMoveToSelected(paramMouseEvent.getX(), paramMouseEvent.getY());
+            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            {
+                //TODO: refactor to allow drag for target orientation
+                user.issueMoveToSelected(paramMouseEvent.getX(), paramMouseEvent.getY());
+            }
         }
     }
 

@@ -34,7 +34,7 @@ public class World
         return selection.toArray(new Entity[selection.size()]);
     }
     
-    public static ArrayList<Entity> getEntityList()
+    public ArrayList<Entity> getEntityList()
     {
         return entities;
     }
