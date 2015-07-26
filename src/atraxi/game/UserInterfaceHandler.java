@@ -2,6 +2,7 @@ package atraxi.game;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -10,6 +11,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.Area;
 
 import factions.Player;
 
@@ -17,10 +19,18 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 {
     Player user;
     private Rectangle selectionArea = null;
+    private static Area playableArea;
+    
+    private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
+    private boolean dragSelect;
     
     public UserInterfaceHandler(Player user)
     {
         this.user = user;
+
+        playableArea = new Area(new Rectangle(0,0,Proto.screen_Width,Proto.screen_Height));
+        playableArea.subtract(new Area(new Rectangle(0,0,Proto.screen_Width,(int)(Proto.screen_Height*0.1))));
+        playableArea.subtract(new Area(new Rectangle(0,(int)(Proto.screen_Height*0.9),Proto.screen_Width,(int)(Proto.screen_Height*0.1))));
     }
 
     public void paint(Graphics g)
@@ -30,7 +40,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         {
             g.setColor(Color.WHITE);
             g.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
-            
         }
     }
     
@@ -39,9 +48,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         this.selectionArea = selectionArea;
     }
     
-    private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
-    private boolean dragSelect;
-    
+    protected static boolean playableAreaContains(Point point)
+    {
+        return playableArea.contains(point);
+    }
+
     @Override
     public void keyReleased(KeyEvent paramKeyEvent){}
     
@@ -139,4 +150,5 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     @Override
     public void mouseExited(MouseEvent paramMouseEvent){}
+
 }
