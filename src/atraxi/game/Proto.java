@@ -19,6 +19,7 @@ public class Proto extends JFrame
 
     public Proto()
     {
+        super();
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         screen_Width = dim.width;
         screen_Height = dim.height;
@@ -47,8 +48,8 @@ public class Proto extends JFrame
         add(game);
         
         setFocusable(true);
-        //TODO:toggle windowed mode, add resizing
-        setUndecorated(true);
+        //TODO: toggle windowed mode, add resizing and resolution options. This can probably wait for the main menu
+        //setUndecorated(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(screen_Width, screen_Height);
         setLocationRelativeTo(null);

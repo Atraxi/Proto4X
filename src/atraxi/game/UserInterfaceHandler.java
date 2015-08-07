@@ -13,6 +13,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Area;
 
+import entities.actionQueue.Action;
 import factions.Player;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
@@ -27,10 +28,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public UserInterfaceHandler(Player user)
     {
         this.user = user;
-
-        playableArea = new Area(new Rectangle(0,0,Proto.screen_Width,Proto.screen_Height));
-        playableArea.subtract(new Area(new Rectangle(0,0,Proto.screen_Width,(int)(Proto.screen_Height*0.1))));
-        playableArea.subtract(new Area(new Rectangle(0,(int)(Proto.screen_Height*0.9),Proto.screen_Width,(int)(Proto.screen_Height*0.1))));
+        //TEST:THIS IS A DIRTY DISGUSTING TEMPORARY HACK, width*2 to work across 2 screens
+        //TEST: this needs to recalculate as the game window is moved around the screen, research window moved events
+        playableArea = new Area(new Rectangle(0,0,Proto.screen_Width*2,Proto.screen_Height));
+        //Removed for now as the feature is incomplete (no visual feedback) and thus will make the UI seem bugged if you don't know what this does
+//        playableArea.subtract(new Area(new Rectangle(0,0,Proto.screen_Width*2,(int)(Proto.screen_Height*0.1))));
+//        playableArea.subtract(new Area(new Rectangle(0,(int)(Proto.screen_Height*0.9),Proto.screen_Width*2,(int)(Proto.screen_Height*0.1))));
     }
 
     public void paint(Graphics g)
@@ -62,7 +65,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         switch (paramKeyEvent.getKeyCode())
         {
             case KeyEvent.VK_B:
-                //TODO!!!half done, tell selected building(s) to build something
+                user.queueAction(new Action(Action.ActionType.BUILD, null));
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
@@ -146,8 +149,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         {
             if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
             {
-                //TODO: refactor to allow drag for target orientation
-                user.issueMoveToSelected(paramMouseEvent.getX(), paramMouseEvent.getY());
+                //TODO: refactor? to allow drag for target orientation
+                if(paramMouseEvent.isShiftDown())
+                {
+                    user.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                }
+                else
+                {
+                    user.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                }
             }
         }
     }

@@ -3,8 +3,14 @@ package entities;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
+import java.math.BigDecimal;
 
 import javax.swing.ImageIcon;
+
+import entities.actionQueue.Action;
+import entities.actionQueue.Action.ActionType;
+import entities.actionQueue.ActionQueue;
+import factions.Player;
 
 public abstract class Entity
 {
@@ -12,9 +18,15 @@ public abstract class Entity
     private String type;
     protected double x, y, velocity, orientation;
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
+    protected ActionQueue actionQueue = new ActionQueue();
+    protected Action actionInProgress = null;
+    protected Player owner;
+    //TODO: Temporary solution for locking on a potentially null object
+    protected final Object actionInProgressLock = new Object();
     
-    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper)
+    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner)
     {
+        this.owner = owner;
         this.type = type;
         image = new ImageIcon("resources/"+this.type+".png").getImage();
         this.x=x;
@@ -35,18 +47,22 @@ public abstract class Entity
         }
     }
     
-    public Entity(String type, double x, double y)
+    public Entity(String type, double x, double y, Player owner)
     {
-        this(type, x, y, 0, 0, 0, 0);
+        this(type, x, y, 0, 0, 0, 0, owner);
     }
     
-    public void rightClickCommand(double d, double e){}
+    public abstract boolean canAcceptAction(ActionType action);
+    protected abstract void startActionFromQueue(Action action);
     
-    public void doWork(long timeDiff, boolean paused){}
     
-    public Image getImage()
+    public void doWork(BigDecimal timeAdjustment, boolean paused)
     {
-        return image;
+        if(actionInProgress == null && !actionQueue.isEmpty())
+        {
+            Action action = actionQueue.popAction();
+            startActionFromQueue(action);
+        }
     }
     
     @Override
@@ -60,16 +76,11 @@ public abstract class Entity
         return getBounds().intersects(selectionArea);
     }
     
-    private Rectangle getBounds()
-    {
-        return new Rectangle((int)(x+boundsXOffset), (int)(y+boundsYOffset), boundsXUpper, boundsYUpper);
-    }
-    
     public AffineTransform getTransform()
     {
         AffineTransform at = AffineTransform.getTranslateInstance(x+image.getWidth(null)/2, y+image.getHeight(null)/2);
         //at.rotate(orientation);
-        //hopefully bypass the snap to 90degrees 'feature', although I'm not sure it's actually needed
+        //hopefully bypass the snap to 90degrees 'feature' (not always desired, but impossible to disable), although I'm not sure it will make a noticeable difference
         at.concatenate(new AffineTransform(Math.cos(orientation), Math.sin(orientation), -Math.sin(orientation), Math.cos(orientation), 0, 0));
         at.translate(-image.getWidth(null)/2, -image.getHeight(null)/2);
         return at;
@@ -82,5 +93,25 @@ public abstract class Entity
     public double getY()
     {
         return y;
+    }
+    public Image getImage()
+    {
+        return image;
+    }
+    private Rectangle getBounds()
+    {
+        return new Rectangle((int)(x+boundsXOffset), (int)(y+boundsYOffset), boundsXUpper, boundsYUpper);
+    }
+    public void queueAction(Action action)
+    {
+        actionQueue.queueAction(action);
+    }
+    public void replaceQueue(Action action)
+    {
+        actionQueue.replaceQueue(action);
+        synchronized(actionInProgressLock)
+        {
+            actionInProgress = null;
+        }
     }
 }

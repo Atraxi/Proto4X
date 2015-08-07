@@ -5,7 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.awt.event.KeyListener;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import javax.swing.ImageIcon;
@@ -17,7 +17,10 @@ import factions.Player;
 public class Game extends JPanel implements Runnable
 {
     private static final long serialVersionUID = 1L;
-    public static final long DELAY = 16;
+    /**
+     * The desired time per frame (in nanoseconds) from which to adjust the speed of all events. 60fps or 1,000,000,000ns/60
+     */
+    public static final long OPTIMALFRAMETIME = 16666666;
     private Thread animator;
     private static ArrayList<Player> players;
     private World world;
@@ -36,6 +39,11 @@ public class Game extends JPanel implements Runnable
         paused = false;
     }
     
+    public static ArrayList<Player> getPlayerList()
+    {
+        return players;
+    }
+    
     @Override
     public void paint(Graphics g)
     {
@@ -51,11 +59,11 @@ public class Game extends JPanel implements Runnable
         g.dispose();
     }
     
-    private void gameLoop(long timeDiff)
+    private void gameLoop(BigDecimal timeAdjustment)
     {
         for(Entity entity : World.getEntityList())
         {
-            entity.doWork(timeDiff, paused);
+            entity.doWork(timeAdjustment, paused);
         }
     }
     
@@ -71,43 +79,35 @@ public class Game extends JPanel implements Runnable
     @Override
     public void run()
     {
-        long beforeTime, timeDiff, sleep;
+        long beforeTime, actualFrameTime;
         
-        beforeTime=System.currentTimeMillis();//.currentTimeMillis();
+        beforeTime = System.nanoTime();
         
         while(true)
         {
-            long currentTime = System.currentTimeMillis();//.currentTimeMillis();
-            timeDiff = currentTime-beforeTime;
+            long currentTime = System.nanoTime();
             
-            if(timeDiff>DELAY*2)
+            actualFrameTime = currentTime-beforeTime;
+            
+            if(actualFrameTime>OPTIMALFRAMETIME)
             {
-                System.out.println("Game running behind, skipping "+((int)((timeDiff-DELAY)/DELAY))+" frames");
+                System.out.println("Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames");
             }
-            while(timeDiff>DELAY)
-            {
-                timeDiff -= DELAY;
-            }
-            //TODO: IMPORTANT separate game loop and render into separate threads.
-            //requires determining all requirements for render, and locking relevant code. all changes probably need to be done 'simultaneously'
-            //perhaps clone relevant data to render thread, and lock entire game loop?
-            //it would probably be wise to research possible approaches before seriously attempting this, as it will require significant changes to the code
-            //making code thread safe will also likely be useful for threaded AI
-            gameLoop(timeDiff);
+            gameLoop(BigDecimal.valueOf(actualFrameTime).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),8,BigDecimal.ROUND_DOWN));
             repaint();
             
-            sleep=DELAY-timeDiff;
-            
-            try
-            {
-                Thread.sleep(sleep);
-            }
-            catch(InterruptedException e)
-            {
-                System.out.println("Interrupted: "+e.getMessage());
-            }
-            
             beforeTime = currentTime;
+            
+//            try
+//            {
+//                //Simulate a slow computer (this is actually really helpful)
+//                Thread.sleep(5);
+//            }
+//            catch (InterruptedException e)
+//            {
+//                // TODO Auto-generated catch block
+//                e.printStackTrace();
+//            }
         }
     }
 }
