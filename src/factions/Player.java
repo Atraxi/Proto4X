@@ -42,33 +42,46 @@ public class Player
         
         public void replaceQueue(Action action)
         {
-            if(selected.size()==1)
+            if(action.type == Action.ActionType.MOVE)
             {
-                if(selected.get(0).canAcceptAction(action.type))
+                if(selected.size()==1)
                 {
-                    selected.get(0).replaceQueue(action);
+                    if(selected.get(0).canAcceptAction(action.type))
+                    {
+                        selected.get(0).replaceQueue(action);
+                    }
+                }
+                else
+                {
+                    //TODO: proper formations, determine destination from formation
+                    double xAvg = 0, yAvg = 0;
+                    for(Entity selectedEntity : selected)
+                    {
+                        xAvg+=selectedEntity.getX();
+                        yAvg+=selectedEntity.getY();
+                    }
+                    xAvg=xAvg/selected.size();
+                    yAvg=yAvg/selected.size();
+                        
+                    double x = (double)action.getData()[0];
+                    double y = (double)action.getData()[1];
+                        
+                    for(Entity e : selected)
+                    {
+                        if(e.canAcceptAction(action.type))
+                        {
+                            e.replaceQueue(new Action(action.type, new Object[]{x+e.getX()-xAvg,y+e.getY()-yAvg}));
+                        }
+                    }
                 }
             }
             else
             {
-                //TODO: proper formations, determine destination from formation
-                double xAvg = 0, yAvg = 0;
-                for(Entity selectedEntity : selected)
-                {
-                    xAvg+=selectedEntity.getX();
-                    yAvg+=selectedEntity.getY();
-                }
-                xAvg=xAvg/selected.size();
-                yAvg=yAvg/selected.size();
-                    
-                double x = (double)action.getData()[0];
-                double y = (double)action.getData()[1];
-                    
                 for(Entity e : selected)
                 {
                     if(e.canAcceptAction(action.type))
                     {
-                        e.replaceQueue(new Action(action.type, new Object[]{x+e.getX()-xAvg,y+e.getY()-yAvg}));
+                        e.replaceQueue(action);
                     }
                 }
             }
@@ -76,11 +89,47 @@ public class Player
 
         public void queueAction(Action action)
         {
-            for(Entity e : selected)
+            if(action.type==Action.ActionType.MOVE)
             {
-                if(e.canAcceptAction(action.type))
+                if(selected.size()==1)
                 {
-                    e.queueAction(action);
+                    if(selected.get(0).canAcceptAction(action.type))
+                    {
+                        selected.get(0).queueAction(action);
+                    }
+                }
+                else
+                {
+                    //TODO: proper formations, determine destination from formation
+                    double xAvg = 0, yAvg = 0;
+                    for(Entity selectedEntity : selected)
+                    {
+                        xAvg+=selectedEntity.getX();
+                        yAvg+=selectedEntity.getY();
+                    }
+                    xAvg=xAvg/selected.size();
+                    yAvg=yAvg/selected.size();
+                        
+                    double x = (double)action.getData()[0];
+                    double y = (double)action.getData()[1];
+                        
+                    for(Entity e : selected)
+                    {
+                        if(e.canAcceptAction(action.type))
+                        {
+                            e.queueAction(new Action(action.type, new Object[]{x+e.getX()-xAvg,y+e.getY()-yAvg}));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for(Entity e : selected)
+                {
+                    if(e.canAcceptAction(action.type))
+                    {
+                        e.queueAction(action);
+                    }
                 }
             }
         }
