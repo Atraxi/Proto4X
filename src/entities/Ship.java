@@ -96,18 +96,20 @@ public class Ship extends Entity
         super.doWork(timeAdjustment, paused);
         if ( !paused)
         {
-            if(actionInProgress!=null && actionInProgress.isExecuting())
+            synchronized(actionInProgressLock)
             {
-                boolean finishedRotation, finishedMoving;
-                synchronized(actionInProgressLock)
+                if(actionInProgress!=null && actionInProgress.isExecuting())
                 {
+                    boolean finishedRotation, finishedMoving;
+
                     finishedRotation = updateOrientation(timeAdjustment);
                     finishedMoving = updatePosition(timeAdjustment);
-                }
-                if(finishedRotation && finishedMoving)
-                {
-                    // TODO: allow drag for target orientation
-                    actionInProgress = null;
+
+                    if(finishedRotation && finishedMoving)
+                    {
+                        // TODO: allow drag for target orientation
+                        actionInProgress = null;
+                    }
                 }
             }
         }
@@ -148,7 +150,10 @@ public class Ship extends Entity
             System.out.println("Right Click Command -> Ship:" + this + "\n\tx:" + x
                     + " y:" + y + " orientationTarget:" + orientationTarget
                     + " orientationDelta:" + (orientationTarget - orientation));
-            actionInProgress = new Action(nextActionFromQueue.type, new Object[]{targetX, targetY, orientationTarget}, true);
+            synchronized(actionInProgressLock)
+            {
+                actionInProgress = new Action(nextActionFromQueue.type, new Object[]{targetX, targetY, orientationTarget}, true);
+            }
         }
     }
 }
