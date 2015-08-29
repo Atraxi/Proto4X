@@ -1,4 +1,4 @@
-package factions;
+package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;

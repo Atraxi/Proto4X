@@ -7,8 +7,8 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
+import atraxi.game.UI.UserInterfaceHandler;
 import debug.DebugKeyIntercept;
-import factions.Player;
 
 public class Proto extends JFrame
 {

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
-import factions.Player;
+import atraxi.game.Player;
 
 public class Ship extends Entity
 {

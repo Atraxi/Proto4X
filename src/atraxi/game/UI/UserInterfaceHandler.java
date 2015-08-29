@@ -1,8 +1,11 @@
-package atraxi.game;
+package atraxi.game.UI;
+
+import atraxi.game.Game;
+import atraxi.game.Player;
+import entities.actionQueue.Action;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -11,16 +14,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.awt.geom.Area;
-
-import entities.actionQueue.Action;
-import factions.Player;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
     private Player user;
     private Rectangle selectionArea = null;
-    private static Area playableArea;
     
     private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
     private boolean dragSelect;
@@ -28,12 +26,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public UserInterfaceHandler(Player user)
     {
         this.user = user;
-        //TEST:THIS IS A DIRTY DISGUSTING TEMPORARY HACK, width*2 to work across 2 screens
-        //TEST: this needs to recalculate as the game window is moved around the screen, research window moved events
-        playableArea = new Area(new Rectangle(0,0,Proto.screen_Width*2,Proto.screen_Height));
-        //Removed for now as the feature is incomplete (no visual feedback) and thus will make the UI seem bugged if you don't know what this does
-//        playableArea.subtract(new Area(new Rectangle(0,0,Proto.screen_Width*2,(int)(Proto.screen_Height*0.1))));
-//        playableArea.subtract(new Area(new Rectangle(0,(int)(Proto.screen_Height*0.9),Proto.screen_Width*2,(int)(Proto.screen_Height*0.1))));
     }
 
     public void paint(Graphics g)
@@ -50,10 +42,25 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         this.selectionArea = selectionArea;
     }
-    
-    protected static boolean playableAreaContains(Point point)
+
+    /**
+     * Passes the event through the UI stack
+     * @param paramMouseEvent
+     * @return true if this event occurred over a UI element that blocks other UI interaction below it
+     */
+    protected static boolean uiOverlay(MouseEvent paramMouseEvent)
     {
-        return playableArea.contains(point);
+        return false;
+    }
+
+    /**
+     *
+     * @param paramMouseWheelEvent
+     * @return true if this event occurred over a UI element that blocks other UI interaction below it
+     */
+    protected static boolean uiOverlay(MouseWheelEvent paramMouseWheelEvent)
+    {
+        return false;
     }
 
     @Override
@@ -82,13 +89,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
+        if(!uiOverlay(paramMouseEvent))
         {
-            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
-                dragSelect=true;
+                dragSelect = true;
             }
         }
     }
@@ -96,14 +103,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
+        uiOverlay(paramMouseEvent);
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
             {
                 dragSelectEndX=paramMouseEvent.getX();
                 dragSelectEndY=paramMouseEvent.getY();
-                /* Rectangle must processed as if drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                /* Rectangle must be created as if drawn from top left corner with positive width&height.
+                 * Not sure what step actually breaks otherwise (bounding box invalid or intersecting area calculation failing most likely)
                  */
                 Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
@@ -116,10 +124,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseMoved(MouseEvent paramMouseEvent){}
+    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
 
     @Override
-    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){}
+    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiOverlay(paramMouseWheelEvent);}
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
     public void mouseClicked(MouseEvent paramMouseEvent){}
@@ -127,6 +135,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
+        boolean uiEvent = uiOverlay(paramMouseEvent);
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
             if(dragSelect)
@@ -134,8 +143,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 dragSelectEndX=paramMouseEvent.getX();
                 dragSelectEndY=paramMouseEvent.getY();
                 dragSelect=false;
-                /* Rectangle must be drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks (bounding box invalid or intersecting area calculation failing most likely)
+                /* Rectangle must be created as if drawn from top left corner with positive width&height.
+                 * Not sure what step actually breaks otherwise (bounding box invalid or intersecting area calculation failing most likely)
                  */
                 Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
@@ -147,7 +156,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
         {
-            if(playableAreaContains(paramMouseEvent.getLocationOnScreen()))
+            if(!uiEvent)
             {
                 //TODO: refactor? to allow drag for target orientation
                 if(paramMouseEvent.isShiftDown())
@@ -163,9 +172,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseEntered(MouseEvent paramMouseEvent){}
+    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
 
     @Override
-    public void mouseExited(MouseEvent paramMouseEvent){}
-
+    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
 }

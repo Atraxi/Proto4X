@@ -3,9 +3,9 @@ package debug;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import factions.Player;
+import atraxi.game.Player;
 import atraxi.game.Game;
-import atraxi.game.UserInterfaceHandler;
+import atraxi.game.UI.UserInterfaceHandler;
 
 public class DebugKeyIntercept extends UserInterfaceHandler
 {

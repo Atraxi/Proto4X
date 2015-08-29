@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import atraxi.game.World;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
-import factions.Player;
+import atraxi.game.Player;
 
 public class Structure extends Entity
 {

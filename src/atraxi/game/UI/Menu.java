@@ -1,4 +1,4 @@
-package atraxi.game;
+package atraxi.game.UI;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -11,6 +11,7 @@ import java.awt.event.MouseListener;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
+import atraxi.game.Proto;
 import entities.Entity;
 
 public class Menu extends JPanel implements MouseListener

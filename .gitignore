@@ -4,3 +4,4 @@ bin/
 .settings/org.eclipse.jdt.core.prefs
 out/
 .idea/workspace.xml
+.idea/uiDesigner.xml

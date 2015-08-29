@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
+import atraxi.game.UI.UserInterfaceHandler;
 import entities.Entity;
-import factions.Player;
 
 public class Game extends JPanel implements Runnable
 {

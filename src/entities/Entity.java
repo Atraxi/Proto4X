@@ -10,7 +10,7 @@ import javax.swing.ImageIcon;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
 import entities.actionQueue.ActionQueue;
-import factions.Player;
+import atraxi.game.Player;
 
 public abstract class Entity
 {
