@@ -22,7 +22,7 @@ public class World
         entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 300));
         entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 320));
         
-        entities.add(new Structure("testButton", Game.getPlayerList().get(0), 500, 500));
+        entities.add(new Structure("baseBuildingClass", Game.getPlayerList().get(0), 500, 500));
     }
     
     /**

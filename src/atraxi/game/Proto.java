@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import javax.swing.JFrame;
 
 import atraxi.game.UI.UserInterfaceHandler;
-import debug.DebugKeyIntercept;
 
 public class Proto extends JFrame
 {
@@ -28,15 +27,9 @@ public class Proto extends JFrame
         ArrayList<Player> players = new ArrayList<Player>();
         players.add(user);
         UserInterfaceHandler ui;
-        
-        if(debug)
-        {
-            ui = new DebugKeyIntercept(user);
-        }
-        else
-        {
-            ui = new UserInterfaceHandler(user);
-        }
+
+        ui = new UserInterfaceHandler(user);
+
         Game game = new Game(players, ui);
         addKeyListener(ui);
         //bind mouse to JPanel to account for taskbar in mouse coords
