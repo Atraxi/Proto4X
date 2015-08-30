@@ -11,7 +11,7 @@ public class Action
     
     
     public Action(ActionType type, Object[] data, boolean executing)
-    {//TODO: safeguards on data types, probably tied to ActionType enumeration
+    {//TODO: safeguards on data types, probably tied to ActionType enum
         this.type = type;
         this.data = data;
         this.executing = executing;
@@ -22,7 +22,7 @@ public class Action
         this(type, data, false);
     }
     
-    public static enum ActionType
+    public enum ActionType
     {
         MOVE, STOP, BUILD, SUICIDE, ATTACK, PATROL, GUARD
     }

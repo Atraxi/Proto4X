@@ -1,89 +1,77 @@
 package atraxi.game.UI;
 
+import atraxi.game.Proto;
+
+import javax.swing.ImageIcon;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
-
-import atraxi.game.Proto;
-import entities.Entity;
-
-public class Menu extends JPanel implements MouseListener
+public class Menu implements UIElement
 {
+    //TODO: implement image scaling, try "image.getScaledInstance(width,height,algorithm(enum));"
     private Button[] buttons;
-    public class Button
-    {
-        private Image image;
-        private int x, y;
-        private boolean pressed = false;
-        protected Rectangle dim;
-        public Button(Image image,int x,int y)
-        {
-            this.image=image;
-            this.x=x;
-            this.y=y;
-            dim=new Rectangle(x,y,image.getWidth(null),image.getHeight(null));
-        }
-    }
-
+    private int x, y;
     private Image menuBackground;
-    private static final long serialVersionUID = 1L;
 
-    public Menu()
+    public Menu(Image background,int x, int y)
     {
-        buttons = new Button[]{new Button(new ImageIcon("resources/"+"testButton"+".png").getImage(),(int)(Proto.screen_Width*0.8),(int)(Proto.screen_Height*0.4))};
+        this.menuBackground=background;
+        this.x=x;
+        this.y=y;
+        //buttons = new Button[]{new Button(new ImageIcon("resources/"+"testButton"+".png").getImage(),(int)(Proto.screen_Width*0.8),(int)(Proto.screen_Height*0.4))};
     }
-    
-    @Override
-    public void paint(Graphics g)
+
+    public void paint (Graphics g)
     {
-        super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.drawImage(menuBackground, 0, 0, null);
-//        for( Entity entity : World.getEntityList())
-//        {
-//            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
-//        }
-//        Toolkit.getDefaultToolkit().sync();
+        for(Button button : buttons)
+        {
+            g2d.drawImage(button.getImage(), x+button.getX(), y+button.getY(), null);
+        }
+        Toolkit.getDefaultToolkit().sync();
         g.dispose();
     }
-    
-    @Override
-    public void mouseClicked(MouseEvent e){}//don't use, mouse movement of any amount invalidates click
 
     @Override
-    public void mouseEntered(MouseEvent e)
-    {//TODO: mouseover image change
-    }
+    public boolean mouseEntered (MouseEvent e){return false;}
 
     @Override
-    public void mouseExited(MouseEvent e)
-    {//TODO: mouseover image reset
-    }
+    public boolean mouseExited (MouseEvent e) {return false;}
 
     @Override
-    public void mousePressed(MouseEvent e)
+    public boolean mousePressed (MouseEvent e)
     {
         for(Button button : buttons)
         {
-            if(button.dim.contains(e.getLocationOnScreen()))
+            if(button.mousePressed(e))
             {
-                button.pressed=true;
-                //button.image=//load new image, load images once, set by reference
+                return true;
             }
         }
+        return false;
     }
 
     @Override
-    public void mouseReleased(MouseEvent e)
+    public boolean mouseReleased (MouseEvent e)
     {
-        // TODO Auto-generated method stub
-        
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged (MouseEvent e)
+    {
+
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved (MouseEvent e)
+    {
+
+        return false;
     }
 }

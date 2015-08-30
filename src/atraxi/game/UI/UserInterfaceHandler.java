@@ -76,8 +76,17 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
+                if(Game.paused)
+                {
+                    System.out.println("Game Paused.");
+                }
+                else
+                {
+                    System.out.println("Game Resumed.");
+                }
                 break;
             case KeyEvent.VK_ESCAPE:
+                System.out.println("escape");
                 System.exit(0);
                 break;
         }
@@ -89,13 +98,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        if(!uiOverlay(paramMouseEvent))
+        boolean uiEvent = uiOverlay(paramMouseEvent);
+        if(!uiEvent)
         {
             if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
                 dragSelect = true;
+                System.out.println("DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY);
             }
         }
     }
@@ -103,7 +114,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
-        uiOverlay(paramMouseEvent);
+        boolean uiEvent = uiOverlay(paramMouseEvent);
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
@@ -119,6 +130,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
                 setSelectionArea(selectionArea);
+                System.out.println("Drag to x:" +
+                                   dragSelectEndX +
+                                   " y:" +
+                                   dragSelectEndY
+                                   +
+                                   "\n\tStarted, x:" +
+                                   dragSelectStartX +
+                                   " y:" +
+                                   dragSelectStartY);
             }
         }
     }
@@ -152,6 +172,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
                 setSelectionArea(null);
+                System.out.println("Drag Ended, x:" +
+                                   dragSelectEndX +
+                                   " y:" +
+                                   dragSelectEndY
+                                   +
+                                   "\n\tStarted, x:" +
+                                   dragSelectStartX +
+                                   " y:" +
+                                   dragSelectStartY);
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
