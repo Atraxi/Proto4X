@@ -1,8 +1,5 @@
 package atraxi.game.UI;
 
-import atraxi.game.Proto;
-
-import javax.swing.ImageIcon;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -16,12 +13,12 @@ public class Menu implements UIElement
     private int x, y;
     private Image menuBackground;
 
-    public Menu(Image background,int x, int y)
+    public Menu(Image background,int x, int y,Button[] buttons)
     {
         this.menuBackground=background;
         this.x=x;
         this.y=y;
-        //buttons = new Button[]{new Button(new ImageIcon("resources/"+"testButton"+".png").getImage(),(int)(Proto.screen_Width*0.8),(int)(Proto.screen_Height*0.4))};
+        this.buttons = buttons;
     }
 
     public void paint (Graphics g)
@@ -37,18 +34,19 @@ public class Menu implements UIElement
     }
 
     @Override
-    public boolean mouseEntered (MouseEvent e){return false;}
+    public boolean mouseEntered (MouseEvent paramMouseEvent){return false;}
 
     @Override
-    public boolean mouseExited (MouseEvent e) {return false;}
+    public boolean mouseExited (MouseEvent paramMouseEvent) {return false;}
 
     @Override
-    public boolean mousePressed (MouseEvent e)
+    public boolean mousePressed (MouseEvent paramMouseEvent)
     {
         for(Button button : buttons)
         {
-            if(button.mousePressed(e))
+            if(button.dim.contains(paramMouseEvent.getLocationOnScreen()))
             {
+                button.state = Button.ButtonState.PRESSED;
                 return true;
             }
         }
@@ -56,22 +54,57 @@ public class Menu implements UIElement
     }
 
     @Override
-    public boolean mouseReleased (MouseEvent e)
+    public boolean mouseReleased (MouseEvent paramMouseEvent)
+    {
+        for(Button button : buttons)
+        {
+            if(button.dim.contains(paramMouseEvent.getLocationOnScreen()) && button.state==Button.ButtonState.PRESSED)
+            {
+                try
+                {
+                    button.executeAction();
+                }
+                catch(Exception e)
+                {
+                    //TODO: Handle this properly, although no exceptions are thrown explicitly (as of writing this comment) so it's unlikely to actually occur
+                    e.printStackTrace();
+                }
+                button.state = Button.ButtonState.HOVER;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged (MouseEvent paramMouseEvent)
     {
         return false;
     }
 
     @Override
-    public boolean mouseDragged (MouseEvent e)
+    public boolean mouseMoved (MouseEvent paramMouseEvent)
     {
-
+        for(Button button : buttons)
+        {
+            if(button.dim.contains(paramMouseEvent.getPoint()) && button.state == Button.ButtonState.DEFAULT)
+            {
+                button.state = Button.ButtonState.HOVER;
+                return true;
+            }
+        }
         return false;
     }
 
     @Override
-    public boolean mouseMoved (MouseEvent e)
+    public UIElement getNextNode ()
+    {
+        return null;
+    }
+
+    @Override
+    public void setNextNode (UIElement element)
     {
 
-        return false;
     }
 }
