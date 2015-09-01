@@ -54,9 +54,9 @@ public class Game extends JPanel implements Runnable
         {
             g2d.drawImage(entity.getImage(), entity.getTransform(), null);
         }
-        uiHandler.paint(g);
+        uiHandler.paint(g2d);
         Toolkit.getDefaultToolkit().sync();
-        g.dispose();
+        g2d.dispose();
     }
     
     private void gameLoop(BigDecimal timeAdjustment)

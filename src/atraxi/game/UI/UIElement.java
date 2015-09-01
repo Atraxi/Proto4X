@@ -1,10 +1,11 @@
 package atraxi.game.UI;
 
+import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 
 public interface UIElement
 {
-
     /**
      * @return true if the event occurred over this object
      * @see java.awt.event.MouseListener#mousePressed(MouseEvent)
@@ -41,7 +42,11 @@ public interface UIElement
      */
     public boolean mouseMoved (MouseEvent paramMouseEvent);
 
-    public UIElement getNextNode();
+    /**
+     * @return true if the event occurred over this object
+     * @see java.awt.event.MouseWheelListener#mouseWheelMoved(MouseWheelEvent)
+     */
+    public boolean mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
 
-    public void setNextNode(UIElement element);
+    public void paint(Graphics2D graphics);
 }
