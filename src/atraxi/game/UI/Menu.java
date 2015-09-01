@@ -18,19 +18,17 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     {
         this.menuBackground=image;
         this.buttons = buttons;
+        this.x=x;
+        this.y=y;
 
         int width = image.getWidth(this);
         int height = image.getHeight(this);
         if(width!=-1 && height!=-1)
         {
-            this.x=x-width/2;
-            this.y=y-height/2;
             dim=new Rectangle(this.x,this.y,width,height);
         }
         else
         {
-            this.x=x;
-            this.y=y;
             dim=new Rectangle(this.x,this.y,0,0);
         }
     }
@@ -140,8 +138,6 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     {
         if(((ImageObserver.WIDTH | ImageObserver.HEIGHT) & infoFlags)  == (ImageObserver.WIDTH | ImageObserver.HEIGHT))
         {
-            this.x=this.x-(width/2);
-            this.y=this.y-(height/2);
             dim = new Rectangle(this.x,this.y,width,height);
             return true;
         }

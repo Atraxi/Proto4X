@@ -28,6 +28,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -46,6 +47,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -64,6 +66,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -82,6 +85,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -100,6 +104,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -118,6 +123,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -136,6 +142,7 @@ public class UIStack implements UIElement
                 {
                     return true;
                 }
+                currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
         }
@@ -175,8 +182,8 @@ public class UIStack implements UIElement
     {
         return new Menu(new ImageIcon("resources/testButton.png").getImage(),Proto.screen_Width/2,Proto.screen_Height/2, new Button[]{new Button(
                     new ImageIcon("resources/baseBuildingClass.png").getImage(),
-                    0,
-                    0,
+                    10,
+                    20,
                     () -> {
                         System.out.println("button clicked");
                         return null;
