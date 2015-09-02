@@ -8,7 +8,7 @@ import java.util.concurrent.Callable;
 public class Button implements ImageObserver
 {
     private Image image, imageHover, imagePressed;
-    private int x, y;
+    protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
     private Callable action;
@@ -26,7 +26,6 @@ public class Button implements ImageObserver
         int height = image.getHeight(this);
         if(width!=-1 && height!=-1)
         {
-
             dim=new Rectangle(this.x,this.y,width,height);
         }
         else
@@ -51,16 +50,6 @@ public class Button implements ImageObserver
             default:
                 return image;
         }
-    }
-
-    protected int getX ()
-    {
-        return x;
-    }
-
-    protected int getY ()
-    {
-        return y;
     }
 
     protected void executeAction() throws Exception

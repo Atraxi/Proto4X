@@ -19,16 +19,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mousePressed (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mousePressed(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -38,16 +38,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseReleased (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseReleased(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -57,16 +57,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseEntered (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseEntered(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -76,16 +76,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseExited (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseExited(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -95,16 +95,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseDragged (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseDragged(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -114,16 +114,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseMoved (MouseEvent paramMouseEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseMoved(paramMouseEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -133,16 +133,16 @@ public class UIStack implements UIElement
     @Override
     public boolean mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
     {
-        if(head!=null)
+        if(tail!=null)
         {
-            UIStackNode currentNode = head;
+            UIStackNode currentNode = tail;
             do
             {
                 if(currentNode.mouseWheelMoved(paramMouseWheelEvent))
                 {
                     return true;
                 }
-                currentNode = currentNode.getNextNode();
+                currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
@@ -174,19 +174,49 @@ public class UIStack implements UIElement
         else
         {
             tail.setNextNode(newNode);
+            newNode.setPreviousNode(tail);
             tail = newNode;
         }
     }
 
     public static UIStackNode getNewTestMenu()
     {
-        return new Menu(new ImageIcon("resources/testButton.png").getImage(),Proto.screen_Width/2,Proto.screen_Height/2, new Button[]{new Button(
-                    new ImageIcon("resources/baseBuildingClass.png").getImage(),
-                    10,
-                    20,
-                    () -> {
-                        System.out.println("button clicked");
-                        return null;
-                    })});
+        return new Menu(new ImageIcon("resources/baseMenuClass.png").getImage(),
+                        (Proto.screen_Width / 2) - 30,
+                        (Proto.screen_Height / 2) - 30,
+                        new Button[]{
+                                new Button(
+                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        60,
+                                        80,
+                                        () -> {
+                                            System.out.println("button 1 clicked");
+                                            return null;
+                                        }),
+                                new Button(
+                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        60,
+                                        150,
+                                        () -> {
+                                            System.out.println("button 2 clicked");
+                                            return null;
+                                        }),
+                                new Button(
+                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        60,
+                                        220,
+                                        () -> {
+                                            System.out.println("button 3 clicked");
+                                            return null;
+                                        }),
+                                new Button(
+                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        60,
+                                        290,
+                                        () -> {
+                                            System.out.println("quit game");
+                                            System.exit(0);
+                                            return null;
+                                        })});
     }
 }

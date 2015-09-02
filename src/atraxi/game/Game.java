@@ -105,7 +105,6 @@ public class Game extends JPanel implements Runnable
 //            }
 //            catch (InterruptedException e)
 //            {
-//                // TODO Auto-generated catch block
 //                e.printStackTrace();
 //            }
         }
