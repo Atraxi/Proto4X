@@ -63,14 +63,9 @@ public class Proto extends JFrame
             debug = false;
         }
         
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Proto frame = new Proto();
-                frame.setVisible(true);
-            }
+        EventQueue.invokeLater(() -> {
+            Proto frame = new Proto();
+            frame.setVisible(true);
         });
     }
 }

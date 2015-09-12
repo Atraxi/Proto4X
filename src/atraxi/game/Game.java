@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class Game extends JPanel implements Runnable
     private Image mapImage;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
+    private Rectangle viewArea;
     
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
@@ -37,6 +39,7 @@ public class Game extends JPanel implements Runnable
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
         setDoubleBuffered(true);
         paused = false;
+        viewArea = new Rectangle(0,0,Proto.screen_Width, Proto.screen_Width);
     }
     
     public static ArrayList<Player> getPlayerList()

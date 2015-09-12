@@ -2,7 +2,7 @@ package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 import entities.Entity;
 import entities.Ship;
@@ -11,6 +11,8 @@ import entities.Structure;
 public class World
 {
     private final static ArrayList<Entity> entities = new ArrayList<Entity>();
+    public static final int WORLDWIDTH = 1920;
+    public static final int WORLDHIEGHT = 1080;
     
     public World()
     {
@@ -35,19 +37,13 @@ public class World
         ArrayList<Entity> selection = new ArrayList<Entity>();
         synchronized(entities)
         {
-            for(Entity e : entities)
-            {
-                if(e.boundsTest(selectionArea))
-                {
-                    selection.add(e);
-                }
-            }
+            selection.addAll(entities.stream().filter(e -> e.boundsTest(selectionArea)).collect(Collectors.toList()));
         }
         return selection.toArray(new Entity[selection.size()]);
     }
     
     /**
-     * @return A new ArrayList populated from the list of all entities. Being a new copy, this will not reflect any changes made to the main entity list.
+     * @return A new ArrayList populated from the list of all entities between the given x-coordinate range. Being a new copy, this will not reflect any changes made to the main entity list.
      */
     public static ArrayList<Entity> getEntityList()
     {
