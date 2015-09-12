@@ -1,89 +1,218 @@
 package atraxi.game.UI;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.image.ImageObserver;
 
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
-
-import atraxi.game.Proto;
-import entities.Entity;
-
-public class Menu extends JPanel implements MouseListener
+public class Menu implements UIElement, UIStackNode, ImageObserver
 {
+    //TODO: implement image scaling, try "image.getScaledInstance(width,height,algorithm(enum));"
     private Button[] buttons;
-    public class Button
+    private int x, y;
+    private Image menuBackground;
+    private Rectangle dim;
+    private UIStackNode nextNode = null, previousNode = null;
+    private Point movePoint = null;
+
+    public Menu(Image image,int x, int y,Button[] buttons)
     {
-        private Image image;
-        private int x, y;
-        private boolean pressed = false;
-        protected Rectangle dim;
-        public Button(Image image,int x,int y)
+        this.menuBackground=image;
+        this.buttons = buttons;
+
+
+        int width = menuBackground.getWidth(this);
+        int height = menuBackground.getHeight(this);
+        if(width!=-1 && height!=-1)
         {
-            this.image=image;
+            this.x=x-(width/2);
+            this.y=y-(height/2);
+            dim=new Rectangle(this.x,this.y,width,height);
+
+            for(Button button : buttons)
+            {
+                button.x+=this.x;
+                button.y+=this.y;
+                button.dim.setLocation(button.x,button.y);
+            }
+        }
+        else
+        {
             this.x=x;
             this.y=y;
-            dim=new Rectangle(x,y,image.getWidth(null),image.getHeight(null));
-        }
-    }
+            dim=new Rectangle(this.x,this.y,0,0);
 
-    private Image menuBackground;
-    private static final long serialVersionUID = 1L;
-
-    public Menu()
-    {
-        buttons = new Button[]{new Button(new ImageIcon("resources/"+"testButton"+".png").getImage(),(int)(Proto.screen_Width*0.8),(int)(Proto.screen_Height*0.4))};
-    }
-    
-    @Override
-    public void paint(Graphics g)
-    {
-        super.paint(g);
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.drawImage(menuBackground, 0, 0, null);
-//        for( Entity entity : World.getEntityList())
-//        {
-//            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
-//        }
-//        Toolkit.getDefaultToolkit().sync();
-        g.dispose();
-    }
-    
-    @Override
-    public void mouseClicked(MouseEvent e){}//don't use, mouse movement of any amount invalidates click
-
-    @Override
-    public void mouseEntered(MouseEvent e)
-    {//TODO: mouseover image change
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e)
-    {//TODO: mouseover image reset
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e)
-    {
-        for(Button button : buttons)
-        {
-            if(button.dim.contains(e.getLocationOnScreen()))
+            for(Button button : buttons)
             {
-                button.pressed=true;
-                //button.image=//load new image, load images once, set by reference
+                button.x+=this.x;
+                button.y+=this.y;
+                button.dim.setLocation(button.x,button.y);
             }
         }
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e)
+    public void paint (Graphics2D g2d)
     {
-        // TODO Auto-generated method stub
-        
+        g2d.drawImage(menuBackground, x, y, null);
+        for(Button button : buttons)
+        {
+            g2d.drawImage(button.getImage(), button.x, button.y, null);
+        }
+    }
+
+    @Override
+    public boolean mouseEntered (MouseEvent paramMouseEvent){return false;}
+
+    @Override
+    public boolean mouseExited (MouseEvent paramMouseEvent) {return false;}
+
+    @Override
+    public boolean mousePressed (MouseEvent paramMouseEvent)
+    {
+        if(dim.contains(paramMouseEvent.getPoint()))
+        {
+            for(Button button : buttons)
+            {
+                if(button.dim.contains(paramMouseEvent.getPoint()))
+                {
+                    button.state = Button.ButtonState.PRESSED;
+                    return true;
+                }
+            }
+            movePoint = paramMouseEvent.getPoint();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased (MouseEvent paramMouseEvent)
+    {
+        if(movePoint != null)
+        {
+            int width = menuBackground.getWidth(this);
+            int height = menuBackground.getHeight(this);
+            this.x-=(movePoint.getX()-paramMouseEvent.getX());
+            this.y-=(movePoint.getY()-paramMouseEvent.getY());
+            dim=new Rectangle(this.x,this.y,width,height);
+
+            for(Button button : buttons)
+            {
+                button.x-=(movePoint.getX()-paramMouseEvent.getX());
+                button.y-=(movePoint.getY()-paramMouseEvent.getY());
+                button.dim.setLocation(button.x,button.y);
+            }
+            movePoint=null;
+        }
+        else if(dim.contains(paramMouseEvent.getPoint()))
+        {
+            for(Button button : buttons)
+            {
+                if(button.dim.contains(paramMouseEvent.getPoint()) &&
+                   button.state == Button.ButtonState.PRESSED)
+                {
+                    try
+                    {
+                        button.executeAction();
+                    }
+                    catch(Exception e)
+                    {
+                        //TODO: Handle this properly, although no exceptions are thrown explicitly (as of writing this comment) so it's unlikely to actually occur
+                        e.printStackTrace();
+                    }
+                    button.state = Button.ButtonState.HOVER;
+                    return true;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged (MouseEvent paramMouseEvent)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved (MouseEvent paramMouseEvent)
+    {
+        if(dim.contains(paramMouseEvent.getPoint()))
+        {
+            for(Button button : buttons)
+            {
+                if(button.dim.contains(paramMouseEvent.getPoint()) && button.state == Button.ButtonState.DEFAULT)
+                {
+                    System.out.println("mouse moved over button");
+                    button.state = Button.ButtonState.HOVER;
+                    return true;
+                }
+                else if(!button.dim.contains(paramMouseEvent.getPoint()) && button.state == Button.ButtonState.HOVER)
+                {
+                    System.out.println("mouse moved off button");
+                    button.state = Button.ButtonState.DEFAULT;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    {
+        if(dim.contains(paramMouseWheelEvent.getPoint()))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public UIStackNode getNextNode ()
+    {
+        return nextNode;
+    }
+
+    @Override
+    public UIStackNode getPreviousNode ()
+    {
+        return previousNode;
+    }
+
+    @Override
+    public void setNextNode (UIStackNode element)
+    {
+        nextNode = element;
+    }
+
+    @Override
+    public void setPreviousNode (UIStackNode element)
+    {
+        previousNode = element;
+    }
+
+    @Override
+    public boolean imageUpdate (Image img, int infoFlags, int x, int y, int width, int height)
+    {
+        if(((ImageObserver.WIDTH | ImageObserver.HEIGHT) & infoFlags)  == (ImageObserver.WIDTH | ImageObserver.HEIGHT))
+        {
+            this.x=x-(width/2);
+            this.y=y-(height/2);
+            dim = new Rectangle(this.x,this.y,width,height);
+
+            for(Button button : buttons)
+            {
+                button.x+=this.x;
+                button.y+=this.y;
+                button.dim.setLocation(button.x,button.y);
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

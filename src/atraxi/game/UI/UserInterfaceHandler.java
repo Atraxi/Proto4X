@@ -4,9 +4,7 @@ import atraxi.game.Game;
 import atraxi.game.Player;
 import entities.actionQueue.Action;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -19,48 +17,32 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 {
     private Player user;
     private Rectangle selectionArea = null;
-    
+    public static UIStack uiStack;
     private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
     private boolean dragSelect;
     
     public UserInterfaceHandler(Player user)
     {
         this.user = user;
+        uiStack = new UIStack();
     }
 
-    public void paint(Graphics g)
+    public void paint(Graphics2D g2d)
     {
-        //Graphics2D g2d = (Graphics2D) g;
+        uiStack.paint(g2d);
         if(selectionArea!=null)
         {
-            g.setColor(Color.WHITE);
-            g.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
+            Color color = g2d.getColor();
+            g2d.setColor(Color.WHITE);
+            g2d.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
+            g2d.setColor(color);
         }
+
     }
     
     public void setSelectionArea(Rectangle selectionArea)
     {
         this.selectionArea = selectionArea;
-    }
-
-    /**
-     * Passes the event through the UI stack
-     * @param paramMouseEvent
-     * @return true if this event occurred over a UI element that blocks other UI interaction below it
-     */
-    protected static boolean uiOverlay(MouseEvent paramMouseEvent)
-    {
-        return false;
-    }
-
-    /**
-     *
-     * @param paramMouseWheelEvent
-     * @return true if this event occurred over a UI element that blocks other UI interaction below it
-     */
-    protected static boolean uiOverlay(MouseWheelEvent paramMouseWheelEvent)
-    {
-        return false;
     }
 
     @Override
@@ -76,10 +58,22 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
+                if(Game.paused)
+                {
+                    System.out.println("Game Paused.");
+                }
+                else
+                {
+                    System.out.println("Game Resumed.");
+                }
                 break;
             case KeyEvent.VK_ESCAPE:
+                System.out.println("escape");
                 System.exit(0);
                 break;
+            case KeyEvent.VK_A:
+                System.out.println("Creating test menu");
+                uiStack.push(UIStack.getNewTestMenu());
         }
     }
 
@@ -89,13 +83,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        if(!uiOverlay(paramMouseEvent))
+        boolean uiEvent = uiStack.mousePressed(paramMouseEvent);
+        if(!uiEvent)
         {
             if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
                 dragSelect = true;
+                System.out.println("DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY);
             }
         }
     }
@@ -103,7 +99,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
-        uiOverlay(paramMouseEvent);
+        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent);
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
@@ -119,15 +115,24 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
                 setSelectionArea(selectionArea);
+                System.out.println("Drag to x:" +
+                                   dragSelectEndX +
+                                   " y:" +
+                                   dragSelectEndY
+                                   +
+                                   "\n\tStarted, x:" +
+                                   dragSelectStartX +
+                                   " y:" +
+                                   dragSelectStartY);
             }
         }
     }
 
     @Override
-    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
+    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseMoved(paramMouseEvent);}
 
     @Override
-    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiOverlay(paramMouseWheelEvent);}
+    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent);}
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
     public void mouseClicked(MouseEvent paramMouseEvent){}
@@ -135,7 +140,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiOverlay(paramMouseEvent);
+        boolean uiEvent = uiStack.mouseReleased(paramMouseEvent);
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
             if(dragSelect)
@@ -152,6 +157,15 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
                 setSelectionArea(null);
+                System.out.println("Drag Ended, x:" +
+                                   dragSelectEndX +
+                                   " y:" +
+                                   dragSelectEndY
+                                   +
+                                   "\n\tStarted, x:" +
+                                   dragSelectStartX +
+                                   " y:" +
+                                   dragSelectStartY);
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
@@ -172,8 +186,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
+    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseEntered(paramMouseEvent);}
 
     @Override
-    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiOverlay(paramMouseEvent);}
+    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseExited(paramMouseEvent);}
 }
