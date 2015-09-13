@@ -13,6 +13,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
 import atraxi.game.UI.UserInterfaceHandler;
+import atraxi.game.World.World;
 import entities.Entity;
 
 public class Game extends JPanel implements Runnable

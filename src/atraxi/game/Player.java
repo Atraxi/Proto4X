@@ -3,7 +3,7 @@ package atraxi.game;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
-import atraxi.game.World;
+import atraxi.game.World.World;
 import entities.Entity;
 import entities.actionQueue.Action;
 

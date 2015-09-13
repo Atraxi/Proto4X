@@ -2,7 +2,7 @@ package entities;
 
 import java.math.BigDecimal;
 
-import atraxi.game.World;
+import atraxi.game.World.World;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
 import atraxi.game.Player;
