@@ -83,7 +83,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiStack.mousePressed(paramMouseEvent);
+        boolean uiEvent = uiStack.mousePressed(paramMouseEvent) != null;
         if(!uiEvent)
         {
             if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
@@ -99,7 +99,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent);
+        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent) != null;
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
@@ -129,10 +129,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseMoved(paramMouseEvent);}
+    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;}
 
     @Override
-    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent);}
+    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;}
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
     public void mouseClicked(MouseEvent paramMouseEvent){}
@@ -140,7 +140,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiStack.mouseReleased(paramMouseEvent);
+        boolean uiEvent = uiStack.mouseReleased(paramMouseEvent) != null;
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
             if(dragSelect)
@@ -186,8 +186,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseEntered(paramMouseEvent);}
+    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseEntered(paramMouseEvent) != null;}
 
     @Override
-    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseExited(paramMouseEvent);}
+    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseExited(paramMouseEvent) != null;}
 }

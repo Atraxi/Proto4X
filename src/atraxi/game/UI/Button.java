@@ -11,9 +11,10 @@ public class Button implements ImageObserver
     protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
-    private Callable action;
+    protected Menu parentMenu;
+    private CustomCallable<Menu,Boolean> action;
 
-    public Button(Image image, Image imageHover, Image imagePressed,int x,int y, Callable action)
+    public Button(Image image, Image imageHover, Image imagePressed, int x, int y, CustomCallable<Menu,Boolean> action)
     {
         this.image = image;
         this.imageHover = imageHover;
@@ -34,7 +35,7 @@ public class Button implements ImageObserver
         }
     }
 
-    public Button (Image image, int x, int y,Callable action)
+    public Button (Image image, int x, int y,CustomCallable<Menu,Boolean> action)
     {
         this(image,image,image,x,y,action);
     }
@@ -54,7 +55,7 @@ public class Button implements ImageObserver
 
     protected void executeAction() throws Exception
     {
-        action.call();
+        action.call(parentMenu);
     }
 
     @Override
