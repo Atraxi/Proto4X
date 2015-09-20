@@ -1,6 +1,9 @@
 package atraxi.game.UI;
 
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.ImageObserver;
@@ -34,6 +37,7 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                 button.x+=this.x;
                 button.y+=this.y;
                 button.dim.setLocation(button.x,button.y);
+                button.parentMenu = this;
             }
         }
         else
@@ -61,13 +65,13 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     }
 
     @Override
-    public boolean mouseEntered (MouseEvent paramMouseEvent){return false;}
+    public UIElement mouseEntered (MouseEvent paramMouseEvent){return null;}
 
     @Override
-    public boolean mouseExited (MouseEvent paramMouseEvent) {return false;}
+    public UIElement mouseExited (MouseEvent paramMouseEvent) {return null;}
 
     @Override
-    public boolean mousePressed (MouseEvent paramMouseEvent)
+    public UIElement mousePressed (MouseEvent paramMouseEvent)
     {
         if(dim.contains(paramMouseEvent.getPoint()))
         {
@@ -76,17 +80,20 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                 if(button.dim.contains(paramMouseEvent.getPoint()))
                 {
                     button.state = Button.ButtonState.PRESSED;
-                    return true;
+                    return this;
                 }
             }
-            movePoint = paramMouseEvent.getPoint();
-            return true;
+            if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
+            {
+                movePoint = paramMouseEvent.getPoint();
+                return this;
+            }
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseReleased (MouseEvent paramMouseEvent)
+    public UIElement mouseReleased (MouseEvent paramMouseEvent)
     {
         if(movePoint != null)
         {
@@ -103,13 +110,13 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                 button.dim.setLocation(button.x,button.y);
             }
             movePoint=null;
+            return this;
         }
-        else if(dim.contains(paramMouseEvent.getPoint()))
+        for(Button button : buttons)
         {
-            for(Button button : buttons)
+            if(button.state == Button.ButtonState.PRESSED)
             {
-                if(button.dim.contains(paramMouseEvent.getPoint()) &&
-                   button.state == Button.ButtonState.PRESSED)
+                if(button.dim.contains(paramMouseEvent.getPoint()))
                 {
                     try
                     {
@@ -117,26 +124,36 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                     }
                     catch(Exception e)
                     {
-                        //TODO: Handle this properly, although no exceptions are thrown explicitly (as of writing this comment) so it's unlikely to actually occur
+                        //TODO: Handle this properly, although no exceptions are thrown explicitly (as of writing this comment), and all other exceptions should be handled internally so it's unlikely to actually occur
                         e.printStackTrace();
                     }
                     button.state = Button.ButtonState.HOVER;
-                    return true;
+                    return this;
+                }
+                else
+                {
+                    button.state = Button.ButtonState.DEFAULT;
                 }
             }
-            return true;
         }
-        return false;
+        if(dim.contains(paramMouseEvent.getPoint()))
+        {
+            return this;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
-    public boolean mouseDragged (MouseEvent paramMouseEvent)
+    public UIElement mouseDragged (MouseEvent paramMouseEvent)
     {
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseMoved (MouseEvent paramMouseEvent)
+    public UIElement mouseMoved (MouseEvent paramMouseEvent)
     {
         if(dim.contains(paramMouseEvent.getPoint()))
         {
@@ -146,7 +163,7 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                 {
                     System.out.println("mouse moved over button");
                     button.state = Button.ButtonState.HOVER;
-                    return true;
+                    return this;
                 }
                 else if(!button.dim.contains(paramMouseEvent.getPoint()) && button.state == Button.ButtonState.HOVER)
                 {
@@ -154,19 +171,19 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
                     button.state = Button.ButtonState.DEFAULT;
                 }
             }
-            return true;
+            return this;
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
     {
         if(dim.contains(paramMouseWheelEvent.getPoint()))
         {
-            return true;
+            return this;
         }
-        return false;
+        return null;
     }
 
     @Override

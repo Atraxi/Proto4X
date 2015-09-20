@@ -6,6 +6,7 @@ import javax.swing.ImageIcon;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.concurrent.Callable;
 
 public class UIStack implements UIElement
 {
@@ -17,136 +18,143 @@ public class UIStack implements UIElement
     }
 
     @Override
-    public boolean mousePressed (MouseEvent paramMouseEvent)
+    public UIElement mousePressed (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mousePressed(paramMouseEvent))
+                UIElement nodePressed = currentNode.mousePressed(paramMouseEvent);
+                if(nodePressed != null)
                 {
-                    return true;
+                    return nodePressed;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseReleased (MouseEvent paramMouseEvent)
+    public UIElement mouseReleased (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseReleased(paramMouseEvent))
+                UIElement nodeReleased = currentNode.mouseReleased(paramMouseEvent);
+                if(nodeReleased != null)
                 {
-                    return true;
+                    return nodeReleased;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseEntered (MouseEvent paramMouseEvent)
+    public UIElement mouseEntered (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseEntered(paramMouseEvent))
+                UIElement nodeEntered = currentNode.mouseEntered(paramMouseEvent);
+                if(nodeEntered != null)
                 {
-                    return true;
+                    return nodeEntered;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseExited (MouseEvent paramMouseEvent)
+    public UIElement mouseExited (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseExited(paramMouseEvent))
+                UIElement nodeExited = currentNode.mouseExited(paramMouseEvent);
+                if(nodeExited != null)
                 {
-                    return true;
+                    return nodeExited;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseDragged (MouseEvent paramMouseEvent)
+    public UIElement mouseDragged (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseDragged(paramMouseEvent))
+                UIElement nodeDragged = currentNode.mouseDragged(paramMouseEvent);
+                if(nodeDragged != null)
                 {
-                    return true;
+                    return nodeDragged;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseMoved (MouseEvent paramMouseEvent)
+    public UIElement mouseMoved (MouseEvent paramMouseEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseMoved(paramMouseEvent))
+                UIElement nodeMouseMoved = currentNode.mouseMoved(paramMouseEvent);
+                if(nodeMouseMoved != null)
                 {
-                    return true;
+                    return nodeMouseMoved;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
     {
         if(tail!=null)
         {
             UIStackNode currentNode = tail;
             do
             {
-                if(currentNode.mouseWheelMoved(paramMouseWheelEvent))
+                UIElement nodeScrolled = currentNode.mouseWheelMoved(paramMouseWheelEvent);
+                if(nodeScrolled != null)
                 {
-                    return true;
+                    return nodeScrolled;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
             while(currentNode != null);
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -179,6 +187,26 @@ public class UIStack implements UIElement
         }
     }
 
+    public void remove(UIStackNode node)
+    {
+        if (node.getNextNode()!=null)
+        {
+            node.getNextNode().setPreviousNode(node.getPreviousNode());
+        }
+        else
+        {
+            tail = node.getPreviousNode();
+        }
+        if(node.getPreviousNode()!=null)
+        {
+            node.getPreviousNode().setNextNode(node.getNextNode());
+        }
+        else
+        {
+            head = node.getNextNode();
+        }
+    }
+
     public static UIStackNode getNewTestMenu()
     {
         return new Menu(new ImageIcon("resources/baseMenuClass.png").getImage(),
@@ -187,36 +215,45 @@ public class UIStack implements UIElement
                         new Button[]{
                                 new Button(
                                         new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
                                         60,
                                         80,
-                                        () -> {
+                                        (Menu menu) -> {
                                             System.out.println("button 1 clicked");
                                             return null;
                                         }),
                                 new Button(
                                         new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
                                         60,
                                         150,
-                                        () -> {
+                                        menu -> {
                                             System.out.println("button 2 clicked");
                                             return null;
                                         }),
                                 new Button(
                                         new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
                                         60,
                                         220,
-                                        () -> {
-                                            System.out.println("button 3 clicked");
-                                            return null;
+                                        menu -> {
+                                            System.out.println("button 3 clicked\n\tmenu closed");
+                                            UserInterfaceHandler.uiStack.remove(menu);
+                                            return true;
                                         }),
                                 new Button(
                                         new ImageIcon("resources/baseButtonClass.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
+                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
                                         60,
                                         290,
-                                        () -> {
+                                        menu -> {
                                             System.out.println("quit game");
                                             System.exit(0);
-                                            return null;
+                                            return true;
                                         })});
     }
 }
