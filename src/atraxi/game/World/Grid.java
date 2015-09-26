@@ -12,7 +12,7 @@ import java.awt.event.MouseWheelEvent;
 /**
  * Created by Atraxi on 13/09/2015.
  */
-public class Grid extends UIStack implements UIStackNode
+public class Grid implements UIElement, UIStackNode
 {
     private UIStackNode nextNode = null, previousNode = null;
     private GridTile[][] tiles;
@@ -53,74 +53,98 @@ public class Grid extends UIStack implements UIStackNode
         previousNode = node;
     }
 
-    public class GridTile implements UIElement, UIStackNode
+    @Override
+    public UIElement mousePressed (MouseEvent paramMouseEvent)
     {
-        private UIStackNode nextNode = null, previousNode = null;
+        return null;
+    }
+
+    @Override
+    public UIElement mouseReleased (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseEntered (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseExited (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseDragged (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseMoved (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public void paint (Graphics2D graphics)
+    {
+
+    }
+
+    public class GridTile implements UIElement
+    {
+
 
         @Override
-        public UIStackNode getNextNode ()
+        public UIElement mousePressed (MouseEvent paramMouseEvent)
         {
-            return nextNode;
+            return null;
         }
 
         @Override
-        public UIStackNode getPreviousNode ()
+        public UIElement mouseReleased (MouseEvent paramMouseEvent)
         {
-            return previousNode;
+            return null;
         }
 
         @Override
-        public void setNextNode (UIStackNode node)
+        public UIElement mouseEntered (MouseEvent paramMouseEvent)
         {
-            nextNode = node;
+            return null;
         }
 
         @Override
-        public void setPreviousNode (UIStackNode node)
+        public UIElement mouseExited (MouseEvent paramMouseEvent)
         {
-            previousNode = node;
+            return null;
         }
 
         @Override
-        public boolean mousePressed (MouseEvent paramMouseEvent)
+        public UIElement mouseDragged (MouseEvent paramMouseEvent)
         {
-            return false;
+            return null;
         }
 
         @Override
-        public boolean mouseReleased (MouseEvent paramMouseEvent)
+        public UIElement mouseMoved (MouseEvent paramMouseEvent)
         {
-            return false;
+            return null;
         }
 
         @Override
-        public boolean mouseEntered (MouseEvent paramMouseEvent)
+        public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
         {
-            return false;
-        }
-
-        @Override
-        public boolean mouseExited (MouseEvent paramMouseEvent)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean mouseDragged (MouseEvent paramMouseEvent)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean mouseMoved (MouseEvent paramMouseEvent)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
-        {
-            return false;
+            return null;
         }
 
         @Override
