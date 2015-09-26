@@ -32,7 +32,7 @@ public class Proto extends JFrame
 
         Game game = new Game(players, ui);
         addKeyListener(ui);
-        //bind mouse to JPanel to account for taskbar in mouse coords
+        //bind mouse to JPanel not JFrame to account for taskbar in mouse coords
         game.addMouseMotionListener(ui);
         game.addMouseListener(ui);
         game.addMouseWheelListener(ui);
@@ -63,14 +63,9 @@ public class Proto extends JFrame
             debug = false;
         }
         
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Proto frame = new Proto();
-                frame.setVisible(true);
-            }
+        EventQueue.invokeLater(() -> {
+            Proto frame = new Proto();
+            frame.setVisible(true);
         });
     }
 }

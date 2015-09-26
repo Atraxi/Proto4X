@@ -6,7 +6,6 @@ import javax.swing.ImageIcon;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.util.concurrent.Callable;
 
 public class UIStack implements UIElement
 {

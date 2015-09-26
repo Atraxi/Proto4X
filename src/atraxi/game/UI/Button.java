@@ -1,11 +1,13 @@
 package atraxi.game.UI;
 
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.image.ImageObserver;
-import java.util.concurrent.Callable;
 
-public class Button implements ImageObserver
+public class Button implements UIElement, ImageObserver
 {
     private Image image, imageHover, imagePressed;
     protected int x, y;
@@ -53,7 +55,7 @@ public class Button implements ImageObserver
         }
     }
 
-    protected void executeAction() throws Exception
+    protected void executeAction()
     {
         action.call(parentMenu);
     }
@@ -70,6 +72,81 @@ public class Button implements ImageObserver
         {
             return false;
         }
+    }
+
+    @Override
+    public UIElement mousePressed (MouseEvent paramMouseEvent)
+    {
+        if(dim.contains(paramMouseEvent.getPoint()))
+        {
+            state = ButtonState.PRESSED;
+            return this;
+        }
+        return null;
+    }
+
+    @Override
+    public UIElement mouseReleased (MouseEvent paramMouseEvent)
+    {
+        if(state == ButtonState.PRESSED)
+        {
+            if(dim.contains(paramMouseEvent.getPoint()))
+            {
+                executeAction();
+                state = ButtonState.HOVER;
+                return this;
+            }
+            else
+            {
+                state = ButtonState.DEFAULT;
+            }
+        }
+        return  null;
+    }
+
+    @Override
+    public UIElement mouseEntered (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseExited (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseDragged (MouseEvent paramMouseEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public UIElement mouseMoved (MouseEvent paramMouseEvent)
+    {
+        if(dim.contains(paramMouseEvent.getPoint()) && state == ButtonState.DEFAULT)
+        {
+            state = ButtonState.HOVER;
+            return this;
+        }
+        else if(!dim.contains(paramMouseEvent.getPoint()) && state == ButtonState.HOVER)
+        {
+            state = ButtonState.DEFAULT;
+        }
+        return null;
+    }
+
+    @Override
+    public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    {
+        return null;
+    }
+
+    @Override
+    public void paint (Graphics2D graphics)
+    {
+        graphics.drawImage(getImage(), x, y, null);
     }
 
     protected enum ButtonState
