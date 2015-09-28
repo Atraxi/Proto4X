@@ -2,7 +2,6 @@ package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.List;
 
 import entities.Entity;
 import entities.Ship;

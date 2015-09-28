@@ -49,12 +49,15 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.drawImage(mapImage, 0, 0, null);
+
+        //TODO: tileable background image. ideally add a layered effect with different scroll speeds based on depth for a parallax illusion
+        g2d.drawImage(mapImage, UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY(), null);
         for( Entity entity : World.getEntityList())
         {
-            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
+            entity.paint(g2d);
         }
         uiHandler.paint(g2d);
+
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();
     }
@@ -65,6 +68,7 @@ public class Game extends JPanel implements Runnable
         {
             entity.doWork(timeAdjustment, paused);
         }
+        uiHandler.doWork(timeAdjustment, paused);
     }
     
     @Override
