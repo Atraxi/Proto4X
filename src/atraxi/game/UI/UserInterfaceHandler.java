@@ -2,9 +2,12 @@ package atraxi.game.UI;
 
 import atraxi.game.Game;
 import atraxi.game.Player;
+import atraxi.game.Proto;
 import entities.actionQueue.Action;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -12,14 +15,22 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.math.BigDecimal;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
     private Player user;
+
+    //variables related to selecting a group of units
     private Rectangle selectionArea = null;
-    public static UIStack uiStack;
     private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
     private boolean dragSelect;
+
+    //variables related to edge scrolling
+    private static double screenLocationX = 0, screenLocationY = 0;
+    private static int mouseX = 200, mouseY = 200;
+
+    public static UIStack uiStack;
     
     public UserInterfaceHandler(Player user)
     {
@@ -27,9 +38,22 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         uiStack = new UIStack();
     }
 
-    public void paint(Graphics2D g2d)
+    public static double getScreenLocationX ()
     {
-        uiStack.paint(g2d);
+        return screenLocationX;
+    }
+
+    public static double getScreenLocationY ()
+    {
+        return screenLocationY;
+    }
+
+    /**
+     * Paint anything that moves relative to objects within the game world (ships, planets, etc)
+     * @param g2d
+     */
+    public void paintWorld(Graphics2D g2d)
+    {
         if(selectionArea!=null)
         {
             Color color = g2d.getColor();
@@ -37,12 +61,36 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             g2d.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
             g2d.setColor(color);
         }
-
     }
-    
-    public void setSelectionArea(Rectangle selectionArea)
+
+    /**
+     * Paint anything that is positioned relative to the screen (probably exclusively UI buttons and menus)
+     * @param g2d
+     */
+    public void paintScreen(Graphics2D g2d)
     {
-        this.selectionArea = selectionArea;
+        uiStack.paint(g2d);
+    }
+
+    public void doWork (BigDecimal timeAdjustment, boolean paused)
+    {
+        //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
+        if(mouseX < 50)
+        {
+            screenLocationX += timeAdjustment.multiply(new BigDecimal((50 - mouseX) / 10)).doubleValue();
+        }
+        else if(mouseX > Proto.screen_Width - 50)
+        {
+            screenLocationX -= timeAdjustment.multiply(new BigDecimal((50 - Proto.screen_Width + mouseX) / 10)).doubleValue();
+        }
+        if(mouseY < 50)
+        {
+            screenLocationY += timeAdjustment.multiply(new BigDecimal((50 - mouseY) / 10)).doubleValue();
+        }
+        else if(mouseY > Proto.screen_Height - 50)
+        {
+            screenLocationY -= timeAdjustment.multiply(new BigDecimal((50 - Proto.screen_Height + mouseY) / 10)).doubleValue();
+        }
     }
 
     @Override
@@ -84,6 +132,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mousePressed(MouseEvent paramMouseEvent)
     {
         boolean uiEvent = uiStack.mousePressed(paramMouseEvent) != null;
+        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
         if(!uiEvent)
         {
             if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
@@ -99,7 +148,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
+        mouseX = paramMouseEvent.getX();
+        mouseY = paramMouseEvent.getY();
         boolean uiEvent = uiStack.mouseDragged(paramMouseEvent) != null;
+        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
@@ -111,10 +164,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                  */
                 Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
-                setSelectionArea(selectionArea);
+                this.selectionArea = selectionArea;
                 System.out.println("Drag to x:" +
                                    dragSelectEndX +
                                    " y:" +
@@ -129,10 +182,20 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;}
+    public void mouseMoved(MouseEvent paramMouseEvent)
+    {
+        mouseX = paramMouseEvent.getX();
+        mouseY = paramMouseEvent.getY();
+        boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;
+        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+    }
 
     @Override
-    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;}
+    public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
+    {
+        boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
+        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+    }
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
     public void mouseClicked(MouseEvent paramMouseEvent){}
@@ -141,6 +204,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
         boolean uiEvent = uiStack.mouseReleased(paramMouseEvent) != null;
+        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
         if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
         {
             if(dragSelect)
@@ -153,10 +218,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                  */
                 Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),
+                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea);
-                setSelectionArea(null);
+                this.selectionArea = null;
                 System.out.println("Drag Ended, x:" +
                                    dragSelectEndX +
                                    " y:" +
@@ -186,8 +251,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void mouseEntered(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseEntered(paramMouseEvent) != null;}
+    public void mouseEntered (MouseEvent paramMouseEvent)
+    {
+        boolean uiEvent = uiStack.mouseEntered(paramMouseEvent) != null;
+        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+    }
 
     @Override
-    public void mouseExited(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseExited(paramMouseEvent) != null;}
+    public void mouseExited(MouseEvent paramMouseEvent)
+    {
+        boolean uiEvent = uiStack.mouseExited(paramMouseEvent) != null;
+        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+    }
 }

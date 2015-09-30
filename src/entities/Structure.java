@@ -35,7 +35,6 @@ public class Structure extends Entity
         if(actionInProgress != null && actionInProgress.isExecuting())
         {
             actionInProgress = new Action(actionInProgress.type, new Object[]{((long)actionInProgress.getData()[0]) + timeDiff.movePointRight(timeDiff.scale()+1).longValue()}, true);
-            System.out.println("Build progress:"+actionInProgress.getData()[0]);
             if((long)actionInProgress.getData()[0]>100000000000L)//How many nanoseconds construction should take
             {//TODO: rally point (move command)
                 Entity newEntity = new Ship("baseShipClass", owner, x, y);

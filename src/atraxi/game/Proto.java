@@ -1,7 +1,9 @@
 package atraxi.game;
 
+import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Robot;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 
@@ -20,8 +22,9 @@ public class Proto extends JFrame
     {
         super();
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-        screen_Width = dim.width;
-        screen_Height = dim.height;
+        //TEST: This is terrible, but will probably be replaced when proper resolution options are added
+        screen_Width = dim.width/2;
+        screen_Height = dim.height/2;
         
         Player user = new Player();
         ArrayList<Player> players = new ArrayList<Player>();
@@ -29,6 +32,16 @@ public class Proto extends JFrame
         UserInterfaceHandler ui;
 
         ui = new UserInterfaceHandler(user);
+        try
+        {
+            Robot robot = new Robot();
+            robot.mouseMove(dim.width/2,dim.height/2);
+        }
+        catch(AWTException e)
+        {
+            //TODO: environment either doesn't support, or doesn't allow, controlling mouse input. Log this, and disable features or quit if needed
+            e.printStackTrace();
+        }
 
         Game game = new Game(players, ui);
         addKeyListener(ui);
