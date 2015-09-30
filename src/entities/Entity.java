@@ -1,6 +1,5 @@
 package entities;
 
-import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
@@ -8,7 +7,6 @@ import java.math.BigDecimal;
 
 import javax.swing.ImageIcon;
 
-import atraxi.game.UI.UserInterfaceHandler;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
 import entities.actionQueue.ActionQueue;
@@ -16,7 +14,7 @@ import atraxi.game.Player;
 
 public abstract class Entity
 {
-    protected Image image;
+    private Image image;
     private String type;
     protected double x, y, velocity, orientation;
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
@@ -84,7 +82,7 @@ public abstract class Entity
         //at.rotate(orientation);
         //hopefully bypass the snap to 90degrees 'feature' (not always desired, but impossible to disable), although I'm not sure it will make a noticeable difference
         at.concatenate(new AffineTransform(Math.cos(orientation), Math.sin(orientation), -Math.sin(orientation), Math.cos(orientation), 0, 0));
-        at.translate((image.getWidth(null)/2)+ UserInterfaceHandler.getScreenLocationX(), (-image.getHeight(null)/2)+UserInterfaceHandler.getScreenLocationY());
+        at.translate(-image.getWidth(null)/2, -image.getHeight(null)/2);
         return at;
     }
     
@@ -95,6 +93,10 @@ public abstract class Entity
     public double getY()
     {
         return y;
+    }
+    public Image getImage()
+    {
+        return image;
     }
     private Rectangle getBounds()
     {
@@ -111,10 +113,5 @@ public abstract class Entity
         {
             actionInProgress = null;
         }
-    }
-
-    public void paint(Graphics2D graphics)
-    {
-        graphics.drawImage(image, getTransform(), null);
     }
 }

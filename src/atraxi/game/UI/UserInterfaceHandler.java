@@ -4,9 +4,7 @@ import atraxi.game.Game;
 import atraxi.game.Player;
 import entities.actionQueue.Action;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -14,19 +12,14 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.math.BigDecimal;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
     private Player user;
-    public static UIStack uiStack;
-    private static double screenLocationX = 0, screenLocationY = 0;
-
     private Rectangle selectionArea = null;
+    public static UIStack uiStack;
     private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
     private boolean dragSelect;
-
-    private static int mouseX = 200, mouseY = 200;
     
     public UserInterfaceHandler(Player user)
     {
@@ -34,18 +27,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         uiStack = new UIStack();
     }
 
-    public static int getScreenLocationX ()
-    {
-        return (int) screenLocationX;
-    }
-
-    public static int getScreenLocationY ()
-    {
-        return (int) screenLocationY;
-    }
-
     public void paint(Graphics2D g2d)
     {
+        uiStack.paint(g2d);
         if(selectionArea!=null)
         {
             Color color = g2d.getColor();
@@ -53,29 +37,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             g2d.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
             g2d.setColor(color);
         }
-        uiStack.paint(g2d);
-    }
 
-    public void doWork (BigDecimal timeAdjustment, boolean paused)
-    {
-        //TODO: % of screen size, currently assumes 1920*1080
-        //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX<300)
-        {
-            screenLocationX-=timeAdjustment.multiply(new BigDecimal((300 - mouseX)/10)).doubleValue();
-        }
-        else if(mouseX>1920-300)
-        {
-            screenLocationX+=timeAdjustment.multiply(new BigDecimal((300-1920+mouseX)/10)).doubleValue();
-        }
-        if(mouseY<300)
-        {
-            screenLocationY-=timeAdjustment.multiply(new BigDecimal((300-mouseY)/10)).doubleValue();
-        }
-        else if(mouseY > 1080-300)
-        {
-            screenLocationY+=timeAdjustment.multiply(new BigDecimal((300-1080+mouseY)/10)).doubleValue();
-        }
     }
     
     public void setSelectionArea(Rectangle selectionArea)
@@ -137,8 +99,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
-        mouseX = paramMouseEvent.getX();
-        mouseY = paramMouseEvent.getY();
+        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent) != null;
         if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
         {
             if(dragSelect)
@@ -163,19 +124,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                                    dragSelectStartX +
                                    " y:" +
                                    dragSelectStartY);
-                return;
             }
         }
-        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent) != null;
     }
 
     @Override
-    public void mouseMoved(MouseEvent paramMouseEvent)
-    {
-        mouseX = paramMouseEvent.getX();
-        mouseY = paramMouseEvent.getY();
-        boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;
-    }
+    public void mouseMoved(MouseEvent paramMouseEvent){boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;}
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent){boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;}
