@@ -5,8 +5,10 @@ import atraxi.game.Player;
 import atraxi.game.Proto;
 import entities.actionQueue.Action;
 
+import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -15,11 +17,13 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.image.ImageObserver;
 import java.math.BigDecimal;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
     private Player user;
+    private Image mapImage, mapImage2;
 
     //variables related to selecting a group of units
     private Rectangle selectionArea = null;
@@ -36,6 +40,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         this.user = user;
         uiStack = new UIStack();
+
+        mapImage = new ImageIcon("resources/Untitled.png").getImage();
+        mapImage2 = new ImageIcon("resources/background.jpg").getImage();
     }
 
     public static double getScreenLocationX ()
@@ -46,6 +53,78 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static double getScreenLocationY ()
     {
         return screenLocationY;
+    }
+
+    /**
+     * Paint the background layer, everything else will draw above this
+     * @param g2d
+     */
+    public void paintBackground(Graphics2D g2d)
+    {
+        //Good luck anyone reading this. It creates the illusion of parallax for the scrolling backdrop
+        //I (mostly) understood it while writing, but I have no idea how to explain the logic behind this math
+        //At it's core it determines the top/left most position for a background tile where it will still be visible (most complex part, loop variable initialization)
+        //then iterates across the screen until reaching the point where the image will no longer be visible
+
+        //TODO:OHGODNO. Do this asap before you forget how it works! add random but deterministic image selection for a tile-able backdrop
+        //g2d.drawImage(mapImage2,(int)screenLocationX,(int)screenLocationY,null);//TEST:static backdrop
+        int mapImageWidth = mapImage.getWidth(null);
+        int mapImageHeight = mapImage.getHeight(null);
+        if(mapImageHeight != -1 && mapImageWidth != -1)//if the image is loaded properly, otherwise don't bother trying to draw
+        {
+            if(screenLocationX>0)
+            {
+                for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - mapImageWidth;
+                    backgroundOffsetX <= Proto.screen_Width + screenLocationX;
+                    backgroundOffsetX += mapImageWidth)
+                {
+                    if(screenLocationY>0)
+                    {
+                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
+                            backgroundOffsetY <= Proto.screen_Height + screenLocationY;
+                            backgroundOffsetY += mapImageHeight)
+                        {
+                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        }
+                    }
+                    else
+                    {
+                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
+                            backgroundOffsetY <= Proto.screen_Height - screenLocationY;
+                            backgroundOffsetY += mapImageHeight)
+                        {
+                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - mapImageWidth;
+                 backgroundOffsetX <= Proto.screen_Width - screenLocationX;
+                 backgroundOffsetX += mapImageWidth)
+                {
+                    if(screenLocationY>0)
+                    {
+                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
+                            backgroundOffsetY <= Proto.screen_Height + screenLocationY;
+                            backgroundOffsetY += mapImageHeight)
+                        {
+                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        }
+                    }
+                    else
+                    {
+                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
+                            backgroundOffsetY <= Proto.screen_Height - screenLocationY;
+                            backgroundOffsetY += mapImageHeight)
+                        {
+                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -75,21 +154,21 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void doWork (BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX < 50)
+        if(mouseX < 100 && screenLocationX<500)
         {
-            screenLocationX += timeAdjustment.multiply(new BigDecimal((50 - mouseX) / 10)).doubleValue();
+            screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
         }
-        else if(mouseX > Proto.screen_Width - 50)
+        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-500)
         {
-            screenLocationX -= timeAdjustment.multiply(new BigDecimal((50 - Proto.screen_Width + mouseX) / 10)).doubleValue();
+            screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
         }
-        if(mouseY < 50)
+        if(mouseY < 100 && screenLocationY<500)
         {
-            screenLocationY += timeAdjustment.multiply(new BigDecimal((50 - mouseY) / 10)).doubleValue();
+            screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
         }
-        else if(mouseY > Proto.screen_Height - 50)
+        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-500)
         {
-            screenLocationY -= timeAdjustment.multiply(new BigDecimal((50 - Proto.screen_Height + mouseY) / 10)).doubleValue();
+            screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
         }
     }
 

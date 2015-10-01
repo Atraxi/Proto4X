@@ -24,7 +24,6 @@ public class Game extends JPanel implements Runnable
     private Thread animator;
     private static ArrayList<Player> players;
     private World world;
-    private Image mapImage;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
     
@@ -33,7 +32,6 @@ public class Game extends JPanel implements Runnable
         Game.players = players;
         Game.uiHandler = uiHandler;
         world = new World();
-        mapImage = new ImageIcon("resources/background.jpg").getImage();
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
         setDoubleBuffered(true);
         paused = false;
@@ -49,8 +47,8 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
+        uiHandler.paintBackground(g2d);
         g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
-        g2d.drawImage(mapImage, 0, 0, null);
         for( Entity entity : World.getEntityList())
         {
             g2d.drawImage(entity.getImage(), entity.getTransform(), null);
@@ -104,7 +102,7 @@ public class Game extends JPanel implements Runnable
             
 //            try
 //            {
-//                //Simulate a slow computer (this is actually really helpful)
+//                //Simulate a slow computer (this is actually really helpful for testing low fps)
 //                Thread.sleep(5);
 //            }
 //            catch (InterruptedException e)
