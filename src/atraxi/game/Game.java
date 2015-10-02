@@ -21,6 +21,7 @@ public class Game extends JPanel implements Runnable
      * The desired time per frame (in nanoseconds) from which to adjust the speed of all events. 60fps or 1,000,000,000ns/60
      */
     public static final long OPTIMALFRAMETIME = 16666666;
+    private static final long MINIMUMFRAMETIME = 8333333;
     private Thread animator;
     private static ArrayList<Player> players;
     private World world;
@@ -91,24 +92,36 @@ public class Game extends JPanel implements Runnable
             
             actualFrameTime = currentTime-beforeTime;
             
-            if(actualFrameTime>OPTIMALFRAMETIME)
+            if(actualFrameTime > OPTIMALFRAMETIME)
             {
                 System.out.println("Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames");
             }
-            gameLoop(BigDecimal.valueOf(actualFrameTime).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),8,BigDecimal.ROUND_DOWN));
-            repaint();
-            
-            beforeTime = currentTime;
-            
-//            try
-//            {
-//                //Simulate a slow computer (this is actually really helpful for testing low fps)
-//                Thread.sleep(5);
-//            }
-//            catch (InterruptedException e)
-//            {
-//                e.printStackTrace();
-//            }
+            if(actualFrameTime < MINIMUMFRAMETIME)
+            {
+                gameLoop(BigDecimal.valueOf(MINIMUMFRAMETIME).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),8,BigDecimal.ROUND_DOWN));
+                repaint();
+
+                beforeTime = currentTime;
+
+                try
+                {
+                    //Limit framerate to 120fps
+                    Thread.sleep((MINIMUMFRAMETIME-actualFrameTime)/1000000);
+                }
+                catch (InterruptedException e)
+                {//TODO: handle this
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                gameLoop(BigDecimal.valueOf(actualFrameTime)
+                                   .divide(BigDecimal.valueOf(OPTIMALFRAMETIME), 8, BigDecimal.ROUND_DOWN));
+                repaint();
+
+                beforeTime = currentTime;
+            }
+
         }
     }
 }
