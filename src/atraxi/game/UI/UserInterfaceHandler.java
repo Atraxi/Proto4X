@@ -3,12 +3,12 @@ package atraxi.game.UI;
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
+import atraxi.game.ResourceManager;
+import atraxi.game.ResourceManager.ImageID;
 import entities.actionQueue.Action;
 
-import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -17,13 +17,17 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.awt.image.ImageObserver;
 import java.math.BigDecimal;
+import java.util.Random;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
     private Player user;
-    private Image mapImage, mapImage2;
+    private static final ResourceManager.ImageID[] mapImages = {ImageID.background1A,ImageID.background1B,ImageID.background1C,ImageID.background1D,
+                                                                ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
+                                                                ImageID.background3A,ImageID.background3B,ImageID.background3C,ImageID.background3D,
+                                                                ImageID.background4A,ImageID.background4B,ImageID.background4C,ImageID.background4D};
+    private int currentWorld = 0;
 
     //variables related to selecting a group of units
     private Rectangle selectionArea = null;
@@ -40,9 +44,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         this.user = user;
         uiStack = new UIStack();
-
-        mapImage = new ImageIcon("resources/Untitled.png").getImage();
-        mapImage2 = new ImageIcon("resources/background.jpg").getImage();
     }
 
     public static double getScreenLocationX ()
@@ -67,64 +68,91 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //then iterates across the screen until reaching the point where the image will no longer be visible
 
         //TODO:OHGODNO. Do this asap before you forget how it works! add random but deterministic image selection for a tile-able backdrop
-        //g2d.drawImage(mapImage2,(int)screenLocationX,(int)screenLocationY,null);//TEST:static backdrop
-        int mapImageWidth = mapImage.getWidth(null);
-        int mapImageHeight = mapImage.getHeight(null);
-        if(mapImageHeight != -1 && mapImageWidth != -1)//if the image is loaded properly, otherwise don't bother trying to draw
+
+        //Current status:
+        //  All working except for consistent index calculation for Random seeding
+        int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
+        int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
+        int indexX = (int)((screenLocationX)/mapImageWidth);
+        int indexY;
+        for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.screen_Width;
+            backgroundOffsetX += mapImageWidth)
         {
-            if(screenLocationX>0)
+            indexY = (int)((screenLocationY) / mapImageHeight);
+            for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.screen_Height;
+                backgroundOffsetY += mapImageHeight)
             {
-                for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - mapImageWidth;
-                    backgroundOffsetX <= Proto.screen_Width + screenLocationX;
-                    backgroundOffsetX += mapImageWidth)
+                //indexX = (int)((backgroundOffsetX)/mapImageWidth);
+                //indexY = (int)((backgroundOffsetY)/mapImageHeight);
+                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                if(Proto.debug)
                 {
-                    if(screenLocationY>0)
-                    {
-                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
-                            backgroundOffsetY <= Proto.screen_Height + screenLocationY;
-                            backgroundOffsetY += mapImageHeight)
-                        {
-                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                        }
-                    }
-                    else
-                    {
-                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
-                            backgroundOffsetY <= Proto.screen_Height - screenLocationY;
-                            backgroundOffsetY += mapImageHeight)
-                        {
-                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                        }
-                    }
+                    g2d.scale(4, 4);
+                    g2d.drawString("x:" + indexX + " y:" + indexY,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 20);
+                    g2d.scale(0.25, 0.25);
                 }
+                indexY++;
             }
-            else
-            {
-                for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - mapImageWidth;
-                 backgroundOffsetX <= Proto.screen_Width - screenLocationX;
-                 backgroundOffsetX += mapImageWidth)
-                {
-                    if(screenLocationY>0)
-                    {
-                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
-                            backgroundOffsetY <= Proto.screen_Height + screenLocationY;
-                            backgroundOffsetY += mapImageHeight)
-                        {
-                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                        }
-                    }
-                    else
-                    {
-                        for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - mapImageHeight;
-                            backgroundOffsetY <= Proto.screen_Height - screenLocationY;
-                            backgroundOffsetY += mapImageHeight)
-                        {
-                            g2d.drawImage(mapImage, (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                        }
-                    }
-                }
-            }
+            indexX++;
         }
+/*
+        indexX = (int)Math.floor((screenLocationX/2)/mapImageWidth);
+        for(double backgroundOffsetX = (screenLocationX/2 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.screen_Width;
+            backgroundOffsetX += mapImageWidth)
+        {
+            indexY = (int)Math.floor((screenLocationY/2)/mapImageHeight);
+            for(double backgroundOffsetY = (screenLocationY/2 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.screen_Height;
+                backgroundOffsetY += mapImageHeight)
+            {
+                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                indexY++;
+            }
+            indexX++;
+        }
+
+        indexX = (int)Math.floor((screenLocationX/3)/mapImageWidth);
+        for(double backgroundOffsetX = (screenLocationX/3 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.screen_Width;
+            backgroundOffsetX += mapImageWidth)
+        {
+            indexY = (int)Math.floor((screenLocationY/3)/mapImageHeight);
+            for(double backgroundOffsetY = (screenLocationY/3 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.screen_Height;
+                backgroundOffsetY += mapImageHeight)
+            {
+                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+
+                indexY++;
+            }
+            indexX++;
+        }
+
+        indexX = (int)Math.floor((screenLocationX/5)/mapImageWidth);
+        for(double backgroundOffsetX = (screenLocationX/5 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.screen_Width;
+            backgroundOffsetX += mapImageWidth)
+        {
+            indexY = (int)Math.floor((screenLocationY/5)/mapImageHeight);
+            for(double backgroundOffsetY = (screenLocationY/5 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.screen_Height;
+                backgroundOffsetY += mapImageHeight)
+            {
+                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                indexY++;
+            }
+            indexX++;
+        }
+*/
     }
 
     /**
@@ -154,19 +182,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void doWork (BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX < 100 && screenLocationX<500)
+        if(mouseX < 100 && screenLocationX<Game.getWorld(currentWorld).getSizeX()/2)
         {
             screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
         }
-        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-500)
+        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-Game.getWorld(currentWorld).getSizeX()/2)
         {
             screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
         }
-        if(mouseY < 100 && screenLocationY<500)
+        if(mouseY < 100 && screenLocationY<Game.getWorld(currentWorld).getSizeY()/2)
         {
             screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
         }
-        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-500)
+        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-Game.getWorld(currentWorld).getSizeY()/2)
         {
             screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
         }
@@ -245,7 +273,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
                         Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea);
+                user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = selectionArea;
                 System.out.println("Drag to x:" +
                                    dragSelectEndX +
@@ -299,7 +327,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
                         Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea);
+                user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = null;
                 System.out.println("Drag Ended, x:" +
                                    dragSelectEndX +

@@ -16,15 +16,17 @@ public class Proto extends JFrame
     private static final long serialVersionUID = 1L;
     public static int screen_Width;
     public static int screen_Height;
-    private static boolean debug;
+    public static boolean debug;
+    public static Proto PROTO;
 
     public Proto()
     {
         super();
+        PROTO = this;
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         //TEST: This is terrible, but will probably be replaced when proper resolution options are added
-        screen_Width = dim.width/2;
-        screen_Height = dim.height/2;
+        screen_Width = (int) (dim.width*0.75);
+        screen_Height = (int) (dim.height*0.75);
         
         Player user = new Player();
         ArrayList<Player> players = new ArrayList<Player>();
@@ -55,12 +57,19 @@ public class Proto extends JFrame
         
         setFocusable(true);
         //TODO: toggle windowed mode, add resizing and resolution options. This can probably wait for the main menu
-        //setUndecorated(true);
+        setUndecorated(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(screen_Width, screen_Height);
         setLocationRelativeTo(null);
         setTitle("4X_proto");
         setResizable(false);
+    }
+
+    public void setDimensions (int width, int height)
+    {
+        screen_Width=width;
+        screen_Height=height;
+        setSize(screen_Width,screen_Height);
     }
     
     public static void main(String[] args)

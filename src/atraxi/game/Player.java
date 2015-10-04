@@ -14,10 +14,10 @@ public class Player
     /**
      * Attempt to select an entity within the given area (i.e. left click for human)
      */
-    public void selectEntity(Rectangle selectionArea)
+    public void selectEntity(Rectangle selectionArea, int worldIndex)
     {
         selection = new Selection();
-        selection.add(World.getEntityArrayWithin(selectionArea));
+        selection.add(Game.getWorld(worldIndex).getEntityArrayWithin(selectionArea));
         System.out.println("Selected:\n"+selection.toString());
     }
     

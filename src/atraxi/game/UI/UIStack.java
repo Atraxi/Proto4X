@@ -230,6 +230,7 @@ public class UIStack implements UIElement
                                         150,
                                         menu -> {
                                             System.out.println("button 2 clicked");
+                                            Proto.PROTO.setDimensions(500, 500);
                                             return null;
                                         }),
                                 new Button(
@@ -241,7 +242,7 @@ public class UIStack implements UIElement
                                         menu -> {
                                             System.out.println("button 3 clicked\n\tmenu closed");
                                             UserInterfaceHandler.uiStack.remove(menu);
-                                            return true;
+                                            return null;
                                         }),
                                 new Button(
                                         new ImageIcon("resources/baseButtonClass.png").getImage(),
@@ -252,7 +253,7 @@ public class UIStack implements UIElement
                                         menu -> {
                                             System.out.println("quit game");
                                             System.exit(0);
-                                            return true;
+                                            return null;
                                         })});
     }
 }

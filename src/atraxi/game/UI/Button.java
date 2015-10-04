@@ -14,9 +14,9 @@ public class Button implements UIElement, ImageObserver
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
     protected Menu parentMenu;
-    private CustomCallable<Menu,Boolean> action;
+    private CustomCallable<Menu,Void> action;
 
-    public Button(Image image, Image imageHover, Image imagePressed, int x, int y, CustomCallable<Menu,Boolean> action)
+    public Button(Image image, Image imageHover, Image imagePressed, int x, int y, CustomCallable<Menu,Void> action)
     {
         this.image = image;
         this.imageHover = imageHover;
@@ -37,7 +37,7 @@ public class Button implements UIElement, ImageObserver
         }
     }
 
-    public Button (Image image, int x, int y,CustomCallable<Menu,Boolean> action)
+    public Button (Image image, int x, int y,CustomCallable<Menu,Void> action)
     {
         this(image,image,image,x,y,action);
     }

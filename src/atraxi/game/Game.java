@@ -3,12 +3,11 @@ package atraxi.game;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Random;
 
-import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
 import atraxi.game.UI.UserInterfaceHandler;
@@ -24,15 +23,18 @@ public class Game extends JPanel implements Runnable
     private static final long MINIMUMFRAMETIME = 8333333;
     private Thread animator;
     private static ArrayList<Player> players;
-    private World world;
+    private static ArrayList<World> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
+    public final long SEED;
     
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
+        SEED = System.nanoTime();
         Game.players = players;
         Game.uiHandler = uiHandler;
-        world = new World();
+        worlds = new ArrayList<World>();
+        worlds.add(new World(SEED, 10000, 10000));
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
         setDoubleBuffered(true);
         paused = false;
@@ -42,19 +44,37 @@ public class Game extends JPanel implements Runnable
     {
         return players;
     }
+
+    public static World getWorld(int index)
+    {
+        return worlds.get(index);
+    }
     
     @Override
     public void paint(Graphics g)
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
+        if(Proto.debug)
+        {//zoom out, show a box where the edge of the screen would normally be
+            g2d.scale(0.4, 0.4);
+            g2d.translate(1000, 500);
+            g2d.drawRect(0, 0, Proto.screen_Width, Proto.screen_Height);
+        }
+        //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
+        // so the camera offset is managed inside it's paint method
         uiHandler.paintBackground(g2d);
+        //Offset to camera position to draw any world objects
         g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
-        for( Entity entity : World.getEntityList())
+        for(World world : worlds)
         {
-            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
+            for(Entity entity : world.getEntityList())
+            {
+                entity.paint(g2d);
+            }
         }
         uiHandler.paintWorld(g2d);
+        //Remove camera offset to draw UI
         g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
         uiHandler.paintScreen(g2d);
         Toolkit.getDefaultToolkit().sync();
@@ -63,9 +83,12 @@ public class Game extends JPanel implements Runnable
     
     private void gameLoop(BigDecimal timeAdjustment)
     {
-        for(Entity entity : World.getEntityList())
+        for(World world : worlds)
         {
-            entity.doWork(timeAdjustment, paused);
+            for(Entity entity : world.getEntityList())
+            {
+                entity.doWork(timeAdjustment, paused);
+            }
         }
         uiHandler.doWork(timeAdjustment, paused);
     }
@@ -115,13 +138,13 @@ public class Game extends JPanel implements Runnable
             }
             else
             {
-                gameLoop(BigDecimal.valueOf(actualFrameTime)
-                                   .divide(BigDecimal.valueOf(OPTIMALFRAMETIME), 8, BigDecimal.ROUND_DOWN));
+                gameLoop(BigDecimal.valueOf(actualFrameTime).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),
+                                                                    8,
+                                                                    BigDecimal.ROUND_DOWN));
                 repaint();
 
                 beforeTime = currentTime;
             }
-
         }
     }
 }

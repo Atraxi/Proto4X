@@ -1,5 +1,6 @@
 package entities;
 
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
@@ -7,6 +8,7 @@ import java.math.BigDecimal;
 
 import javax.swing.ImageIcon;
 
+import atraxi.game.World;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
 import entities.actionQueue.ActionQueue;
@@ -16,6 +18,7 @@ public abstract class Entity
 {
     private Image image;
     private String type;
+    protected World world;
     protected double x, y, velocity, orientation;
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
     protected ActionQueue actionQueue = new ActionQueue();
@@ -24,10 +27,11 @@ public abstract class Entity
     //TODO: Temporary solution for locking on a potentially null object
     protected final Object actionInProgressLock = new Object();
     
-    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner)
+    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner, World world)
     {
         this.owner = owner;
         this.type = type;
+        this.world = world;
         image = new ImageIcon("resources/"+this.type+".png").getImage();
         this.x=x;
         this.y=y;
@@ -47,9 +51,9 @@ public abstract class Entity
         }
     }
     
-    public Entity(String type, double x, double y, Player owner)
+    public Entity(String type, double x, double y, Player owner, World world)
     {
-        this(type, x, y, 0, 0, 0, 0, owner);
+        this(type, x, y, 0, 0, 0, 0, owner, world);
     }
     
     public abstract boolean canAcceptAction(ActionType action);
@@ -113,5 +117,9 @@ public abstract class Entity
         {
             actionInProgress = null;
         }
+    }
+    public void paint(Graphics2D g2d)
+    {
+        g2d.drawImage(getImage(), getTransform(), null);
     }
 }
