@@ -73,19 +73,18 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //  All working except for consistent index calculation for Random seeding
         int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
         int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
-        int indexX = (int)((screenLocationX)/mapImageWidth);
+        int indexX;
         int indexY;
         for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
             backgroundOffsetX <= Proto.screen_Width;
             backgroundOffsetX += mapImageWidth)
         {
-            indexY = (int)((screenLocationY) / mapImageHeight);
             for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
                 backgroundOffsetY <= Proto.screen_Height;
                 backgroundOffsetY += mapImageHeight)
             {
-                //indexX = (int)((backgroundOffsetX)/mapImageWidth);
-                //indexY = (int)((backgroundOffsetY)/mapImageHeight);
+                indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY));
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
@@ -94,65 +93,60 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
+                    g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 40);
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 60);
                     g2d.scale(0.25, 0.25);
                 }
-                indexY++;
             }
-            indexX++;
         }
-/*
-        indexX = (int)Math.floor((screenLocationX/2)/mapImageWidth);
         for(double backgroundOffsetX = (screenLocationX/2 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
             backgroundOffsetX <= Proto.screen_Width;
             backgroundOffsetX += mapImageWidth)
         {
-            indexY = (int)Math.floor((screenLocationY/2)/mapImageHeight);
             for(double backgroundOffsetY = (screenLocationY/2 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
                 backgroundOffsetY <= Proto.screen_Height;
                 backgroundOffsetY += mapImageHeight)
             {
+                indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY));
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                indexY++;
             }
-            indexX++;
         }
 
-        indexX = (int)Math.floor((screenLocationX/3)/mapImageWidth);
         for(double backgroundOffsetX = (screenLocationX/3 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
             backgroundOffsetX <= Proto.screen_Width;
             backgroundOffsetX += mapImageWidth)
         {
-            indexY = (int)Math.floor((screenLocationY/3)/mapImageHeight);
             for(double backgroundOffsetY = (screenLocationY/3 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
                 backgroundOffsetY <= Proto.screen_Height;
                 backgroundOffsetY += mapImageHeight)
             {
+                indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY));
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-
-                indexY++;
             }
-            indexX++;
         }
 
-        indexX = (int)Math.floor((screenLocationX/5)/mapImageWidth);
         for(double backgroundOffsetX = (screenLocationX/5 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
             backgroundOffsetX <= Proto.screen_Width;
             backgroundOffsetX += mapImageWidth)
         {
-            indexY = (int)Math.floor((screenLocationY/5)/mapImageHeight);
             for(double backgroundOffsetY = (screenLocationY/5 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
                 backgroundOffsetY <= Proto.screen_Height;
                 backgroundOffsetY += mapImageHeight)
             {
+                indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY));
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                indexY++;
             }
-            indexX++;
         }
-*/
     }
 
     /**
