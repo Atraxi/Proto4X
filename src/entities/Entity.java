@@ -1,13 +1,12 @@
 package entities;
 
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.math.BigDecimal;
 
-import javax.swing.ImageIcon;
-
+import atraxi.game.ResourceManager;
+import atraxi.game.ResourceManager.ImageID;
 import atraxi.game.World;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
@@ -16,15 +15,16 @@ import atraxi.game.Player;
 
 public abstract class Entity
 {
-    private Image image;
+    private ImageID imageID;
     private String type;
     protected World world;
     protected double x, y, velocity, orientation;
+    //TODO: combine these into a Path2D instance
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
     protected ActionQueue actionQueue = new ActionQueue();
     protected Action actionInProgress = null;
     protected Player owner;
-    //TODO: Temporary solution for locking on a potentially null object
+    //TODO: Temporary solution for locking on a potentially null object, as of writing there is no reason not to use 'this' although that could change later
     protected final Object actionInProgressLock = new Object();
     
     public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner, World world)
@@ -32,7 +32,7 @@ public abstract class Entity
         this.owner = owner;
         this.type = type;
         this.world = world;
-        image = new ImageIcon("resources/"+this.type+".png").getImage();
+        imageID = ImageID.valueOf(this.type);
         this.x=x;
         this.y=y;
         velocity = 0;
@@ -41,8 +41,8 @@ public abstract class Entity
         orientation = 0;
         if(boundsXUpper==0 && boundsYUpper==0)
         {
-            this.boundsXUpper = image.getWidth(null);
-            this.boundsYUpper = image.getHeight(null);
+            this.boundsXUpper = ResourceManager.getImage(imageID).getWidth(null);
+            this.boundsYUpper = ResourceManager.getImage(imageID).getHeight(null);
         }
         else
         {
@@ -82,11 +82,12 @@ public abstract class Entity
     
     public AffineTransform getTransform()
     {
-        AffineTransform at = AffineTransform.getTranslateInstance(x+image.getWidth(null)/2, y+image.getHeight(null)/2);
+        AffineTransform at = AffineTransform.getTranslateInstance(x+ResourceManager.getImage(imageID).getWidth(null)/2, y+ResourceManager.getImage(
+                imageID).getHeight(null)/2);
         //at.rotate(orientation);
         //hopefully bypass the snap to 90degrees 'feature' (not always desired, but impossible to disable), although I'm not sure it will make a noticeable difference
         at.concatenate(new AffineTransform(Math.cos(orientation), Math.sin(orientation), -Math.sin(orientation), Math.cos(orientation), 0, 0));
-        at.translate(-image.getWidth(null)/2, -image.getHeight(null)/2);
+        at.translate(-ResourceManager.getImage(imageID).getWidth(null)/2, -ResourceManager.getImage(imageID).getHeight(null)/2);
         return at;
     }
     
@@ -98,9 +99,9 @@ public abstract class Entity
     {
         return y;
     }
-    public Image getImage()
+    public ImageID getImageID ()
     {
-        return image;
+        return imageID;
     }
     private Rectangle getBounds()
     {
@@ -120,6 +121,6 @@ public abstract class Entity
     }
     public void paint(Graphics2D g2d)
     {
-        g2d.drawImage(getImage(), getTransform(), null);
+        g2d.drawImage(ResourceManager.getImage(imageID), getTransform(), null);
     }
 }

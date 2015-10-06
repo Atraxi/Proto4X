@@ -2,6 +2,7 @@ package entities;
 
 import java.math.BigDecimal;
 
+import atraxi.game.ResourceManager;
 import atraxi.game.World;
 import entities.actionQueue.Action;
 import entities.actionQueue.Action.ActionType;
@@ -139,8 +140,8 @@ public class Ship extends Entity
             double x = (double) nextActionFromQueue.getData()[0];
             double y = (double) nextActionFromQueue.getData()[1];
             //offset the target location to be relative to the image center, instead of the corner
-            x -= getImage().getWidth(null) / 2;
-            y -= getImage().getHeight(null) / 2;
+            x -= ResourceManager.getImage(getImageID()).getWidth(null) / 2;
+            y -= ResourceManager.getImage(getImageID()).getHeight(null) / 2;
             
             double targetX = x;
             double targetY = y;

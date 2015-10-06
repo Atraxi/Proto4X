@@ -18,15 +18,15 @@ public class World
         this.seed = seed;
         sizeX = xDim;
         sizeY = yDim;
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 200, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 220, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 240, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 260, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 280, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 300, this));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 320, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 200, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 220, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 240, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 260, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 280, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 300, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 320, this));
         
-        entities.add(new Structure("baseBuildingClass", Game.getPlayerList().get(0), 500, 500, this));
+        entities.add(new Structure("entityStructureDefault", Game.getPlayerList().get(0), 500, 500, this));
     }
     
     /**

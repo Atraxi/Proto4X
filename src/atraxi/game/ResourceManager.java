@@ -11,6 +11,11 @@ public class ResourceManager
     //TODO: pre-load this
     private static Image[] images = new Image[ImageID.values().length];
 
+    public static void resetLoadedImages()
+    {
+        images = new Image[ImageID.values().length];
+    }
+
     public static Image getImage(ImageID id)
     {
         //All images will be pre-loaded, null-check is for a utility method for artists/texture packs/debugging to be able to reload textures
@@ -66,6 +71,24 @@ public class ResourceManager
                 case background4D:
                     images[id.ordinal()] = new ImageIcon("resources/background4D.png").getImage();
                     break;
+                case buttonDefault:
+                    images[id.ordinal()] = new ImageIcon("resources/baseButton").getImage();
+                    break;
+                case buttonHover:
+                    images[id.ordinal()] = new ImageIcon("resources/baseButtonHover").getImage();
+                    break;
+                case buttonClick:
+                    images[id.ordinal()] = new ImageIcon("resources/baseButtonClick").getImage();
+                    break;
+                case menuBackground:
+                    images[id.ordinal()] = new ImageIcon("resources/baseMenuClass").getImage();
+                    break;
+                case entityShipDefault:
+                    images[id.ordinal()] = new ImageIcon("resources/baseShipClass").getImage();
+                    break;
+                case entityStructureDefault:
+                    images[id.ordinal()] = new ImageIcon("resources/baseBuildingClass").getImage();
+                    break;
             }
         }
         return images[id.ordinal()];
@@ -76,6 +99,10 @@ public class ResourceManager
         background1A,background1B,background1C,background1D,
         background2A,background2B,background2C,background2D,
         background3A,background3B,background3C,background3D,
-        background4A,background4B,background4C,background4D
+        background4A,background4B,background4C,background4D,
+        buttonDefault,buttonHover,buttonClick,
+        menuBackground,
+        entityShipDefault,
+        entityStructureDefault
     }
 }

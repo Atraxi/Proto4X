@@ -1,8 +1,9 @@
 package atraxi.game.UI;
 
 import atraxi.game.Proto;
+import atraxi.game.ResourceManager;
+import atraxi.game.ResourceManager.ImageID;
 
-import javax.swing.ImageIcon;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -208,14 +209,14 @@ public class UIStack implements UIElement
 
     public static UIStackNode getNewTestMenu()
     {
-        return new Menu(new ImageIcon("resources/baseMenuClass.png").getImage(),
+        return new Menu(ResourceManager.getImage(ImageID.menuBackground),
                         (Proto.screen_Width / 2) - 30,
                         (Proto.screen_Height / 2) - 30,
                         new Button[]{
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ResourceManager.getImage(ImageID.buttonDefault),
+                                        ResourceManager.getImage(ImageID.buttonHover),
+                                        ResourceManager.getImage(ImageID.buttonClick),
                                         60,
                                         80,
                                         (Menu menu) -> {
@@ -223,9 +224,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ResourceManager.getImage(ImageID.buttonDefault),
+                                        ResourceManager.getImage(ImageID.buttonHover),
+                                        ResourceManager.getImage(ImageID.buttonClick),
                                         60,
                                         150,
                                         menu -> {
@@ -234,9 +235,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ResourceManager.getImage(ImageID.buttonDefault),
+                                        ResourceManager.getImage(ImageID.buttonHover),
+                                        ResourceManager.getImage(ImageID.buttonClick),
                                         60,
                                         220,
                                         menu -> {
@@ -245,9 +246,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ResourceManager.getImage(ImageID.buttonDefault),
+                                        ResourceManager.getImage(ImageID.buttonHover),
+                                        ResourceManager.getImage(ImageID.buttonClick),
                                         60,
                                         290,
                                         menu -> {
