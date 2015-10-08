@@ -6,7 +6,6 @@ import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Random;
 
 import javax.swing.JPanel;
 
@@ -26,11 +25,10 @@ public class Game extends JPanel implements Runnable
     private static ArrayList<World> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
-    public final long SEED;
+    public static final long SEED = System.nanoTime();
     
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
-        SEED = System.nanoTime();
         Game.players = players;
         Game.uiHandler = uiHandler;
         worlds = new ArrayList<World>();

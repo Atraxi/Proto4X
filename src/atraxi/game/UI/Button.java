@@ -1,32 +1,34 @@
 package atraxi.game.UI;
 
+import atraxi.game.ResourceManager;
+import atraxi.game.ResourceManager.ImageID;
+
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.image.ImageObserver;
+import java.awt.geom.Rectangle2D;
 
-public class Button implements UIElement, ImageObserver
+public class Button implements UIElement
 {
-    private Image image, imageHover, imagePressed;
+    private ImageID imageIDDefault, imageIDHover, imageIDPressed;
     protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
     protected Menu parentMenu;
     private CustomCallable<Menu,Void> action;
 
-    public Button(Image image, Image imageHover, Image imagePressed, int x, int y, CustomCallable<Menu,Void> action)
+    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, CustomCallable<Menu,Void> action)
     {
-        this.image = image;
-        this.imageHover = imageHover;
-        this.imagePressed = imagePressed;
+        this.imageIDDefault = imageIDDefault;
+        this.imageIDHover = imageIDHover;
+        this.imageIDPressed = imageIDPressed;
         this.action=action;
         this.x=x;
         this.y=y;
 
-        int width = image.getWidth(this);
-        int height = image.getHeight(this);
+        int width = ResourceManager.getImage(imageIDDefault).getWidth(null);
+        int height = ResourceManager.getImage(imageIDDefault).getHeight(null);
         if(width!=-1 && height!=-1)
         {
             dim=new Rectangle(this.x,this.y,width,height);
@@ -37,41 +39,27 @@ public class Button implements UIElement, ImageObserver
         }
     }
 
-    public Button (Image image, int x, int y,CustomCallable<Menu,Void> action)
+    public Button (ImageID imageID, int x, int y,CustomCallable<Menu,Void> action)
     {
-        this(image,image,image,x,y,action);
+        this(imageID,imageID,imageID,x,y,action);
     }
 
-    public Image getImage ()
+    public ImageID getImageID ()
     {
         switch (state)
         {
             case HOVER:
-                return imageHover;
+                return imageIDHover;
             case PRESSED:
-                return imagePressed;
+                return imageIDPressed;
             default:
-                return image;
+                return imageIDDefault;
         }
     }
 
     protected void executeAction()
     {
         action.call(parentMenu);
-    }
-
-    @Override
-    public boolean imageUpdate (Image img, int infoFlags, int x, int y, int width, int height)
-    {
-        if(((ImageObserver.WIDTH | ImageObserver.HEIGHT) & infoFlags)  == (ImageObserver.WIDTH | ImageObserver.HEIGHT))
-        {
-            dim = new Rectangle(this.x,this.y,width,height);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
     }
 
     @Override
@@ -146,7 +134,7 @@ public class Button implements UIElement, ImageObserver
     @Override
     public void paint (Graphics2D graphics)
     {
-        graphics.drawImage(getImage(), x, y, null);
+        graphics.drawImage(ResourceManager.getImage(getImageID()), x, y, null);
     }
 
     protected enum ButtonState

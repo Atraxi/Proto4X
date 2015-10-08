@@ -67,10 +67,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //At it's core it determines the top/left most position for a background tile where it will still be visible (most complex part, loop variable initialization)
         //then iterates across the screen until reaching the point where the image will no longer be visible
 
-        //TODO:OHGODNO. Do this asap before you forget how it works! add random but deterministic image selection for a tile-able backdrop
+        //Also picks a random background image to draw from a selection, seeded buy the x,y index of the image in the background
+        //the image index must be calculated as needed, due to the images not being in an indexed list that corresponds to the location they are drawn
 
-        //Current status:
-        //  All working except for consistent index calculation for Random seeding
         int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
         int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
         int indexX;
@@ -85,7 +84,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED);
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -93,12 +92,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
-                    g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 40);
                     g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
                                    (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 60);
+                                   (int) backgroundOffsetY/4 + 60);*/
                     g2d.scale(0.25, 0.25);
                 }
             }
@@ -113,8 +112,22 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*2);
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                if(Proto.debug)
+                {
+                    g2d.scale(4, 4);
+                    g2d.drawString("x:" + indexX + " y:" + indexY,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 20);
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 40);
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 60);*/
+                    g2d.scale(0.25, 0.25);
+                }
             }
         }
 
@@ -128,8 +141,22 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*3);
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                if(Proto.debug)
+                {
+                    g2d.scale(4, 4);
+                    g2d.drawString("x:" + indexX + " y:" + indexY,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 20);
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 40);
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 60);*/
+                    g2d.scale(0.25, 0.25);
+                }
             }
         }
 
@@ -143,8 +170,22 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY));
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*5);
                 g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                if(Proto.debug)
+                {
+                    g2d.scale(4, 4);
+                    g2d.drawString("x:" + indexX + " y:" + indexY,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 20);
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 40);
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                                   (int) backgroundOffsetX/4 + 20,
+                                   (int) backgroundOffsetY/4 + 60);*/
+                    g2d.scale(0.25, 0.25);
+                }
             }
         }
     }

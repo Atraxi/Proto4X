@@ -9,6 +9,8 @@ import java.awt.Image;
 public class ResourceManager
 {
     //TODO: pre-load this
+    //TODO: throw some sort of error if the file isn't found
+    //TODO: implement imageObserver and similar, and verify all resources are properly loaded
     private static Image[] images = new Image[ImageID.values().length];
 
     public static void resetLoadedImages()
@@ -72,22 +74,22 @@ public class ResourceManager
                     images[id.ordinal()] = new ImageIcon("resources/background4D.png").getImage();
                     break;
                 case buttonDefault:
-                    images[id.ordinal()] = new ImageIcon("resources/baseButton").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseButtonClass.png").getImage();
                     break;
                 case buttonHover:
-                    images[id.ordinal()] = new ImageIcon("resources/baseButtonHover").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseButtonClassHover.png").getImage();
                     break;
                 case buttonClick:
-                    images[id.ordinal()] = new ImageIcon("resources/baseButtonClick").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseButtonClassClick.png").getImage();
                     break;
                 case menuBackground:
-                    images[id.ordinal()] = new ImageIcon("resources/baseMenuClass").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseMenuClass.png").getImage();
                     break;
                 case entityShipDefault:
-                    images[id.ordinal()] = new ImageIcon("resources/baseShipClass").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseShipClass.png").getImage();
                     break;
                 case entityStructureDefault:
-                    images[id.ordinal()] = new ImageIcon("resources/baseBuildingClass").getImage();
+                    images[id.ordinal()] = new ImageIcon("resources/baseBuildingClass.png").getImage();
                     break;
             }
         }

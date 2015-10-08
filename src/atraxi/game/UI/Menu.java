@@ -1,31 +1,32 @@
 package atraxi.game.UI;
 
+import atraxi.game.ResourceManager;
+import atraxi.game.ResourceManager.ImageID;
+
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.image.ImageObserver;
 
-public class Menu implements UIElement, UIStackNode, ImageObserver
+public class Menu implements UIElement, UIStackNode
 {
     //TODO: implement image scaling, try "image.getScaledInstance(width,height,algorithm(enum));"
     private Button[] buttons;
     private int x, y;
-    private Image menuBackground;
+    private ImageID backgroundID;
     private Rectangle dim;
     private UIStackNode nextNode = null, previousNode = null;
     private Point movePoint = null;
 
-    public Menu(Image image,int x, int y,Button[] buttons)
+    public Menu(ImageID imageID, int x, int y, Button[] buttons)
     {
-        this.menuBackground=image;
+        this.backgroundID=imageID;
         this.buttons = buttons;
 
 
-        int width = menuBackground.getWidth(this);
-        int height = menuBackground.getHeight(this);
+        int width = ResourceManager.getImage(backgroundID).getWidth(null);
+        int height = ResourceManager.getImage(backgroundID).getHeight(null);
         if(width!=-1 && height!=-1)
         {
             this.x=x-(width/2);
@@ -57,7 +58,7 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
 
     public void paint (Graphics2D g2d)
     {
-        g2d.drawImage(menuBackground, x, y, null);
+        g2d.drawImage(ResourceManager.getImage(backgroundID), x, y, null);
         for(Button button : buttons)
         {
             button.paint(g2d);
@@ -119,11 +120,9 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     {
         if(movePoint != null)
         {
-            int width = menuBackground.getWidth(this);
-            int height = menuBackground.getHeight(this);
             this.x-=(movePoint.getX()-paramMouseEvent.getX());
             this.y-=(movePoint.getY()-paramMouseEvent.getY());
-            dim=new Rectangle(this.x,this.y,width,height);
+            dim.setLocation(this.x,this.y);
 
             for(Button button : buttons)
             {
@@ -154,11 +153,9 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     {
         if(movePoint != null)
         {
-            int width = menuBackground.getWidth(this);
-            int height = menuBackground.getHeight(this);
             this.x-=(movePoint.getX()-paramMouseEvent.getX());
             this.y-=(movePoint.getY()-paramMouseEvent.getY());
-            dim=new Rectangle(this.x,this.y,width,height);
+            dim.setLocation(this.x,this.y);
 
             for(Button button : buttons)
             {
@@ -238,28 +235,5 @@ public class Menu implements UIElement, UIStackNode, ImageObserver
     public void setPreviousNode (UIStackNode element)
     {
         previousNode = element;
-    }
-
-    @Override
-    public boolean imageUpdate (Image img, int infoFlags, int x, int y, int width, int height)
-    {
-        if(((ImageObserver.WIDTH | ImageObserver.HEIGHT) & infoFlags)  == (ImageObserver.WIDTH | ImageObserver.HEIGHT))
-        {
-            this.x=x-(width/2);
-            this.y=y-(height/2);
-            dim = new Rectangle(this.x,this.y,width,height);
-
-            for(Button button : buttons)
-            {
-                button.x+=this.x;
-                button.y+=this.y;
-                button.dim.setLocation(button.x,button.y);
-            }
-            return true;
-        }
-        else
-        {
-            return false;
-        }
     }
 }
