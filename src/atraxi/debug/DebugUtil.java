@@ -1,4 +1,4 @@
-package debug;
+package atraxi.debug;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

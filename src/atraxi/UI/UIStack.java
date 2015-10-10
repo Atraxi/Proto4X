@@ -1,7 +1,6 @@
-package atraxi.game.UI;
+package atraxi.UI;
 
 import atraxi.game.Proto;
-import atraxi.game.ResourceManager;
 import atraxi.game.ResourceManager.ImageID;
 
 import java.awt.Graphics2D;

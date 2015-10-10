@@ -1,11 +1,11 @@
-package atraxi.game.UI;
+package atraxi.UI;
 
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
 import atraxi.game.ResourceManager;
 import atraxi.game.ResourceManager.ImageID;
-import entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Action;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

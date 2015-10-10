@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
-import atraxi.game.UI.UserInterfaceHandler;
+import atraxi.UI.UserInterfaceHandler;
 
 public class Proto extends JFrame
 {

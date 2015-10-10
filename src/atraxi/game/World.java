@@ -3,9 +3,9 @@ package atraxi.game;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
-import entities.Entity;
-import entities.Ship;
-import entities.Structure;
+import atraxi.entities.Entity;
+import atraxi.entities.Ship;
+import atraxi.entities.Structure;
 
 public class World
 {

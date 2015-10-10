@@ -1,4 +1,4 @@
-package entities.actionQueue;
+package atraxi.entities.actionQueue;
 
 import java.util.Arrays;
 

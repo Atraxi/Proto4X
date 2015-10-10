@@ -1,4 +1,4 @@
-package atraxi.game.UI;
+package atraxi.UI;
 
 import atraxi.game.ResourceManager;
 import atraxi.game.ResourceManager.ImageID;

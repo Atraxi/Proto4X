@@ -1,4 +1,4 @@
-package atraxi.game.UI;
+package atraxi.UI;
 
 /**
  * Created by Atraxi on 1/09/2015.

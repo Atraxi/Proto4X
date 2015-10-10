@@ -1,11 +1,11 @@
-package entities;
+package atraxi.entities;
 
 import java.math.BigDecimal;
 
 import atraxi.game.ResourceManager;
 import atraxi.game.World;
-import entities.actionQueue.Action;
-import entities.actionQueue.Action.ActionType;
+import atraxi.entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Action.ActionType;
 import atraxi.game.Player;
 
 public class Ship extends Entity

@@ -3,8 +3,8 @@ package atraxi.game;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
-import entities.Entity;
-import entities.actionQueue.Action;
+import atraxi.entities.Entity;
+import atraxi.entities.actionQueue.Action;
 
 public class Player
 {

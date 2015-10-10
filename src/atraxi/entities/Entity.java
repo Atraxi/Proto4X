@@ -1,4 +1,4 @@
-package entities;
+package atraxi.entities;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -8,9 +8,9 @@ import java.math.BigDecimal;
 import atraxi.game.ResourceManager;
 import atraxi.game.ResourceManager.ImageID;
 import atraxi.game.World;
-import entities.actionQueue.Action;
-import entities.actionQueue.Action.ActionType;
-import entities.actionQueue.ActionQueue;
+import atraxi.entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Action.ActionType;
+import atraxi.entities.actionQueue.ActionQueue;
 import atraxi.game.Player;
 
 public abstract class Entity
