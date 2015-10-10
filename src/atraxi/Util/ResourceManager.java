@@ -1,4 +1,4 @@
-package atraxi.game;
+package atraxi.util;
 
 import javax.swing.ImageIcon;
 import java.awt.Image;

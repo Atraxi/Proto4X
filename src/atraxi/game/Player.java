@@ -2,6 +2,7 @@ package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import atraxi.entities.Entity;
 import atraxi.entities.actionQueue.Action;
@@ -135,10 +136,7 @@ public class Player
         
         protected void add(Entity[] additions)
         {
-            for(Entity e : additions)
-            {
-                this.selected.add(e);
-            }
+            Collections.addAll(this.selected, additions);
         }
         
         protected void remove(Entity[] removals)
@@ -154,10 +152,10 @@ public class Player
         @Override
         public String toString()
         {
-            String entityList = "Entity List\n{\n";
+            String entityList = "Entity List"+System.lineSeparator()+"{"+System.lineSeparator();
             for(Entity e : selected)
             {
-                entityList+=e+"\n";
+                entityList+=e+System.lineSeparator();
             }
             return entityList+"}";
         }

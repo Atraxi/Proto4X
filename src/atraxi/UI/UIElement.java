@@ -1,4 +1,4 @@
-package atraxi.UI;
+package atraxi.ui;
 
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;

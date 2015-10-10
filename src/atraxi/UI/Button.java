@@ -1,13 +1,13 @@
-package atraxi.UI;
+package atraxi.ui;
 
-import atraxi.game.ResourceManager;
-import atraxi.game.ResourceManager.ImageID;
+import atraxi.util.ResourceManager;
+import atraxi.util.ResourceManager.ImageID;
+import atraxi.util.Util;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Rectangle2D;
 
 public class Button implements UIElement
 {
@@ -17,8 +17,9 @@ public class Button implements UIElement
     protected ButtonState state = ButtonState.DEFAULT;
     protected Menu parentMenu;
     private CustomCallable<Menu,Void> action;
+    private String buttonText;
 
-    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, CustomCallable<Menu,Void> action)
+    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, String buttonText, CustomCallable<Menu,Void> action)
     {
         this.imageIDDefault = imageIDDefault;
         this.imageIDHover = imageIDHover;
@@ -26,6 +27,7 @@ public class Button implements UIElement
         this.action=action;
         this.x=x;
         this.y=y;
+        this.buttonText = buttonText;
 
         int width = ResourceManager.getImage(imageIDDefault).getWidth(null);
         int height = ResourceManager.getImage(imageIDDefault).getHeight(null);
@@ -37,11 +39,6 @@ public class Button implements UIElement
         {
             dim=new Rectangle(this.x,this.y,0,0);
         }
-    }
-
-    public Button (ImageID imageID, int x, int y,CustomCallable<Menu,Void> action)
-    {
-        this(imageID,imageID,imageID,x,y,action);
     }
 
     public ImageID getImageID ()
@@ -135,6 +132,7 @@ public class Button implements UIElement
     public void paint (Graphics2D graphics)
     {
         graphics.drawImage(ResourceManager.getImage(getImageID()), x, y, null);
+        Util.drawString(buttonText, dim, graphics);
     }
 
     protected enum ButtonState

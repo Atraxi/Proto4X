@@ -2,7 +2,9 @@ package atraxi.entities;
 
 import java.math.BigDecimal;
 
-import atraxi.game.ResourceManager;
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
+import atraxi.util.ResourceManager;
 import atraxi.game.World;
 import atraxi.entities.actionQueue.Action;
 import atraxi.entities.actionQueue.Action.ActionType;
@@ -149,7 +151,7 @@ public class Ship extends Entity
             x -= this.x;
             y -= this.y;
             double orientationTarget = Math.atan2(y, x);
-            System.out.println("Right Click Command -> Ship:" + this + "\n\tx:" + x
+            Logger.log(LogLevel.debug, "Right Click Command -> Ship:" + this, "\tx:" + x
                     + " y:" + y + " orientationTarget:" + orientationTarget
                     + " orientationDelta:" + (orientationTarget - orientation));
             synchronized(actionInProgressLock)

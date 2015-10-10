@@ -1,7 +1,9 @@
-package atraxi.UI;
+package atraxi.ui;
 
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
 import atraxi.game.Proto;
-import atraxi.game.ResourceManager.ImageID;
+import atraxi.util.ResourceManager.ImageID;
 
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
@@ -10,11 +12,6 @@ import java.awt.event.MouseWheelEvent;
 public class UIStack implements UIElement
 {
     private UIStackNode head = null, tail = null;
-
-    public UIStack()
-    {
-
-    }
 
     @Override
     public UIElement mousePressed (MouseEvent paramMouseEvent)
@@ -218,8 +215,9 @@ public class UIStack implements UIElement
                                         ImageID.buttonClick,
                                         60,
                                         80,
+                                        "empty",
                                         (Menu menu) -> {
-                                            System.out.println("button 1 clicked");
+                                            Logger.log(LogLevel.debug, "button 1 clicked");
                                             return null;
                                         }),
                                 new Button(
@@ -228,8 +226,9 @@ public class UIStack implements UIElement
                                         ImageID.buttonClick,
                                         60,
                                         150,
+                                        "Set resolution",
                                         menu -> {
-                                            System.out.println("button 2 clicked");
+                                            Logger.log(LogLevel.debug, "button 2 clicked");
                                             Proto.PROTO.setDimensions(500, 500);
                                             return null;
                                         }),
@@ -239,8 +238,9 @@ public class UIStack implements UIElement
                                         ImageID.buttonClick,
                                         60,
                                         220,
+                                        "Return to game",
                                         menu -> {
-                                            System.out.println("button 3 clicked\n\tmenu closed");
+                                            Logger.log(LogLevel.debug, "button 3 clicked", "\tmenu closed");
                                             UserInterfaceHandler.uiStack.remove(menu);
                                             return null;
                                         }),
@@ -250,8 +250,9 @@ public class UIStack implements UIElement
                                         ImageID.buttonClick,
                                         60,
                                         290,
+                                        "Quit game",
                                         menu -> {
-                                            System.out.println("quit game");
+                                            Logger.log(LogLevel.debug, "quit game");
                                             System.exit(0);
                                             return null;
                                         })});

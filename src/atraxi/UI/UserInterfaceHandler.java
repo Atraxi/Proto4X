@@ -1,10 +1,12 @@
-package atraxi.UI;
+package atraxi.ui;
 
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
-import atraxi.game.ResourceManager;
-import atraxi.game.ResourceManager.ImageID;
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
+import atraxi.util.ResourceManager;
+import atraxi.util.ResourceManager.ImageID;
 import atraxi.entities.actionQueue.Action;
 
 import java.awt.Color;
@@ -236,7 +238,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     @Override
-    public void keyReleased(KeyEvent paramKeyEvent){}
+    public void keyReleased (KeyEvent paramKeyEvent){}
     
     @Override
     public void keyPressed(KeyEvent paramKeyEvent)
@@ -250,19 +252,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 Game.paused=!Game.paused;
                 if(Game.paused)
                 {
-                    System.out.println("Game Paused.");
+                    Logger.log(LogLevel.debug, "Game Paused.");
                 }
                 else
                 {
-                    System.out.println("Game Resumed.");
+                    Logger.log(LogLevel.debug, "Game Resumed.");
                 }
                 break;
             case KeyEvent.VK_ESCAPE:
-                System.out.println("escape");
+                Logger.log(LogLevel.debug, "escape");
                 System.exit(0);
                 break;
             case KeyEvent.VK_A:
-                System.out.println("Creating test menu");
+                Logger.log(LogLevel.debug, "Creating test menu");
                 uiStack.push(UIStack.getNewTestMenu());
         }
     }
@@ -282,7 +284,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
                 dragSelect = true;
-                System.out.println("DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY);
+                Logger.log(LogLevel.debug, "DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY);
             }
         }
     }
@@ -310,15 +312,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = selectionArea;
-                System.out.println("Drag to x:" +
-                                   dragSelectEndX +
-                                   " y:" +
-                                   dragSelectEndY
-                                   +
-                                   "\n\tStarted, x:" +
-                                   dragSelectStartX +
-                                   " y:" +
-                                   dragSelectStartY);
+                Logger.log(LogLevel.debug, "Drag to x:" + dragSelectEndX +
+                                          " y:" + dragSelectEndY,
+                                          "\tStarted, x:" + dragSelectStartX +
+                                          " y:" + dragSelectStartY);
             }
         }
     }
@@ -364,15 +361,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = null;
-                System.out.println("Drag Ended, x:" +
-                                   dragSelectEndX +
-                                   " y:" +
-                                   dragSelectEndY
-                                   +
-                                   "\n\tStarted, x:" +
-                                   dragSelectStartX +
-                                   " y:" +
-                                   dragSelectStartY);
+                Logger.log(LogLevel.debug, "Drag Ended, x:" + dragSelectEndX +
+                                          " y:" + dragSelectEndY,
+                                          "\tStarted, x:" + dragSelectStartX +
+                                          " y:" + dragSelectStartY);
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)

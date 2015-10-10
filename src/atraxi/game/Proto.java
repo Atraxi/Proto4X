@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
-import atraxi.UI.UserInterfaceHandler;
+import atraxi.ui.UserInterfaceHandler;
 
 public class Proto extends JFrame
 {
@@ -37,7 +37,7 @@ public class Proto extends JFrame
         try
         {
             Robot robot = new Robot();
-            robot.mouseMove(dim.width/2,dim.height/2);
+            robot.mouseMove((int) (dim.width*0.5),(int)(dim.height * 0.5));
         }
         catch(AWTException e)
         {

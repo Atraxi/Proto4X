@@ -1,7 +1,7 @@
-package atraxi.UI;
+package atraxi.ui;
 
-import atraxi.game.ResourceManager;
-import atraxi.game.ResourceManager.ImageID;
+import atraxi.util.ResourceManager;
+import atraxi.util.ResourceManager.ImageID;
 
 import java.awt.Graphics2D;
 import java.awt.Point;

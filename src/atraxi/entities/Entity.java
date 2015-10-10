@@ -5,8 +5,8 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.math.BigDecimal;
 
-import atraxi.game.ResourceManager;
-import atraxi.game.ResourceManager.ImageID;
+import atraxi.util.ResourceManager;
+import atraxi.util.ResourceManager.ImageID;
 import atraxi.game.World;
 import atraxi.entities.actionQueue.Action;
 import atraxi.entities.actionQueue.Action.ActionType;

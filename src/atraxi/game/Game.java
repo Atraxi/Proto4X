@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
-import atraxi.UI.UserInterfaceHandler;
+import atraxi.ui.UserInterfaceHandler;
 import atraxi.entities.Entity;
 
 public class Game extends JPanel implements Runnable
