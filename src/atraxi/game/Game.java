@@ -33,7 +33,7 @@ public class Game extends JPanel implements Runnable
         Game.uiHandler = uiHandler;
         worlds = new ArrayList<World>();
         worlds.add(new World(SEED, 10000, 10000));
-        setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
+        setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
     }
@@ -55,8 +55,8 @@ public class Game extends JPanel implements Runnable
         Graphics2D g2d = (Graphics2D) g;
         if(Proto.debug)
         {//zoom out, show a box where the edge of the screen would normally be
-            g2d.scale(0.4, 0.4);
-            g2d.translate(1000, 500);
+            g2d.scale(0.75, 0.75);
+            g2d.translate(250, 100);
             g2d.drawRect(0, 0, Proto.screen_Width, Proto.screen_Height);
         }
         //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
