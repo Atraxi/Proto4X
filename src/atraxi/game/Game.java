@@ -106,7 +106,7 @@ public class Game extends JPanel implements Runnable
         long beforeTime, actualFrameTime;
         
         beforeTime = System.nanoTime();
-        
+
         while(true)
         {
             long currentTime = System.nanoTime();

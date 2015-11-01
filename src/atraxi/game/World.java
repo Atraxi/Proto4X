@@ -2,6 +2,7 @@ package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import atraxi.entities.Entity;
 import atraxi.entities.Ship;
@@ -39,13 +40,7 @@ public class World
         ArrayList<Entity> selection = new ArrayList<Entity>();
         synchronized(entities)
         {
-            for(Entity e : entities)
-            {
-                if(e.boundsTest(selectionArea))
-                {
-                    selection.add(e);
-                }
-            }
+            selection.addAll(entities.stream().filter(e -> e.boundsTest(selectionArea)).collect(Collectors.toList()));
         }
         return selection.toArray(new Entity[selection.size()]);
     }

@@ -217,7 +217,7 @@ public class UIStack implements UIElement
                                         80,
                                         "empty",
                                         (Menu menu) -> {
-                                            Logger.log(LogLevel.debug, "button 1 clicked");
+                                            Logger.log(LogLevel.debug, new String[]{"button 1 clicked"});
                                             return null;
                                         }),
                                 new Button(
@@ -228,7 +228,7 @@ public class UIStack implements UIElement
                                         150,
                                         "Set resolution",
                                         menu -> {
-                                            Logger.log(LogLevel.debug, "button 2 clicked");
+                                            Logger.log(LogLevel.debug, new String[]{"button 2 clicked"});
                                             Proto.PROTO.setDimensions(500, 500);
                                             return null;
                                         }),
@@ -240,7 +240,7 @@ public class UIStack implements UIElement
                                         220,
                                         "Return to game",
                                         menu -> {
-                                            Logger.log(LogLevel.debug, "button 3 clicked", "\tmenu closed");
+                                            Logger.log(LogLevel.debug, new String[]{"button 3 clicked", "\tmenu closed"});
                                             UserInterfaceHandler.uiStack.remove(menu);
                                             return null;
                                         }),
@@ -252,7 +252,7 @@ public class UIStack implements UIElement
                                         290,
                                         "Quit game",
                                         menu -> {
-                                            Logger.log(LogLevel.debug, "quit game");
+                                            Logger.log(LogLevel.debug, new String[]{"quit game"});
                                             System.exit(0);
                                             return null;
                                         })});

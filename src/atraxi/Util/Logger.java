@@ -14,7 +14,7 @@ public class Logger
      * @param logLevel
      * @param messages each line of output, system specific newline added between each String arg
      */
-    public static void log (LogLevel logLevel, String... messages)
+    public static void log (LogLevel logLevel, String[] messages)
     {
         switch (logLevel)
         {

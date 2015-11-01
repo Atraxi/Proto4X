@@ -12,7 +12,7 @@ public class ResourceManager
 {
     //TODO: pre-load this
     //TODO: throw some sort of error if the file isn't found
-    //TODO: implement imageObserver and similar, and verify all resources are properly loaded
+    //TODO: implement imageObserver or similar, and verify all resources are properly loaded
     private static BufferedImage[] images = new BufferedImage[ImageID.values().length];
 
     public static void resetLoadedImages()
@@ -92,6 +92,9 @@ public class ResourceManager
                     case entityShipDefault:
                         images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/baseShipClass.png"));
                         break;
+                    case infoPanelDefault:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/baseShipClass.png"));
+                        break;
                     case entityStructureDefault:
                         images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/baseBuildingClass.png"));
                         break;
@@ -114,6 +117,6 @@ public class ResourceManager
         buttonDefault,buttonHover,buttonClick,
         menuBackground,
         entityShipDefault,
-        entityStructureDefault
+        infoPanelDefault, entityStructureDefault
     }
 }
