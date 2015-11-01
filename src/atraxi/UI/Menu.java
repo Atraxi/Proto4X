@@ -13,7 +13,7 @@ public class Menu implements UIElement, UIStackNode
 {
     //TODO: implement image scaling, try "image.getScaledInstance(width,height,algorithm(enum));"
     private Button[] buttons;
-    private int x, y;
+    //private int x, y;
     private ImageID backgroundID;
     private Rectangle dim;
     private UIStackNode nextNode = null, previousNode = null;
@@ -24,41 +24,22 @@ public class Menu implements UIElement, UIStackNode
         this.backgroundID=imageID;
         this.buttons = buttons;
 
-
         int width = ResourceManager.getImage(backgroundID).getWidth(null);
         int height = ResourceManager.getImage(backgroundID).getHeight(null);
-        if(width!=-1 && height!=-1)
-        {
-            this.x=x-(width/2);
-            this.y=y-(height/2);
-            dim=new Rectangle(this.x,this.y,width,height);
 
-            for(Button button : buttons)
-            {
-                button.x+=this.x;
-                button.y+=this.y;
-                button.dim.setLocation(button.x,button.y);
-                button.parentMenu = this;
-            }
-        }
-        else
-        {
-            this.x=x;
-            this.y=y;
-            dim=new Rectangle(this.x,this.y,0,0);
+        dim = new Rectangle(x-(width/2),y-(height/2),width,height);
 
-            for(Button button : buttons)
-            {
-                button.x+=this.x;
-                button.y+=this.y;
-                button.dim.setLocation(button.x,button.y);
-            }
+        for(Button button : buttons)
+        {
+            button.dim.setLocation(button.dim.x+dim.x,button.dim.y+dim.y);
+            button.parentMenu = this;
         }
     }
 
+    @Override
     public void paint (Graphics2D g2d)
     {
-        g2d.drawImage(ResourceManager.getImage(backgroundID), x, y, null);
+        g2d.drawImage(ResourceManager.getImage(backgroundID), dim.x, dim.y, null);
         for(Button button : buttons)
         {
             button.paint(g2d);
@@ -120,15 +101,13 @@ public class Menu implements UIElement, UIStackNode
     {
         if(movePoint != null)
         {
-            this.x-=(movePoint.getX()-paramMouseEvent.getX());
-            this.y-=(movePoint.getY()-paramMouseEvent.getY());
-            dim.setLocation(this.x,this.y);
+            dim.x-=(movePoint.getX()-paramMouseEvent.getX());
+            dim.y-=(movePoint.getY()-paramMouseEvent.getY());
 
             for(Button button : buttons)
             {
-                button.x-=(movePoint.getX()-paramMouseEvent.getX());
-                button.y-=(movePoint.getY()-paramMouseEvent.getY());
-                button.dim.setLocation(button.x,button.y);
+                button.dim.x-=(movePoint.getX()-paramMouseEvent.getX());
+                button.dim.y-=(movePoint.getY()-paramMouseEvent.getY());
             }
             movePoint=null;
             return this;
@@ -153,15 +132,13 @@ public class Menu implements UIElement, UIStackNode
     {
         if(movePoint != null)
         {
-            this.x-=(movePoint.getX()-paramMouseEvent.getX());
-            this.y-=(movePoint.getY()-paramMouseEvent.getY());
-            dim.setLocation(this.x,this.y);
+            dim.x-=(movePoint.getX()-paramMouseEvent.getX());
+            dim.y-=(movePoint.getY()-paramMouseEvent.getY());
 
             for(Button button : buttons)
             {
-                button.x-=(movePoint.getX()-paramMouseEvent.getX());
-                button.y-=(movePoint.getY()-paramMouseEvent.getY());
-                button.dim.setLocation(button.x,button.y);
+                button.dim.x-=(movePoint.getX()-paramMouseEvent.getX());
+                button.dim.y-=(movePoint.getY()-paramMouseEvent.getY());
             }
             movePoint = paramMouseEvent.getPoint();
             return this;

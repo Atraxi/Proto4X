@@ -12,7 +12,7 @@ import java.awt.event.MouseWheelEvent;
 public class Button implements UIElement
 {
     private ImageID imageIDDefault, imageIDHover, imageIDPressed;
-    protected int x, y;
+    //protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
     protected Menu parentMenu;
@@ -25,20 +25,12 @@ public class Button implements UIElement
         this.imageIDHover = imageIDHover;
         this.imageIDPressed = imageIDPressed;
         this.action=action;
-        this.x=x;
-        this.y=y;
         this.buttonText = buttonText;
 
         int width = ResourceManager.getImage(imageIDDefault).getWidth(null);
         int height = ResourceManager.getImage(imageIDDefault).getHeight(null);
-        if(width!=-1 && height!=-1)
-        {
-            dim=new Rectangle(this.x,this.y,width,height);
-        }
-        else
-        {
-            dim=new Rectangle(this.x,this.y,0,0);
-        }
+
+        dim=new Rectangle(x,y,width,height);
     }
 
     public ImageID getImageID ()
@@ -131,7 +123,7 @@ public class Button implements UIElement
     @Override
     public void paint (Graphics2D graphics)
     {
-        graphics.drawImage(ResourceManager.getImage(getImageID()), x, y, null);
+        graphics.drawImage(ResourceManager.getImage(getImageID()), dim.x, dim.y, null);
         Util.drawString(buttonText, dim, graphics);
     }
 
