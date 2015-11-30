@@ -57,7 +57,7 @@ public class Proto extends JFrame
         
         setFocusable(true);
         //TODO: toggle windowed mode, add resizing and resolution options. This can probably wait for the main menu
-        setUndecorated(true);
+        //setUndecorated(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(screen_Width, screen_Height);
         setLocationRelativeTo(null);

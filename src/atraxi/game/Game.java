@@ -3,14 +3,18 @@ package atraxi.game;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
+import atraxi.ui.InfoPanel;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.entities.Entity;
+import atraxi.util.ResourceManager;
+import atraxi.util.ResourceManager.ImageID;
 
 public class Game extends JPanel implements Runnable
 {
@@ -75,6 +79,10 @@ public class Game extends JPanel implements Runnable
         //Remove camera offset to draw UI
         g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
         uiHandler.paintScreen(g2d);
+
+        new InfoPanel(new Rectangle(20, 20, ResourceManager.getImage(ImageID.infoPanelDefault).getWidth(null)+100, ResourceManager.getImage(ImageID.infoPanelDefault).getHeight(null)+100),
+                      ImageID.infoPanelDefault,0,0,0).paint(g2d);
+
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();
     }
