@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 import atraxi.ui.InfoPanel;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.entities.Entity;
+import atraxi.util.Logger;
 import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
 
@@ -123,7 +124,7 @@ public class Game extends JPanel implements Runnable
             
             if(actualFrameTime > OPTIMALFRAMETIME)
             {
-                System.out.println("Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames");
+                Logger.log(Logger.LogLevel.warning, new String[] {"Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames"});
             }
             if(actualFrameTime < MINIMUMFRAMETIME)
             {

@@ -151,9 +151,9 @@ public class Ship extends Entity
             x -= this.x;
             y -= this.y;
             double orientationTarget = Math.atan2(y, x);
-            Logger.log(LogLevel.debug, "Right Click Command -> Ship:" + this, "\tx:" + x
+            Logger.log(LogLevel.debug, new String[] {"Right Click Command -> Ship:" + this, "\tx:" + x
                     + " y:" + y + " orientationTarget:" + orientationTarget
-                    + " orientationDelta:" + (orientationTarget - orientation));
+                    + " orientationDelta:" + (orientationTarget - orientation)});
             synchronized(actionInProgressLock)
             {
                 actionInProgress = new Action(nextActionFromQueue.type, new Object[]{targetX, targetY, orientationTarget}, true);

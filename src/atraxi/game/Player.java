@@ -6,6 +6,7 @@ import java.util.Collections;
 
 import atraxi.entities.Entity;
 import atraxi.entities.actionQueue.Action;
+import atraxi.util.Logger;
 
 public class Player
 {
@@ -19,7 +20,7 @@ public class Player
     {
         selection = new Selection();
         selection.add(Game.getWorld(worldIndex).getEntityArrayWithin(selectionArea));
-        System.out.println("Selected:\n"+selection.toString());
+        Logger.log(Logger.LogLevel.debug, new String[] {"Selected:\n"+selection.toString()});
     }
     
     public void replaceQueue(Action action)

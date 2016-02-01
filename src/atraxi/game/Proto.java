@@ -7,9 +7,10 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 
-import javax.swing.JFrame;
+import javax.swing.*;
 
 import atraxi.ui.UserInterfaceHandler;
+import atraxi.util.Logger;
 
 public class Proto extends JFrame
 {
@@ -58,7 +59,7 @@ public class Proto extends JFrame
         setFocusable(true);
         //TODO: toggle windowed mode, add resizing and resolution options. This can probably wait for the main menu
         //setUndecorated(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(screen_Width, screen_Height);
         setLocationRelativeTo(null);
         setTitle("4X_proto");
@@ -74,17 +75,16 @@ public class Proto extends JFrame
     
     public static void main(String[] args)
     {
-        //Future: compiler flags for debug build
         if(args.length>0 && args[0].equals("-debug"))
         {
-            System.out.println("Debug enabled");
+            Logger.log(Logger.LogLevel.debug, new String[] {"Debug enabled"});
             debug = true;
         }
         else
         {
             debug = false;
         }
-        
+
         EventQueue.invokeLater(() -> {
             Proto frame = new Proto();
             frame.setVisible(true);

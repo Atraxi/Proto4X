@@ -252,19 +252,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 Game.paused=!Game.paused;
                 if(Game.paused)
                 {
-                    Logger.log(LogLevel.debug, "Game Paused.");
+                    Logger.log(LogLevel.debug, new String[] {"Game Paused."});
                 }
                 else
                 {
-                    Logger.log(LogLevel.debug, "Game Resumed.");
+                    Logger.log(LogLevel.debug, new String[] {"Game Resumed."});
                 }
                 break;
             case KeyEvent.VK_ESCAPE:
-                Logger.log(LogLevel.debug, "escape");
+                Logger.log(LogLevel.debug, new String[] {"escape"});
                 System.exit(0);
                 break;
             case KeyEvent.VK_A:
-                Logger.log(LogLevel.debug, "Creating test menu");
+                Logger.log(LogLevel.debug, new String[] {"Creating test menu"});
                 uiStack.push(UIStack.getNewTestMenu());
         }
     }
@@ -284,7 +284,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 dragSelectStartX = paramMouseEvent.getX();
                 dragSelectStartY = paramMouseEvent.getY();
                 dragSelect = true;
-                Logger.log(LogLevel.debug, "DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY);
+                Logger.log(LogLevel.debug, new String[] {"DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY});
             }
         }
     }
@@ -312,10 +312,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = selectionArea;
-                Logger.log(LogLevel.debug, "Drag to x:" + dragSelectEndX +
+                Logger.log(LogLevel.debug, new String[] {"Drag to x:" + dragSelectEndX +
                                           " y:" + dragSelectEndY,
                                           "\tStarted, x:" + dragSelectStartX +
-                                          " y:" + dragSelectStartY);
+                                          " y:" + dragSelectStartY});
             }
         }
     }
@@ -361,10 +361,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
                 user.selectEntity(selectionArea,currentWorld);
                 this.selectionArea = null;
-                Logger.log(LogLevel.debug, "Drag Ended, x:" + dragSelectEndX +
+                Logger.log(LogLevel.debug, new String[] {"Drag Ended, x:" + dragSelectEndX +
                                           " y:" + dragSelectEndY,
                                           "\tStarted, x:" + dragSelectStartX +
-                                          " y:" + dragSelectStartY);
+                                          " y:" + dragSelectStartY});
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)

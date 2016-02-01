@@ -45,8 +45,9 @@ public class Util
 
     private static void drawString(String stringToDraw, int x, int y, Rectangle containingArea, Graphics2D g2d, Rectangle2D stringDim)
     {
-        if(x < containingArea.x || y < containingArea.y || containingArea.getWidth()+containingArea.x < stringDim.getWidth()+y || containingArea.getHeight()+containingArea.y < stringDim.getHeight()+y)
+        if(Proto.debug && (x < containingArea.x || y < containingArea.y || containingArea.getWidth()+containingArea.x < stringDim.getWidth()+y || containingArea.getHeight()+containingArea.y < stringDim.getHeight()+y))
         {//This is excessively detailed logging, but a string overflowing it's container is also a simple oversight that looks sloppy. This safeguards against that happening as long as the logs are watch occasionally
+            //throw new IllegalArgumentException("String overflowed container:\n" + stringToDraw);//Ideally this would be a hard crash (in debug only) but Swing handles the exception internally
             ArrayList<String> stackTrace = new ArrayList<String>();
             stackTrace.add("String overflowed container");
             Arrays.stream(Thread.currentThread().getStackTrace()).forEach((e)->stackTrace.add(e.toString()));
