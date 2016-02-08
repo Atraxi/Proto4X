@@ -3,6 +3,7 @@ package atraxi.ui;
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
+import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.Logger.LogLevel;
 import atraxi.util.ResourceManager;
@@ -72,8 +73,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //Also picks a random background image to draw from a selection, seeded buy the x,y index of the image in the background
         //the image index must be calculated as needed, due to the images not being in an indexed list that corresponds to the location they are drawn
 
-        int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
-        int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
+        int mapImageWidth = mapImages[0].getImage().getWidth(null);
+        int mapImageHeight = mapImages[0].getImage().getHeight(null);
         int indexX;
         int indexY;
         for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
@@ -87,7 +88,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
                     g2d.scale(4, 4);
@@ -115,7 +116,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*2);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
                     g2d.scale(4, 4);
@@ -144,7 +145,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*3);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
                     g2d.scale(4, 4);
@@ -173,7 +174,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
                 Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*5);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
                     g2d.scale(4, 4);
@@ -209,11 +210,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     /**
      * Paint anything that is positioned relative to the screen (probably exclusively UI buttons and menus)
-     * @param g2d
+     * @param render
      */
-    public void paintScreen(Graphics2D g2d)
+    public void paintScreen(CheckedRender render)
     {
-        uiStack.paint(g2d);
+        uiStack.paint(render);
     }
 
     public void doWork (BigDecimal timeAdjustment, boolean paused)
@@ -384,17 +385,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         }
     }
 
-    @Override
-    public void mouseEntered (MouseEvent paramMouseEvent)
-    {
-        boolean uiEvent = uiStack.mouseEntered(paramMouseEvent) != null;
-        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
-    }
+    @Override //Not relevant with a custom UI stack
+    public void mouseEntered (MouseEvent paramMouseEvent) {}
 
-    @Override
-    public void mouseExited(MouseEvent paramMouseEvent)
-    {
-        boolean uiEvent = uiStack.mouseExited(paramMouseEvent) != null;
-        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
-    }
+    @Override//Not relevant with a custom UI stack
+    public void mouseExited(MouseEvent paramMouseEvent) {}
 }

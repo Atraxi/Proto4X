@@ -2,6 +2,7 @@ package atraxi.entities;
 
 import java.math.BigDecimal;
 
+import atraxi.game.Game;
 import atraxi.game.World;
 import atraxi.entities.actionQueue.Action;
 import atraxi.entities.actionQueue.Action.ActionType;
@@ -36,7 +37,7 @@ public class Structure extends Entity
             actionInProgress = new Action(actionInProgress.type, new Object[]{((long)actionInProgress.getData()[0]) + timeDiff.movePointRight(timeDiff.scale()+1).longValue()}, true);
             if((long)actionInProgress.getData()[0]>100000000000L)//How many nanoseconds construction should take
             {//TODO: rally point (move command)
-                Entity newEntity = new Ship("baseShipClass", owner, x, y, world);
+                Entity newEntity = new Ship("entityShipDefault", owner, x, y, world);
                 newEntity.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)x+300.0, (double)y+100}));
                 world.addEntity(newEntity);
                 actionInProgress = null;

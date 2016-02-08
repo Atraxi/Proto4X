@@ -1,5 +1,7 @@
 package atraxi.ui;
 
+import atraxi.util.CheckedRender;
+
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -20,18 +22,6 @@ public interface UIElement
 
     /**
      * @return if the event has been handled by this UIElement, then this, else null
-     * @see java.awt.event.MouseListener#mouseEntered(MouseEvent)
-     */
-    public UIElement mouseEntered (MouseEvent paramMouseEvent);
-
-    /**
-     * @return if the event has been handled by this UIElement, then this, else null
-     * @see java.awt.event.MouseListener#mouseExited(MouseEvent)
-     */
-    public UIElement mouseExited (MouseEvent paramMouseEvent);
-
-    /**
-     * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseMotionListener#mouseDragged(MouseEvent)
      */
     public UIElement mouseDragged (MouseEvent paramMouseEvent);
@@ -48,5 +38,5 @@ public interface UIElement
      */
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
 
-    public void paint(Graphics2D graphics);
+    public void paint(CheckedRender checkedRender);
 }

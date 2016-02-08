@@ -1,5 +1,6 @@
 package atraxi.ui;
 
+import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.Logger.LogLevel;
 import atraxi.game.Proto;
@@ -45,46 +46,6 @@ public class UIStack implements UIElement
                 if(nodeReleased != null)
                 {
                     return nodeReleased;
-                }
-                currentNode = currentNode.getPreviousNode();
-            }
-            while(currentNode != null);
-        }
-        return null;
-    }
-
-    @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        if(tail!=null)
-        {
-            UIStackNode currentNode = tail;
-            do
-            {
-                UIElement nodeEntered = currentNode.mouseEntered(paramMouseEvent);
-                if(nodeEntered != null)
-                {
-                    return nodeEntered;
-                }
-                currentNode = currentNode.getPreviousNode();
-            }
-            while(currentNode != null);
-        }
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        if(tail!=null)
-        {
-            UIStackNode currentNode = tail;
-            do
-            {
-                UIElement nodeExited = currentNode.mouseExited(paramMouseEvent);
-                if(nodeExited != null)
-                {
-                    return nodeExited;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
@@ -154,14 +115,14 @@ public class UIStack implements UIElement
     }
 
     @Override
-    public void paint(Graphics2D g2d)
+    public void paint(CheckedRender render)
     {
         if(head!=null)
         {
             UIStackNode currentNode = head;
             do
             {
-                currentNode.paint(g2d);
+                currentNode.paint(render);
                 currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);

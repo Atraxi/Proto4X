@@ -142,8 +142,8 @@ public class Ship extends Entity
             double x = (double) nextActionFromQueue.getData()[0];
             double y = (double) nextActionFromQueue.getData()[1];
             //offset the target location to be relative to the image center, instead of the corner
-            x -= ResourceManager.getImage(getImageID()).getWidth(null) / 2;
-            y -= ResourceManager.getImage(getImageID()).getHeight(null) / 2;
+            x -= getImageID().getImage().getWidth(null) / 2;
+            y -= getImageID().getImage().getHeight(null) / 2;
             
             double targetX = x;
             double targetY = y;

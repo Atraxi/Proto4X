@@ -1,8 +1,7 @@
 package atraxi.ui;
 
-import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
-import atraxi.util.Util;
+import atraxi.util.CheckedRender;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -27,8 +26,8 @@ public class Button implements UIElement
         this.action=action;
         this.buttonText = buttonText;
 
-        int width = ResourceManager.getImage(imageIDDefault).getWidth(null);
-        int height = ResourceManager.getImage(imageIDDefault).getHeight(null);
+        int width = imageIDDefault.getImage().getWidth(null);
+        int height = imageIDDefault.getImage().getHeight(null);
 
         dim=new Rectangle(x,y,width,height);
     }
@@ -82,18 +81,6 @@ public class Button implements UIElement
     }
 
     @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
     public UIElement mouseDragged (MouseEvent paramMouseEvent)
     {
         return null;
@@ -121,10 +108,10 @@ public class Button implements UIElement
     }
 
     @Override
-    public void paint (Graphics2D graphics)
+    public void paint (CheckedRender render)
     {
-        graphics.drawImage(ResourceManager.getImage(getImageID()), dim.x, dim.y, null);
-        Util.drawString(buttonText, dim, graphics);
+        render.drawImage(getImageID(), dim.x, dim.y, dim);
+        render.drawString(buttonText, dim);
     }
 
     protected enum ButtonState

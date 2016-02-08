@@ -1,14 +1,14 @@
 package atraxi.ui;
 
-import atraxi.util.ResourceManager;
+import atraxi.game.Proto;
 import atraxi.util.ResourceManager.ImageID;
-import atraxi.util.Util;
+import atraxi.util.CheckedRender;
 
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.image.BufferedImage;
 
 /**
  * Created by Atraxi on 6/10/2015.
@@ -53,18 +53,6 @@ public class InfoPanel implements UIElement
     }
 
     @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
     public UIElement mouseDragged (MouseEvent paramMouseEvent)
     {
         return null;
@@ -83,17 +71,21 @@ public class InfoPanel implements UIElement
     }
 
     @Override
-    public void paint (Graphics2D graphics)
+    public void paint (CheckedRender render)
     {
-        graphics.drawImage(ResourceManager.getImage(background), dim.x, dim.y, null);
-        graphics.drawImage(ResourceManager.getImage(icon), dim.x+5, dim.y+5, null);
-        Image icon = ResourceManager.getImage(this.icon);
+        render.drawImage(background, dim.x, dim.y, dim);
+        render.drawImage(icon, dim.x + 5, dim.y + 5, dim);
+        BufferedImage icon = this.icon.getImage();
         for(String module : specialModules)
         {
-            Util.drawString(module, icon.getWidth(null) + 10, 5, dim, graphics);
+            render.drawString(module, icon.getWidth() + 10 + dim.x, 5 + dim.y, dim);
         }
-        Util.drawString(Integer.toString(health), 5, icon.getHeight(null)+10, dim, graphics);
-        Util.drawString(Integer.toString(supply), 5, icon.getHeight(null)+20, dim, graphics);
-        Util.drawString(Integer.toString(ammunition), 5, icon.getHeight(null)+30, dim, graphics);
+        render.drawString(Integer.toString(health), 5 + dim.x, icon.getHeight(null)+10 + dim.y, dim);
+        render.drawString(Integer.toString(supply), 5 + dim.x, icon.getHeight(null)+20 + dim.y, dim);
+        render.drawString(Integer.toString(ammunition), 5 + dim.x, icon.getHeight(null)+30 + dim.y, dim);
+        if(Proto.debug)
+        {
+            render.drawRect(dim.x, dim.y, dim.width, dim.height);
+        }
     }
 }

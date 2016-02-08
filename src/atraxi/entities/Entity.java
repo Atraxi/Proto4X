@@ -5,6 +5,7 @@ import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.math.BigDecimal;
 
+import atraxi.util.CheckedRender;
 import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
 import atraxi.game.World;
@@ -41,8 +42,8 @@ public abstract class Entity
         orientation = 0;
         if(boundsXUpper==0 && boundsYUpper==0)
         {
-            this.boundsXUpper = ResourceManager.getImage(imageID).getWidth(null);
-            this.boundsYUpper = ResourceManager.getImage(imageID).getHeight(null);
+            this.boundsXUpper = imageID.getImage().getWidth(null);
+            this.boundsYUpper = imageID.getImage().getHeight(null);
         }
         else
         {
@@ -82,35 +83,40 @@ public abstract class Entity
     
     public AffineTransform getTransform()
     {
-        AffineTransform at = AffineTransform.getTranslateInstance(x+ResourceManager.getImage(imageID).getWidth(null)/2, y+ResourceManager.getImage(
-                imageID).getHeight(null)/2);
+        AffineTransform at = AffineTransform.getTranslateInstance(x+imageID.getImage().getWidth(null)/2, y+
+                imageID.getImage().getHeight(null)/2);
         //at.rotate(orientation);
         //hopefully bypass the snap to 90degrees 'feature' (not always desired, but impossible to disable), although I'm not sure it will make a noticeable difference
         at.concatenate(new AffineTransform(Math.cos(orientation), Math.sin(orientation), -Math.sin(orientation), Math.cos(orientation), 0, 0));
-        at.translate(-ResourceManager.getImage(imageID).getWidth(null)/2, -ResourceManager.getImage(imageID).getHeight(null)/2);
+        at.translate(-imageID.getImage().getWidth(null)/2, -imageID.getImage().getHeight(null)/2);
         return at;
     }
-    
+
     public double getX()
     {
         return x;
     }
+
     public double getY()
     {
         return y;
     }
+
     public ImageID getImageID ()
     {
         return imageID;
     }
+
     private Rectangle getBounds()
     {
         return new Rectangle((int)(x+boundsXOffset), (int)(y+boundsYOffset), boundsXUpper, boundsYUpper);
     }
+
     public void queueAction(Action action)
     {
         actionQueue.queueAction(action);
     }
+
     public void replaceQueue(Action action)
     {
         actionQueue.replaceQueue(action);
@@ -119,8 +125,9 @@ public abstract class Entity
             actionInProgress = null;
         }
     }
+
     public void paint(Graphics2D g2d)
     {
-        g2d.drawImage(ResourceManager.getImage(imageID), getTransform(), null);
+        g2d.drawImage(imageID.getImage(), getTransform(), null);
     }
 }

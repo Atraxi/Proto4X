@@ -20,7 +20,7 @@ public class ResourceManager
         images = new BufferedImage[ImageID.values().length];
     }
 
-    public static Image getImage(ImageID id)
+    private static BufferedImage getImage(ImageID id)
     {
         //All images will be pre-loaded, null-check is for a utility method for artists/texture packs/debugging to be able to reload textures
         if(images[id.ordinal()] == null)
@@ -117,6 +117,11 @@ public class ResourceManager
         buttonDefault,buttonHover,buttonClick,
         menuBackground,
         entityShipDefault,
-        infoPanelDefault, entityStructureDefault
+        infoPanelDefault, entityStructureDefault;
+
+        public BufferedImage getImage()
+        {
+            return ResourceManager.getImage(this);
+        }
     }
 }

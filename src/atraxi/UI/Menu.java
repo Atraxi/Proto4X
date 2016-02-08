@@ -1,5 +1,6 @@
 package atraxi.ui;
 
+import atraxi.util.CheckedRender;
 import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
 
@@ -24,8 +25,8 @@ public class Menu implements UIElement, UIStackNode
         this.backgroundID=imageID;
         this.buttons = buttons;
 
-        int width = ResourceManager.getImage(backgroundID).getWidth(null);
-        int height = ResourceManager.getImage(backgroundID).getHeight(null);
+        int width = backgroundID.getImage().getWidth(null);
+        int height = backgroundID.getImage().getHeight(null);
 
         dim = new Rectangle(x-(width/2),y-(height/2),width,height);
 
@@ -37,41 +38,13 @@ public class Menu implements UIElement, UIStackNode
     }
 
     @Override
-    public void paint (Graphics2D g2d)
+    public void paint (CheckedRender render)
     {
-        g2d.drawImage(ResourceManager.getImage(backgroundID), dim.x, dim.y, null);
+        render.drawImage(backgroundID, dim.x, dim.y, dim);
         for(Button button : buttons)
         {
-            button.paint(g2d);
+            button.paint(render);
         }
-    }
-
-    @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        for(Button button : buttons)
-        {
-            UIElement resultElement = button.mouseEntered(paramMouseEvent);
-            if(resultElement!=null)
-            {
-                return resultElement;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        for(Button button : buttons)
-        {
-            UIElement resultElement = button.mouseExited(paramMouseEvent);
-            if(resultElement!=null)
-            {
-                return resultElement;
-            }
-        }
-        return null;
     }
 
     @Override

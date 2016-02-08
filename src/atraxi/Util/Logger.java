@@ -23,20 +23,20 @@ public class Logger
                 {
                     for(String message : messages)
                     {
-                        System.out.println("[debug]" + message);
+                        System.out.println("[Debug]" + message);
                     }
                 }
                 break;
             case info:
                 for(String message : messages)
                 {
-                    System.out.println("[info]" + message);
+                    System.out.println("[Info]" + message);
                 }
                 break;
             case warning:
                 for(String message : messages)
                 {
-                    System.err.println("[warning]" + message);
+                    System.err.println("[Warning]" + message);
                 }
                 break;
             case error:

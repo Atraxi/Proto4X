@@ -13,8 +13,8 @@ import javax.swing.JPanel;
 import atraxi.ui.InfoPanel;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.entities.Entity;
+import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
-import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
 
 public class Game extends JPanel implements Runnable
@@ -25,12 +25,12 @@ public class Game extends JPanel implements Runnable
      */
     public static final long OPTIMALFRAMETIME = 16666666;
     private static final long MINIMUMFRAMETIME = 8333333;
-    private Thread animator;
     private static ArrayList<Player> players;
     private static ArrayList<World> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
     public static final long SEED = System.nanoTime();
+    private static CheckedRender checkedRender;
     
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
@@ -41,6 +41,7 @@ public class Game extends JPanel implements Runnable
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
+        checkedRender = new CheckedRender();
     }
     
     public static ArrayList<Player> getPlayerList()
@@ -58,6 +59,7 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
+        checkedRender.setG2d(g2d);
         if(Proto.debug)
         {//zoom out, show a box where the edge of the screen would normally be
             g2d.scale(0.75, 0.75);
@@ -79,10 +81,10 @@ public class Game extends JPanel implements Runnable
         uiHandler.paintWorld(g2d);
         //Remove camera offset to draw UI
         g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
-        uiHandler.paintScreen(g2d);
+        uiHandler.paintScreen(checkedRender);
 
-        new InfoPanel(new Rectangle(20, 20, ResourceManager.getImage(ImageID.infoPanelDefault).getWidth(null)+100, ResourceManager.getImage(ImageID.infoPanelDefault).getHeight(null)+100),
-                      ImageID.infoPanelDefault,0,0,0).paint(g2d);
+        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
+                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
 
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();
@@ -104,8 +106,8 @@ public class Game extends JPanel implements Runnable
     public void addNotify()
     {
         super.addNotify();
-        
-        animator = new Thread(this);
+
+        Thread animator = new Thread(this);
         animator.start();
     }
     
