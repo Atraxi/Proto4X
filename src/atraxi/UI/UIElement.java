@@ -2,7 +2,6 @@ package atraxi.ui;
 
 import atraxi.util.CheckedRender;
 
-import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 

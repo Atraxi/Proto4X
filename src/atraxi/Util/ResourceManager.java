@@ -108,6 +108,9 @@ public class ResourceManager
         return images[id.ordinal()];
     }
 
+    /**
+     * Allows access to the {@link BufferedImage} represented by this enum via {@link ImageID#getImage()}.
+     */
     public enum ImageID
     {
         background1A,background1B,background1C,background1D,
@@ -119,6 +122,9 @@ public class ResourceManager
         entityShipDefault,
         infoPanelDefault, entityStructureDefault;
 
+        /**
+         * @return The {@link BufferedImage} represented by this enum.
+         */
         public BufferedImage getImage()
         {
             return ResourceManager.getImage(this);

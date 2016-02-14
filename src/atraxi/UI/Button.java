@@ -14,11 +14,21 @@ public class Button implements UIElement
     //protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
-    protected Menu parentMenu;
-    private CustomCallable<Menu,Void> action;
+    protected UIStackNode parent;
+    private CustomCallable<UIStackNode, Void> action;
     private String buttonText;
 
-    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, String buttonText, CustomCallable<Menu,Void> action)
+    /**
+     *
+     * @param imageIDDefault
+     * @param imageIDHover
+     * @param imageIDPressed
+     * @param x Position
+     * @param y Position
+     * @param buttonText
+     * @param action Executed when pressed
+     */
+    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, String buttonText, CustomCallable<UIStackNode, Void> action)
     {
         this.imageIDDefault = imageIDDefault;
         this.imageIDHover = imageIDHover;
@@ -47,7 +57,7 @@ public class Button implements UIElement
 
     protected void executeAction()
     {
-        action.call(parentMenu);
+        action.call(parent);
     }
 
     @Override

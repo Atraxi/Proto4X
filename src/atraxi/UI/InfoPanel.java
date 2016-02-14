@@ -24,7 +24,13 @@ public class InfoPanel implements UIElement
     private String[] specialModules;
 
 
-    public InfoPanel(Rectangle dim, ImageID background, ImageID icon, int health, int supply, int ammunition, String[] specialModules)
+    public InfoPanel(Rectangle dim, ImageID icon, int health, int supply, int ammunition)
+    {
+        this(dim, ImageID.infoPanelDefault, icon, health, supply, ammunition, new String[0]);
+    }
+
+    public InfoPanel(Rectangle dim, ImageID background, ImageID icon, int health, int supply, int ammunition,
+                     String[] specialModules)
     {
         this.dim = dim;
         this.background = background;
@@ -35,55 +41,51 @@ public class InfoPanel implements UIElement
         this.specialModules = specialModules;
     }
 
-    public InfoPanel(Rectangle dim, ImageID icon, int health, int supply, int ammunition)
-    {
-        this(dim, ImageID.infoPanelDefault, icon, health, supply, ammunition, new String[0]);
-    }
-
     @Override
-    public UIElement mousePressed (MouseEvent paramMouseEvent)
+    public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
         return null;
     }
 
     @Override
-    public UIElement mouseReleased (MouseEvent paramMouseEvent)
+    public UIElement mouseReleased(MouseEvent paramMouseEvent)
     {
         return null;
     }
 
     @Override
-    public UIElement mouseDragged (MouseEvent paramMouseEvent)
+    public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
         return null;
     }
 
     @Override
-    public UIElement mouseMoved (MouseEvent paramMouseEvent)
+    public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
         return null;
     }
 
     @Override
-    public UIElement mouseWheelMoved (MouseWheelEvent paramMouseWheelEvent)
+    public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
         return null;
     }
 
     @Override
-    public void paint (CheckedRender render)
+    public void paint(CheckedRender render)
     {
+        //TODO CheckedRender with a single public method taking a lambda equivalent of this paint method, and a Rectangle to set Graphics2D clip area
         render.drawImage(background, dim.x, dim.y, dim);
         render.drawImage(icon, dim.x + 5, dim.y + 5, dim);
         BufferedImage icon = this.icon.getImage();
-        for(String module : specialModules)
+        for (String module : specialModules)
         {
             render.drawString(module, icon.getWidth() + 10 + dim.x, 5 + dim.y, dim);
         }
-        render.drawString(Integer.toString(health), 5 + dim.x, icon.getHeight(null)+10 + dim.y, dim);
-        render.drawString(Integer.toString(supply), 5 + dim.x, icon.getHeight(null)+20 + dim.y, dim);
-        render.drawString(Integer.toString(ammunition), 5 + dim.x, icon.getHeight(null)+30 + dim.y, dim);
-        if(Proto.debug)
+        render.drawString(Integer.toString(health), 5 + dim.x, icon.getHeight(null) + 10 + dim.y, dim);
+        render.drawString(Integer.toString(supply), 5 + dim.x, icon.getHeight(null) + 20 + dim.y, dim);
+        render.drawString(Integer.toString(ammunition), 5 + dim.x, icon.getHeight(null) + 30 + dim.y, dim);
+        if (Proto.debug)
         {
             render.drawRect(dim.x, dim.y, dim.width, dim.height);
         }

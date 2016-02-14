@@ -1,6 +1,6 @@
 package atraxi.ui;
 
-import atraxi.util.CheckedRender;
+import atraxi.util.*;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -11,26 +11,60 @@ import java.awt.event.MouseWheelEvent;
  */
 public class ScrollBar implements UIElement
 {
-
+    UIElement parent;
     private Rectangle dim;
-    private int position;
-    private boolean vertical;
-    private Button left, right, drag;
+    private int position, length;
+    private boolean isVertical;
+    private Button buttonA, buttonB, drag;
+    private Color backgroundColor;
 
-    public ScrollBar(Rectangle dim)
+    /**
+     *
+     * @param length The length of this scroll bar, EXCLUDING the size of the buttons at each end. Used with the button dimensions to determine the overall size of the scroll bar.
+     * @param backgroundColor
+     * @param buttonDefault
+     * @param buttonHover
+     * @param buttonPressed
+     */
+    public ScrollBar(int length, Color backgroundColor, boolean isVertical, int x, int y, UIElement parent, ResourceManager.ImageID buttonDefault, ResourceManager.ImageID buttonHover, ResourceManager.ImageID buttonPressed)
     {
-        this.dim = dim;
+        this.parent = parent;
+        this.length = length;
+        dim = new Rectangle(length, buttonDefault.getImage().getHeight());
+        this.backgroundColor = backgroundColor;
+        this.isVertical = isVertical;
+        buttonA = new Button(buttonDefault, buttonHover, buttonPressed, x, y, "", (scrollBar) -> {
+            ((ScrollBar)scrollBar).moveLeft();
+            return null;
+        });
+        if(isVertical)
+        {
+            buttonB = new Button(buttonDefault, buttonHover, buttonPressed, x, y+length, "", (scrollBar) -> {
+                ((ScrollBar)scrollBar).moveRight();
+                return null;
+            });
+        }
+    }
+
+    private void moveRight()
+    {
+        position++;
+    }
+
+    private void moveLeft()
+    {
+        position--;
     }
 
     @Override
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
-        UIElement resultElement = left.mousePressed(paramMouseEvent);
+        UIElement resultElement = buttonA.mousePressed(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
         }
-        resultElement = right.mousePressed(paramMouseEvent);
+        resultElement = buttonB.mousePressed(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
@@ -54,12 +88,12 @@ public class ScrollBar implements UIElement
     @Override
     public UIElement mouseReleased(MouseEvent paramMouseEvent)
     {
-        UIElement resultElement = left.mouseReleased(paramMouseEvent);
+        UIElement resultElement = buttonA.mouseReleased(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
         }
-        resultElement = right.mouseReleased(paramMouseEvent);
+        resultElement = buttonB.mouseReleased(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
@@ -75,12 +109,12 @@ public class ScrollBar implements UIElement
     @Override
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
-        UIElement resultElement = left.mouseDragged(paramMouseEvent);
+        UIElement resultElement = buttonA.mouseDragged(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
         }
-        resultElement = right.mouseDragged(paramMouseEvent);
+        resultElement = buttonB.mouseDragged(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
@@ -96,12 +130,12 @@ public class ScrollBar implements UIElement
     @Override
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
-        UIElement resultElement = left.mouseMoved(paramMouseEvent);
+        UIElement resultElement = buttonA.mouseMoved(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
         }
-        resultElement = right.mouseMoved(paramMouseEvent);
+        resultElement = buttonB.mouseMoved(paramMouseEvent);
         if(resultElement!=null)
         {
             return resultElement;
@@ -117,12 +151,12 @@ public class ScrollBar implements UIElement
     @Override
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        UIElement resultElement = left.mouseWheelMoved(paramMouseWheelEvent);
+        UIElement resultElement = buttonA.mouseWheelMoved(paramMouseWheelEvent);
         if(resultElement!=null)
         {
             return resultElement;
         }
-        resultElement = right.mouseWheelMoved(paramMouseWheelEvent);
+        resultElement = buttonB.mouseWheelMoved(paramMouseWheelEvent);
         if(resultElement!=null)
         {
             return resultElement;
@@ -138,6 +172,9 @@ public class ScrollBar implements UIElement
     @Override
     public void paint(CheckedRender render)
     {
-
+        render.fill(Color.GRAY, dim);
+        buttonA.paint(render);
+        buttonB.paint(render);
+        drag.paint(render);
     }
 }

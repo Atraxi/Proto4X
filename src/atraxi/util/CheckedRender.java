@@ -1,14 +1,12 @@
 package atraxi.util;
 
+import atraxi.ui.UIElement;
 import atraxi.util.Logger.LogLevel;
 import atraxi.game.Proto;
 
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Created by Atraxi on 10/10/2015.
@@ -88,7 +86,7 @@ public class CheckedRender
     }
 
     /**
-     * Draw the specified Image to the screen at the given x, y co-ordinates, checking if the Image dimensions are fully contained within it's container bounding area, and logging a warning if not
+     * Draw the specified {@link java.awt.image.BufferedImage Image} to the screen at the given x, y co-ordinates, checking if the Image dimensions are fully contained within it's container bounding area, and logging a warning if not
      * @param imageID
      * @param x
      * @param y
@@ -115,7 +113,55 @@ public class CheckedRender
         g2d.drawImage(imageID.getImage(), x, y, null);
     }
 
+    /**
+     * Exposes {@link java.awt.Graphics2D#drawRect(int, int, int, int) drawRect()} from the underlying {@link Graphics2D} object.
+     * @see
+     * @param x
+     * @param y
+     * @param width
+     * @param height
+     */
     public void drawRect(int x, int y, int width, int height) {
         g2d.drawRect(x, y, width, height);
+    }
+
+    /**
+     * Sets the {@link Color}, and calls the {@link java.awt.Graphics2D#fill(Shape) fill()} method for the underlying {@link Graphics2D} object.
+     * Then resets the color.
+     * @param color
+     * @param dim
+     */
+    public void fill(Color color, Rectangle dim)
+    {
+        Color originalColor = g2d.getColor();
+        if (color != null)
+        {
+            g2d.setColor(color);
+        }
+
+        g2d.fill(dim);
+
+        g2d.setColor(originalColor);
+    }
+
+    /**
+     * This calls {@link UIElement#paint(CheckedRender render) paint()} on the provided {@link UIElement}, but sets the {@link Graphics2D} clip area set to the {@link Rectangle} dim.
+     * The original clip area is stored internally and restored before this method returns.
+     * @see Graphics2D#setClip(Shape)
+     * @see Graphics2D#getClip()
+     * @param uiElement
+     * @param dim
+     */
+    public void paintWithinBounds(UIElement uiElement, Rectangle dim)
+    {
+        Shape originalClip = g2d.getClip();
+        if(dim != null)
+        {
+            g2d.setClip(dim);
+        }
+
+        uiElement.paint(this);
+
+        g2d.setClip(originalClip);
     }
 }

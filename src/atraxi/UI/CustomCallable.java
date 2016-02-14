@@ -1,7 +1,8 @@
 package atraxi.ui;
 
 /**
- * Created by Atraxi on 21/09/2015.
+ * @param <T1> Input arg
+ * @param <T2> Return type
  */
 @FunctionalInterface
 public interface CustomCallable<T1, T2>

@@ -177,7 +177,7 @@ public class UIStack implements UIElement
                                         60,
                                         80,
                                         "empty",
-                                        (Menu menu) -> {
+                                        menu -> {
                                             Logger.log(LogLevel.debug, new String[]{"button 1 clicked"});
                                             return null;
                                         }),

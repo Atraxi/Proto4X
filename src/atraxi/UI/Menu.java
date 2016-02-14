@@ -33,7 +33,7 @@ public class Menu implements UIElement, UIStackNode
         for(Button button : buttons)
         {
             button.dim.setLocation(button.dim.x+dim.x,button.dim.y+dim.y);
-            button.parentMenu = this;
+            button.parent = this;
         }
     }
 
