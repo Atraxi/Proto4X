@@ -58,6 +58,10 @@ public class CheckedRender
      */
     private void drawString(String stringToDraw, int x, int y, Rectangle containingArea, Rectangle2D stringDim)
     {
+        if (containingArea == null)
+        {
+            throw new NullPointerException("containingArea cannot be null");
+        }
         if(Proto.debug &&
                 (x < containingArea.x ||
                         y < containingArea.y ||
@@ -94,7 +98,7 @@ public class CheckedRender
      */
     public void drawImage(ResourceManager.ImageID imageID, int x, int y, Rectangle containingArea)
     {
-        if(Proto.debug && (
+        if(Proto.debug && containingArea != null && (
                 x < containingArea.x ||
                         y < containingArea.y ||
                         x + imageID.getImage().getWidth() > containingArea.x + containingArea.width ||

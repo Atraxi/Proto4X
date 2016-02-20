@@ -1,5 +1,6 @@
 package atraxi.game.world;
 
+import atraxi.entities.*;
 import atraxi.ui.UIElement;
 import atraxi.ui.UIStack;
 import atraxi.ui.UIStackNode;
@@ -10,6 +11,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.*;
 
 /**
  * Created by Atraxi on 13/09/2015.
@@ -99,13 +101,18 @@ public class Grid implements UIElement, UIStackNode
 
     public class GridTile implements UIElement
     {
-        ImageID imageDefault, imageHover, imageClick;
+        private ImageID imageDefault, imageHover, imageClick;
+        private TileState state;
+        private int x, y;
+        private LinkedList<Entity> entities;
 
         public GridTile(ImageID imageDefault, ImageID imageHover, ImageID imageClick)
         {
             this.imageDefault = imageDefault;
             this.imageHover = imageHover;
             this.imageClick = imageClick;
+            state = TileState.DEFAULT;
+            entities = new LinkedList<>();
         }
 
         @Override
@@ -141,7 +148,23 @@ public class Grid implements UIElement, UIStackNode
         @Override
         public void paint (CheckedRender render)
         {
-
+            switch (state)
+            {
+                case DEFAULT:
+                    render.drawImage(imageDefault, x, y, null);
+                    break;
+                case HOVER:
+                    render.drawImage(imageDefault, x, y, null);
+                    break;
+                case PRESSED:
+                    render.drawImage(imageDefault, x, y, null);
+                    break;
+            }
         }
     }
+
+    private enum TileState
+{
+    DEFAULT, HOVER, PRESSED
+}
 }
