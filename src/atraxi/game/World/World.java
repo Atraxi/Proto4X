@@ -1,36 +1,34 @@
-package atraxi.game.World;
+package atraxi.game.world;
 
-import java.awt.*;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
+import atraxi.entities.Entity;
+import atraxi.entities.Ship;
+import atraxi.entities.Structure;
 import atraxi.game.Game;
-import atraxi.game.UI.UserInterfaceHandler;
-import entities.Entity;
-import entities.Ship;
-import entities.Structure;
 
 public class World
 {
-    private final static ArrayList<Entity> entities = new ArrayList<Entity>();
-    public static final int WORLDWIDTH = 1920;
-    public static final int WORLDHEIGHT = 1080;
-    private static final int GRIDWIDTH = 20;
-    private static final int GRIDHEIGHT = 20;
+    private final ArrayList<Entity> entities = new ArrayList<Entity>();
+    private int sizeX, sizeY;
+    public final long seed;
     
-    public World()
+    public World(long seed, int xDim, int yDim)
     {
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 200));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 220));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 240));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 260));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 280));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 300));
-        entities.add(new Ship("baseShipClass", Game.getPlayerList().get(0), 100, 320));
+        this.seed = seed;
+        sizeX = xDim;
+        sizeY = yDim;
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 200, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 220, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 240, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 260, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 280, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 300, this));
+        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 320, this));
         
-        entities.add(new Structure("baseBuildingClass", Game.getPlayerList().get(0), 500, 500));
-
-        UserInterfaceHandler.uiStack.push(new Grid(new Rectangle(0,0,GRIDWIDTH,GRIDHEIGHT)));
+        entities.add(new Structure("entityStructureDefault", Game.getPlayerList().get(0), 500, 500, this));
     }
     
     /**
@@ -38,7 +36,7 @@ public class World
      * @param selectionArea
      * @return An array of all entities found
      */
-    public static Entity[] getEntityArrayWithin(Rectangle selectionArea)
+    public Entity[] getEntityArrayWithin(Rectangle selectionArea)
     {
         ArrayList<Entity> selection = new ArrayList<Entity>();
         synchronized(entities)
@@ -49,9 +47,9 @@ public class World
     }
     
     /**
-     * @return A new ArrayList populated from the list of all entities between the given x-coordinate range. Being a new copy, this will not reflect any changes made to the main entity list.
+     * @return A new ArrayList populated from the list of all entities. Being a new copy, this will not reflect any changes made to the main entity list.
      */
-    public static ArrayList<Entity> getEntityList()
+    public ArrayList<Entity> getEntityList()
     {
         synchronized(entities)
         {
@@ -64,7 +62,7 @@ public class World
      * A thread safe means to add a new entity
      * @param entity The entity to be added
      */
-    public static void addEntity(Entity entity)
+    public void addEntity(Entity entity)
     {
         synchronized(entities)
         {
@@ -72,5 +70,13 @@ public class World
         }
     }
 
+    public int getSizeY ()
+    {
+        return sizeY;
+    }
 
+    public int getSizeX ()
+    {
+        return sizeX;
+    }
 }

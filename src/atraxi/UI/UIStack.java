@@ -1,21 +1,18 @@
-package atraxi.game.UI;
+package atraxi.ui;
 
+import atraxi.util.CheckedRender;
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
 import atraxi.game.Proto;
+import atraxi.util.ResourceManager.ImageID;
 
-import javax.swing.ImageIcon;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.util.concurrent.Callable;
 
 public class UIStack implements UIElement
 {
     private UIStackNode head = null, tail = null;
-
-    public UIStack()
-    {
-
-    }
 
     @Override
     public UIElement mousePressed (MouseEvent paramMouseEvent)
@@ -49,46 +46,6 @@ public class UIStack implements UIElement
                 if(nodeReleased != null)
                 {
                     return nodeReleased;
-                }
-                currentNode = currentNode.getPreviousNode();
-            }
-            while(currentNode != null);
-        }
-        return null;
-    }
-
-    @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        if(tail!=null)
-        {
-            UIStackNode currentNode = tail;
-            do
-            {
-                UIElement nodeEntered = currentNode.mouseEntered(paramMouseEvent);
-                if(nodeEntered != null)
-                {
-                    return nodeEntered;
-                }
-                currentNode = currentNode.getPreviousNode();
-            }
-            while(currentNode != null);
-        }
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        if(tail!=null)
-        {
-            UIStackNode currentNode = tail;
-            do
-            {
-                UIElement nodeExited = currentNode.mouseExited(paramMouseEvent);
-                if(nodeExited != null)
-                {
-                    return nodeExited;
                 }
                 currentNode = currentNode.getPreviousNode();
             }
@@ -158,14 +115,14 @@ public class UIStack implements UIElement
     }
 
     @Override
-    public void paint(Graphics2D g2d)
+    public void paint(CheckedRender render)
     {
         if(head!=null)
         {
             UIStackNode currentNode = head;
             do
             {
-                currentNode.paint(g2d);
+                currentNode.paint(render);
                 currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);
@@ -209,51 +166,56 @@ public class UIStack implements UIElement
 
     public static UIStackNode getNewTestMenu()
     {
-        return new Menu(new ImageIcon("resources/baseMenuClass.png").getImage(),
+        return new Menu(ImageID.menuBackground,
                         (Proto.screen_Width / 2) - 30,
                         (Proto.screen_Height / 2) - 30,
                         new Button[]{
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ImageID.buttonDefault,
+                                        ImageID.buttonHover,
+                                        ImageID.buttonClick,
                                         60,
                                         80,
-                                        (Menu menu) -> {
-                                            System.out.println("button 1 clicked");
+                                        "empty",
+                                        menu -> {
+                                            Logger.log(LogLevel.debug, new String[]{"button 1 clicked"});
                                             return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ImageID.buttonDefault,
+                                        ImageID.buttonHover,
+                                        ImageID.buttonClick,
                                         60,
                                         150,
+                                        "Set resolution",
                                         menu -> {
-                                            System.out.println("button 2 clicked");
+                                            Logger.log(LogLevel.debug, new String[]{"button 2 clicked"});
+                                            Proto.PROTO.setDimensions(500, 500);
                                             return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ImageID.buttonDefault,
+                                        ImageID.buttonHover,
+                                        ImageID.buttonClick,
                                         60,
                                         220,
+                                        "Return to game",
                                         menu -> {
-                                            System.out.println("button 3 clicked\n\tmenu closed");
+                                            Logger.log(LogLevel.debug, new String[]{"button 3 clicked", "\tmenu closed"});
                                             UserInterfaceHandler.uiStack.remove(menu);
-                                            return true;
+                                            return null;
                                         }),
                                 new Button(
-                                        new ImageIcon("resources/baseButtonClass.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassHover.png").getImage(),
-                                        new ImageIcon("resources/baseButtonClassClick.png").getImage(),
+                                        ImageID.buttonDefault,
+                                        ImageID.buttonHover,
+                                        ImageID.buttonClick,
                                         60,
                                         290,
+                                        "Quit game",
                                         menu -> {
-                                            System.out.println("quit game");
+                                            Logger.log(LogLevel.debug, new String[]{"quit game"});
                                             System.exit(0);
-                                            return true;
+                                            return null;
                                         })});
     }
 }

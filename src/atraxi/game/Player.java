@@ -2,10 +2,11 @@ package atraxi.game;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Collections;
 
-import atraxi.game.World.World;
-import entities.Entity;
-import entities.actionQueue.Action;
+import atraxi.entities.Entity;
+import atraxi.entities.actionQueue.Action;
+import atraxi.util.Logger;
 
 public class Player
 {
@@ -15,11 +16,11 @@ public class Player
     /**
      * Attempt to select an entity within the given area (i.e. left click for human)
      */
-    public void selectEntity(Rectangle selectionArea)
+    public void selectEntity(Rectangle selectionArea, int worldIndex)
     {
         selection = new Selection();
-        selection.add(World.getEntityArrayWithin(selectionArea));
-        System.out.println("Selected:\n"+selection.toString());
+        selection.add(Game.getWorld(worldIndex).getEntityArrayWithin(selectionArea));
+        Logger.log(Logger.LogLevel.debug, new String[] {"Selected:\n"+selection.toString()});
     }
     
     public void replaceQueue(Action action)
@@ -136,10 +137,7 @@ public class Player
         
         protected void add(Entity[] additions)
         {
-            for(Entity e : additions)
-            {
-                this.selected.add(e);
-            }
+            Collections.addAll(this.selected, additions);
         }
         
         protected void remove(Entity[] removals)
@@ -155,10 +153,10 @@ public class Player
         @Override
         public String toString()
         {
-            String entityList = "Entity List\n{\n";
+            String entityList = "Entity List"+System.lineSeparator()+"{"+System.lineSeparator();
             for(Entity e : selected)
             {
-                entityList+=e+"\n";
+                entityList+=e+System.lineSeparator();
             }
             return entityList+"}";
         }

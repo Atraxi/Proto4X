@@ -5,3 +5,5 @@ bin/
 out/
 .idea/workspace.xml
 .idea/uiDesigner.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml

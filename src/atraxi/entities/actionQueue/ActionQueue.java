@@ -1,4 +1,4 @@
-package entities.actionQueue;
+package atraxi.entities.actionQueue;
 
 public class ActionQueue
 {

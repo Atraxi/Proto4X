@@ -1,9 +1,13 @@
-package entities;
+package atraxi.entities;
 
 import java.math.BigDecimal;
 
-import entities.actionQueue.Action;
-import entities.actionQueue.Action.ActionType;
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
+import atraxi.util.ResourceManager;
+import atraxi.game.world.World;
+import atraxi.entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Action.ActionType;
 import atraxi.game.Player;
 
 public class Ship extends Entity
@@ -11,9 +15,9 @@ public class Ship extends Entity
     private static final double MAXROTATIONSPEED = 0.05;
     private static final double MAXTRAVELSPEED   = 2;
     
-    public Ship(String type, Player owner, double x, double y)
+    public Ship(String type, Player owner, double x, double y, World world)
     {
-        super(type, x, y, owner);
+        super(type, x, y, owner, world);
     }
     /**
      * Rotate to the target orientation stored in actionInProgress' data field,
@@ -138,8 +142,8 @@ public class Ship extends Entity
             double x = (double) nextActionFromQueue.getData()[0];
             double y = (double) nextActionFromQueue.getData()[1];
             //offset the target location to be relative to the image center, instead of the corner
-            x -= getImage().getWidth(null) / 2;
-            y -= getImage().getHeight(null) / 2;
+            x -= getImageID().getImage().getWidth(null) / 2;
+            y -= getImageID().getImage().getHeight(null) / 2;
             
             double targetX = x;
             double targetY = y;
@@ -147,9 +151,9 @@ public class Ship extends Entity
             x -= this.x;
             y -= this.y;
             double orientationTarget = Math.atan2(y, x);
-            System.out.println("Right Click Command -> Ship:" + this + "\n\tx:" + x
+            Logger.log(LogLevel.debug, new String[] {"Right Click Command -> Ship:" + this, "\tx:" + x
                     + " y:" + y + " orientationTarget:" + orientationTarget
-                    + " orientationDelta:" + (orientationTarget - orientation));
+                    + " orientationDelta:" + (orientationTarget - orientation)});
             synchronized(actionInProgressLock)
             {
                 actionInProgress = new Action(nextActionFromQueue.type, new Object[]{targetX, targetY, orientationTarget}, true);

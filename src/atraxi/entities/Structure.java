@@ -1,18 +1,18 @@
-package entities;
+package atraxi.entities;
 
 import java.math.BigDecimal;
 
-import atraxi.game.World.World;
-import entities.actionQueue.Action;
-import entities.actionQueue.Action.ActionType;
+import atraxi.game.Game;
+import atraxi.game.world.World;
+import atraxi.entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Action.ActionType;
 import atraxi.game.Player;
 
 public class Structure extends Entity
 {
-    
-    public Structure(String type, Player owner, int x, int y)
+    public Structure(String type, Player owner, int x, int y, World world)
     {
-        super(type, x, y, owner);
+        super(type, x, y, owner, world);
     }
     
     @Override
@@ -35,12 +35,11 @@ public class Structure extends Entity
         if(actionInProgress != null && actionInProgress.isExecuting())
         {
             actionInProgress = new Action(actionInProgress.type, new Object[]{((long)actionInProgress.getData()[0]) + timeDiff.movePointRight(timeDiff.scale()+1).longValue()}, true);
-            System.out.println("Build progress:"+actionInProgress.getData()[0]);
             if((long)actionInProgress.getData()[0]>100000000000L)//How many nanoseconds construction should take
             {//TODO: rally point (move command)
-                Entity newEntity = new Ship("baseShipClass", owner, x, y);
+                Entity newEntity = new Ship("entityShipDefault", owner, x, y, world);
                 newEntity.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)x+300.0, (double)y+100}));
-                World.addEntity(newEntity);
+                world.addEntity(newEntity);
                 actionInProgress = null;
             }
         }

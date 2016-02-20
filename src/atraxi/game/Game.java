@@ -3,18 +3,20 @@ package atraxi.game;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
-import atraxi.game.UI.UserInterfaceHandler;
-import atraxi.game.World.World;
-import entities.Entity;
+import atraxi.game.world.*;
+import atraxi.ui.InfoPanel;
+import atraxi.ui.UserInterfaceHandler;
+import atraxi.entities.Entity;
+import atraxi.util.CheckedRender;
+import atraxi.util.Logger;
+import atraxi.util.ResourceManager.ImageID;
 
 public class Game extends JPanel implements Runnable
 {
@@ -23,29 +25,34 @@ public class Game extends JPanel implements Runnable
      * The desired time per frame (in nanoseconds) from which to adjust the speed of all events. 60fps or 1,000,000,000ns/60
      */
     public static final long OPTIMALFRAMETIME = 16666666;
-    private Thread animator;
+    private static final long MINIMUMFRAMETIME = 8333333;
     private static ArrayList<Player> players;
-    private World world;
-    private Image mapImage;
+    private static ArrayList<World> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
-    private Rectangle viewArea;
+    public static final long SEED = System.nanoTime();
+    private static CheckedRender checkedRender;
     
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
     {
         Game.players = players;
         Game.uiHandler = uiHandler;
-        world = new World();
-        mapImage = new ImageIcon("resources/background.jpg").getImage();
-        setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Width));
+        worlds = new ArrayList<World>();
+        worlds.add(new World(SEED, 10000, 10000));
+        setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
-        viewArea = new Rectangle(0,0,Proto.screen_Width, Proto.screen_Width);
+        checkedRender = new CheckedRender();
     }
     
     public static ArrayList<Player> getPlayerList()
     {
         return players;
+    }
+
+    public static World getWorld(int index)
+    {
+        return worlds.get(index);
     }
     
     @Override
@@ -53,30 +60,55 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.drawImage(mapImage, 0, 0, null);
-        for( Entity entity : World.getEntityList())
-        {
-            g2d.drawImage(entity.getImage(), entity.getTransform(), null);
+        checkedRender.setG2d(g2d);
+        if(Proto.debug)
+        {//zoom out, show a box where the edge of the screen would normally be
+            g2d.scale(0.75, 0.75);
+            g2d.translate(250, 100);
+            g2d.drawRect(0, 0, Proto.screen_Width, Proto.screen_Height);
         }
-        uiHandler.paint(g2d);
+        //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
+        // so the camera offset is managed inside it's paint method
+        uiHandler.paintBackground(g2d);
+        //Offset to camera position to draw any world objects
+        g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
+        for(World world : worlds)
+        {
+            for(Entity entity : world.getEntityList())
+            {
+                entity.paint(g2d);
+            }
+        }
+        uiHandler.paintWorld(g2d);
+        //Remove camera offset to draw UI
+        g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
+        uiHandler.paintScreen(checkedRender);
+
+        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
+                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
+
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();
     }
     
     private void gameLoop(BigDecimal timeAdjustment)
     {
-        for(Entity entity : World.getEntityList())
+        for(World world : worlds)
         {
-            entity.doWork(timeAdjustment, paused);
+            for(Entity entity : world.getEntityList())
+            {
+                entity.doWork(timeAdjustment, paused);
+            }
         }
+        uiHandler.doWork(timeAdjustment, paused);
     }
     
     @Override
     public void addNotify()
     {
         super.addNotify();
-        
-        animator = new Thread(this);
+
+        Thread animator = new Thread(this);
         animator.start();
     }
     
@@ -86,31 +118,43 @@ public class Game extends JPanel implements Runnable
         long beforeTime, actualFrameTime;
         
         beforeTime = System.nanoTime();
-        
+
         while(true)
         {
             long currentTime = System.nanoTime();
             
             actualFrameTime = currentTime-beforeTime;
             
-            if(actualFrameTime>OPTIMALFRAMETIME)
+            if(actualFrameTime > OPTIMALFRAMETIME)
             {
-                System.out.println("Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames");
+                Logger.log(Logger.LogLevel.warning, new String[] {"Game running behind, skipping "+((int)((actualFrameTime)/OPTIMALFRAMETIME))+" frames"});
             }
-            gameLoop(BigDecimal.valueOf(actualFrameTime).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),8,BigDecimal.ROUND_DOWN));
-            repaint();
-            
-            beforeTime = currentTime;
-            
-//            try
-//            {
-//                //Simulate a slow computer (this is actually really helpful)
-//                Thread.sleep(5);
-//            }
-//            catch (InterruptedException e)
-//            {
-//                e.printStackTrace();
-//            }
+            if(actualFrameTime < MINIMUMFRAMETIME)
+            {
+                gameLoop(BigDecimal.valueOf(MINIMUMFRAMETIME).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),8,BigDecimal.ROUND_DOWN));
+                repaint();
+
+                beforeTime = currentTime;
+
+                try
+                {
+                    //Limit framerate to 120fps
+                    Thread.sleep((MINIMUMFRAMETIME-actualFrameTime)/1000000);
+                }
+                catch (InterruptedException e)
+                {//TODO: handle this
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                gameLoop(BigDecimal.valueOf(actualFrameTime).divide(BigDecimal.valueOf(OPTIMALFRAMETIME),
+                                                                    8,
+                                                                    BigDecimal.ROUND_DOWN));
+                repaint();
+
+                beforeTime = currentTime;
+            }
         }
     }
 }

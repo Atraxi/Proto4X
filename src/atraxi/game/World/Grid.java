@@ -1,8 +1,10 @@
-package atraxi.game.World;
+package atraxi.game.world;
 
-import atraxi.game.UI.UIElement;
-import atraxi.game.UI.UIStack;
-import atraxi.game.UI.UIStackNode;
+import atraxi.ui.UIElement;
+import atraxi.ui.UIStack;
+import atraxi.ui.UIStackNode;
+import atraxi.util.*;
+import atraxi.util.ResourceManager.*;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -17,14 +19,14 @@ public class Grid implements UIElement, UIStackNode
     private UIStackNode nextNode = null, previousNode = null;
     private GridTile[][] tiles;
 
-    public Grid(Rectangle bounds)
+    public Grid(Rectangle bounds, World world, ImageID tileDefault, ImageID tileHover, ImageID tileClick)
     {
-        tiles = new GridTile[World.WORLDWIDTH/bounds.width][World.WORLDHEIGHT/bounds.height];
+        tiles = new GridTile[world.getSizeX()/bounds.width][world.getSizeY()/bounds.height];
         for(int x=0;x<tiles.length;x++)
         {
             for(int y=0;y<tiles[x].length;y++)
             {
-                tiles[x][y] = new GridTile();
+                tiles[x][y] = new GridTile(tileDefault, tileHover, tileClick);
             }
         }
     }
@@ -66,18 +68,6 @@ public class Grid implements UIElement, UIStackNode
     }
 
     @Override
-    public UIElement mouseEntered (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
-    public UIElement mouseExited (MouseEvent paramMouseEvent)
-    {
-        return null;
-    }
-
-    @Override
     public UIElement mouseDragged (MouseEvent paramMouseEvent)
     {
         return null;
@@ -96,14 +86,27 @@ public class Grid implements UIElement, UIStackNode
     }
 
     @Override
-    public void paint (Graphics2D graphics)
+    public void paint (CheckedRender render)
     {
-
+        for(GridTile[] tileRow : tiles)
+        {
+            for (GridTile tile : tileRow)
+            {
+                tile.paint(render);
+            }
+        }
     }
 
     public class GridTile implements UIElement
     {
+        ImageID imageDefault, imageHover, imageClick;
 
+        public GridTile(ImageID imageDefault, ImageID imageHover, ImageID imageClick)
+        {
+            this.imageDefault = imageDefault;
+            this.imageHover = imageHover;
+            this.imageClick = imageClick;
+        }
 
         @Override
         public UIElement mousePressed (MouseEvent paramMouseEvent)
@@ -113,18 +116,6 @@ public class Grid implements UIElement, UIStackNode
 
         @Override
         public UIElement mouseReleased (MouseEvent paramMouseEvent)
-        {
-            return null;
-        }
-
-        @Override
-        public UIElement mouseEntered (MouseEvent paramMouseEvent)
-        {
-            return null;
-        }
-
-        @Override
-        public UIElement mouseExited (MouseEvent paramMouseEvent)
         {
             return null;
         }
@@ -148,7 +139,7 @@ public class Grid implements UIElement, UIStackNode
         }
 
         @Override
-        public void paint (Graphics2D graphics)
+        public void paint (CheckedRender render)
         {
 
         }
