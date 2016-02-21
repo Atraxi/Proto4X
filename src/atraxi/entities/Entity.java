@@ -1,22 +1,22 @@
 package atraxi.entities;
 
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.geom.AffineTransform;
-import java.math.BigDecimal;
-
-import atraxi.util.ResourceManager.ImageID;
-import atraxi.game.world.World;
 import atraxi.entities.actionQueue.Action;
 import atraxi.entities.actionQueue.Action.ActionType;
 import atraxi.entities.actionQueue.ActionQueue;
 import atraxi.game.Player;
+import atraxi.game.world.World;
+import atraxi.util.CheckedRender;
+import atraxi.util.ResourceManager.ImageID;
+
+import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
+import java.math.BigDecimal;
 
 public abstract class Entity
 {
     private ImageID imageID;
     private String type;
-    protected World world;
+    protected World.GridTile worldTile;
     protected double x, y, velocity, orientation;
     //TODO: combine these into a Path2D instance
     private int boundsXOffset, boundsXUpper, boundsYOffset, boundsYUpper;
@@ -26,11 +26,11 @@ public abstract class Entity
     //TODO: Temporary solution for locking on a potentially null object, as of writing there is no reason not to use 'this' although that could change later
     protected final Object actionInProgressLock = new Object();
     
-    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner, World world)
+    public Entity(String type, double x, double y, int boundsXOffset, int boundsYOffset, int boundsXUpper, int boundsYUpper, Player owner, World.GridTile worldTile)
     {
         this.owner = owner;
         this.type = type;
-        this.world = world;
+        this.worldTile = worldTile;
         imageID = ImageID.valueOf(this.type);
         this.x=x;
         this.y=y;
@@ -50,15 +50,14 @@ public abstract class Entity
         }
     }
     
-    public Entity(String type, double x, double y, Player owner, World world)
+    public Entity(String type, double x, double y, Player owner, World.GridTile worldTile)
     {
-        this(type, x, y, 0, 0, 0, 0, owner, world);
+        this(type, x, y, 0, 0, 0, 0, owner, worldTile);
     }
     
     public abstract boolean canAcceptAction(ActionType action);
     protected abstract void startActionFromQueue(Action action);
-    
-    
+
     public void doWork(BigDecimal timeAdjustment, boolean paused)
     {
         if(actionInProgress == null && !actionQueue.isEmpty())
@@ -124,8 +123,8 @@ public abstract class Entity
         }
     }
 
-    public void paint(Graphics2D g2d)
+    public void paint(CheckedRender render)
     {
-        g2d.drawImage(imageID.getImage(), getTransform(), null);
+        render.drawImage(imageID, getTransform(), null);
     }
 }

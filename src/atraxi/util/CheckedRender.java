@@ -1,12 +1,19 @@
 package atraxi.util;
 
+import atraxi.game.Proto;
 import atraxi.ui.UIElement;
 import atraxi.util.Logger.LogLevel;
-import atraxi.game.Proto;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
-import java.util.*;
+import java.awt.image.ImageObserver;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Created by Atraxi on 10/10/2015.
@@ -167,5 +174,10 @@ public class CheckedRender
         uiElement.paint(this);
 
         g2d.setClip(originalClip);
+    }
+
+    public void drawImage(ResourceManager.ImageID imageID, AffineTransform transform, ImageObserver observer)
+    {
+        g2d.drawImage(imageID.getImage(), transform, observer);
     }
 }

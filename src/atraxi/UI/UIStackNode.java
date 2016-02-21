@@ -5,11 +5,11 @@ package atraxi.ui;
  */
 public interface UIStackNode extends UIElement
 {
-    public UIStackNode getNextNode ();
+    UIStackNode getNextNode();
 
-    public UIStackNode getPreviousNode ();
+    UIStackNode getPreviousNode();
 
-    public void setNextNode(UIStackNode element);
+    void setNextNode(UIStackNode element);
 
-    public void setPreviousNode(UIStackNode element);
+    void setPreviousNode(UIStackNode element);
 }

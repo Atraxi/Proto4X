@@ -1,5 +1,13 @@
 package atraxi.game;
 
+import atraxi.game.world.World;
+import atraxi.ui.InfoPanel;
+import atraxi.ui.UserInterfaceHandler;
+import atraxi.util.CheckedRender;
+import atraxi.util.Logger;
+import atraxi.util.ResourceManager.ImageID;
+
+import javax.swing.JPanel;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -7,16 +15,6 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-
-import javax.swing.JPanel;
-
-import atraxi.game.world.*;
-import atraxi.ui.InfoPanel;
-import atraxi.ui.UserInterfaceHandler;
-import atraxi.entities.Entity;
-import atraxi.util.CheckedRender;
-import atraxi.util.Logger;
-import atraxi.util.ResourceManager.ImageID;
 
 public class Game extends JPanel implements Runnable
 {
@@ -38,7 +36,7 @@ public class Game extends JPanel implements Runnable
         Game.players = players;
         Game.uiHandler = uiHandler;
         worlds = new ArrayList<World>();
-        worlds.add(new World(SEED, 10000, 10000));
+        worlds.add(new World(SEED, new Rectangle(50, 50), 100, 100, ImageID.gridDefault, ImageID.gridHover, ImageID.gridClick));
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
@@ -72,13 +70,7 @@ public class Game extends JPanel implements Runnable
         uiHandler.paintBackground(g2d);
         //Offset to camera position to draw any world objects
         g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
-        for(World world : worlds)
-        {
-            for(Entity entity : world.getEntityList())
-            {
-                entity.paint(g2d);
-            }
-        }
+
         uiHandler.paintWorld(g2d);
         //Remove camera offset to draw UI
         g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
@@ -93,13 +85,13 @@ public class Game extends JPanel implements Runnable
     
     private void gameLoop(BigDecimal timeAdjustment)
     {
-        for(World world : worlds)
-        {
-            for(Entity entity : world.getEntityList())
-            {
-                entity.doWork(timeAdjustment, paused);
-            }
-        }
+//        for(World world : worlds)
+//        {
+//            for(Entity entity : world.getEntityList())
+//            {
+//                entity.doWork(timeAdjustment, paused);
+//            }
+//        }
         uiHandler.doWork(timeAdjustment, paused);
     }
     

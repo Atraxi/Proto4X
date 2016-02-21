@@ -1,73 +1,94 @@
 package atraxi.game.world;
 
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
 import atraxi.entities.Entity;
-import atraxi.entities.Ship;
-import atraxi.entities.Structure;
-import atraxi.game.Game;
+import atraxi.entities.actionQueue.Action;
+import atraxi.ui.UIElement;
+import atraxi.ui.UIStackNode;
+import atraxi.ui.UserInterfaceHandler;
+import atraxi.util.CheckedRender;
+import atraxi.util.ResourceManager.ImageID;
 
-public class World
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.util.LinkedList;
+
+public class World implements UIElement, UIStackNode
 {
-    private final ArrayList<Entity> entities = new ArrayList<Entity>();
+    private UIStackNode nextNode = null, previousNode = null;
+    private GridTile[][] tiles;
+    private Rectangle tileBounds;
     private int sizeX, sizeY;
     public final long seed;
-    
-    public World(long seed, int xDim, int yDim)
+
+    /**
+     * Instantiates a new game world
+     * @param tileBounds The dimensions of each tile
+     * @param sizeX The number of tiles wide
+     * @param sizeY The number of tiles tall
+     * @param tileDefault The default image for each tile
+     * @param tileHover The image used to indicate mouseover of a tile
+     * @param tileClick The image used when the player clicks a tile
+     */
+    public World(long seed, Rectangle tileBounds, int sizeX, int sizeY, ImageID tileDefault, ImageID tileHover, ImageID tileClick)
     {
         this.seed = seed;
-        sizeX = xDim;
-        sizeY = yDim;
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 200, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 220, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 240, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 260, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 280, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 300, this));
-        entities.add(new Ship("entityShipDefault", Game.getPlayerList().get(0), 100, 320, this));
-        
-        entities.add(new Structure("entityStructureDefault", Game.getPlayerList().get(0), 500, 500, this));
-    }
-    
-    /**
-     * Finds all entities within the given area by performing a bounds check on every entity
-     * @param selectionArea
-     * @return An array of all entities found
-     */
-    public Entity[] getEntityArrayWithin(Rectangle selectionArea)
-    {
-        ArrayList<Entity> selection = new ArrayList<Entity>();
-        synchronized(entities)
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+        this.tileBounds = tileBounds;
+        tiles = new GridTile[sizeX][sizeY];
+        for (int x = 0; x < tiles.length; x++)
         {
-            selection.addAll(entities.stream().filter(e -> e.boundsTest(selectionArea)).collect(Collectors.toList()));
-        }
-        return selection.toArray(new Entity[selection.size()]);
-    }
-    
-    /**
-     * @return A new ArrayList populated from the list of all entities. Being a new copy, this will not reflect any changes made to the main entity list.
-     */
-    public ArrayList<Entity> getEntityList()
-    {
-        synchronized(entities)
-        {
-            //Protection against concurrent modification, all modifications must be performed via synchronised methods within this class
-            return new ArrayList<Entity>(entities);
+            for (int y = 0; y < tiles[x].length; y++)
+            {
+                tiles[x][y] = new GridTile(x, y, tileDefault, tileHover, tileClick);
+            }
         }
     }
-    
-    /**
-     * A thread safe means to add a new entity
-     * @param entity The entity to be added
-     */
-    public void addEntity(Entity entity)
+
+    @Override
+    public UIStackNode getNextNode()
     {
-        synchronized(entities)
-        {
-            entities.add(entity);
-        }
+        return nextNode;
+    }
+
+    @Override
+    public UIStackNode getPreviousNode()
+    {
+        return previousNode;
+    }
+
+    @Override
+    public void setPreviousNode(UIStackNode node)
+    {
+        previousNode = node;
+    }
+
+    @Override
+    public void setNextNode(UIStackNode node)
+    {
+        nextNode = node;
+    }
+
+    @Override
+    public UIElement mousePressed(MouseEvent paramMouseEvent)
+    {
+        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
+                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
+                .mousePressed(paramMouseEvent);
+    }
+
+    private enum TileState
+    {
+        DEFAULT, HOVER, PRESSED
+    }
+
+    @Override
+    public UIElement mouseReleased(MouseEvent paramMouseEvent)
+    {
+        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
+                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
+                .mousePressed(paramMouseEvent);
     }
 
     public int getSizeY ()
@@ -78,5 +99,138 @@ public class World
     public int getSizeX ()
     {
         return sizeX;
+    }
+
+    public int getGridSize()
+    {
+        return tileBounds.width;
+    }
+
+    public class GridTile implements UIElement
+    {
+        private ImageID imageDefault, imageHover, imageClick;
+        private TileState state;
+        private int x, y;
+        private LinkedList<Entity> entities;
+
+        public GridTile(int x, int y, ImageID imageDefault, ImageID imageHover, ImageID imageClick)
+        {
+            this.x = x;
+            this.y = y;
+            this.imageDefault = imageDefault;
+            this.imageHover = imageHover;
+            this.imageClick = imageClick;
+            state = TileState.DEFAULT;
+            entities = new LinkedList<>();
+        }
+
+        @Override
+        public UIElement mousePressed(MouseEvent paramMouseEvent)
+        {
+            return null;
+        }
+
+        @Override
+        public UIElement mouseReleased(MouseEvent paramMouseEvent)
+        {
+            return null;
+        }
+
+        @Override
+        public UIElement mouseDragged(MouseEvent paramMouseEvent)
+        {
+            return null;
+        }
+
+        @Override
+        public UIElement mouseMoved(MouseEvent paramMouseEvent)
+        {
+            return null;
+        }
+
+        @Override
+        public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
+        {
+            return null;
+        }
+
+        @Override
+        public void paint(CheckedRender render)
+        {
+            switch (state)
+            {
+                case DEFAULT:
+                    render.drawImage(imageDefault, x, y, null);
+                    break;
+                case HOVER:
+                    render.drawImage(imageHover, x, y, null);
+                    break;
+                case PRESSED:
+                    render.drawImage(imageClick, x, y, null);
+                    break;
+            }
+            for (Entity entity : entities)
+            {
+                entity.paint(render);
+            }
+        }
+
+        public void addEntity(Entity newEntity)
+        {
+            entities.add(newEntity);
+        }
+
+        public void queueAction(Action action)
+        {
+            for(Entity entity : entities)
+            {
+                entity.queueAction(action);
+            }
+        }
+
+        public void replaceQueue(Action action)
+        {
+            for(Entity entity : entities)
+            {
+                entity.queueAction(action);
+            }
+        }
+    }
+
+    @Override
+    public UIElement mouseDragged(MouseEvent paramMouseEvent)
+    {
+        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
+                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
+                .mousePressed(paramMouseEvent);
+    }
+
+    @Override
+    public UIElement mouseMoved(MouseEvent paramMouseEvent)
+    {
+        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
+                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
+                .mousePressed(paramMouseEvent);
+    }
+
+    @Override
+    public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
+    {
+        return tiles[(int) ((paramMouseWheelEvent.getX() + UserInterfaceHandler.getScreenLocationX()) /
+                            tileBounds.getWidth())]
+                [(int) ((paramMouseWheelEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
+                .mousePressed(paramMouseWheelEvent);
+    }
+
+    @Override
+    public void paint(CheckedRender render)
+    {
+        for (GridTile[] tileRow : tiles)
+        {
+            for (GridTile tile : tileRow)
+            {
+                tile.paint(render);
+            }
+        }
     }
 }

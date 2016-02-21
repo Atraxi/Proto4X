@@ -120,7 +120,7 @@ public class ResourceManager
         buttonDefault,buttonHover,buttonClick,
         menuBackground,
         entityShipDefault,
-        infoPanelDefault, entityStructureDefault;
+        infoPanelDefault, entityStructureDefault, gridClick, gridHover, gridDefault;
 
         /**
          * @return The {@link BufferedImage} represented by this enum.

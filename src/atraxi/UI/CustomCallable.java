@@ -7,5 +7,5 @@ package atraxi.ui;
 @FunctionalInterface
 public interface CustomCallable<T1, T2>
 {
-    public T2 call(T1 arg);
+    T2 call(T1 arg);
 }

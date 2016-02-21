@@ -1,18 +1,17 @@
 package atraxi.ui;
 
+import atraxi.entities.actionQueue.Action;
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
+import atraxi.game.world.World;
 import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.Logger.LogLevel;
 import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
-import atraxi.entities.actionQueue.Action;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -25,17 +24,13 @@ import java.util.Random;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
+    private World.GridTile selected;
     private Player user;
     private static final ResourceManager.ImageID[] mapImages = {ImageID.background1A,ImageID.background1B,ImageID.background1C,ImageID.background1D,
                                                                 ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
                                                                 ImageID.background3A,ImageID.background3B,ImageID.background3C,ImageID.background3D,
                                                                 ImageID.background4A,ImageID.background4B,ImageID.background4C,ImageID.background4D};
     private int currentWorld = 0;
-
-    //variables related to selecting a group of units
-    private Rectangle selectionArea = null;
-    private int dragSelectStartX, dragSelectEndX, dragSelectStartY, dragSelectEndY;
-    private boolean dragSelect;
 
     //variables related to edge scrolling
     private static double screenLocationX = 0, screenLocationY = 0;
@@ -199,13 +194,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      */
     public void paintWorld(Graphics2D g2d)
     {
-        if(selectionArea!=null)
-        {
-            Color color = g2d.getColor();
-            g2d.setColor(Color.WHITE);
-            g2d.drawRect(selectionArea.x, selectionArea.y, selectionArea.width, selectionArea.height);
-            g2d.setColor(color);
-        }
     }
 
     /**
@@ -220,19 +208,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void doWork (BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX < 100 && screenLocationX<Game.getWorld(currentWorld).getSizeX()/2)
+        if(mouseX < 100 && screenLocationX<Game.getWorld(currentWorld).getSizeX()*Game.getWorld(currentWorld).getGridSize()/2)
         {
             screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
         }
-        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-Game.getWorld(currentWorld).getSizeX()/2)
+        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-Game.getWorld(currentWorld).getSizeX()*Game.getWorld(currentWorld).getGridSize()/2)
         {
             screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
         }
-        if(mouseY < 100 && screenLocationY<Game.getWorld(currentWorld).getSizeY()/2)
+        if(mouseY < 100 && screenLocationY<Game.getWorld(currentWorld).getSizeY()*Game.getWorld(currentWorld).getGridSize()/2)
         {
             screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
         }
-        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-Game.getWorld(currentWorld).getSizeY()/2)
+        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-Game.getWorld(currentWorld).getSizeY()*Game.getWorld(currentWorld).getGridSize()/2)
         {
             screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
         }
@@ -247,7 +235,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         switch (paramKeyEvent.getKeyCode())
         {
             case KeyEvent.VK_B:
-                user.queueAction(new Action(Action.ActionType.BUILD, null));
+                selected.queueAction(new Action(Action.ActionType.BUILD, null));
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
@@ -276,65 +264,53 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiStack.mousePressed(paramMouseEvent) != null;
-        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
-        if(!uiEvent)
+        boolean isUIEventHandled;
         {
-            if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
-            {
-                dragSelectStartX = paramMouseEvent.getX();
-                dragSelectStartY = paramMouseEvent.getY();
-                dragSelect = true;
-                Logger.log(LogLevel.debug, new String[] {"DragSelectStarted, x:" + dragSelectStartX + " y:" + dragSelectStartY});
-            }
+            UIElement element = uiStack.mousePressed(paramMouseEvent);
+            //GridTile is the default unless the mouse event is over a non-selectable part of the world
+            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
     }
     
     @Override
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
+        //See doWork() for usage, store coords for camera pan
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
-        boolean uiEvent = uiStack.mouseDragged(paramMouseEvent) != null;
-        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
 
-        if(paramMouseEvent.getModifiers()==MouseEvent.BUTTON1_MASK)
+        boolean isUIEventHandled;
         {
-            if(dragSelect)
-            {
-                dragSelectEndX=paramMouseEvent.getX();
-                dragSelectEndY=paramMouseEvent.getY();
-                /* Rectangle must be created as if drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks otherwise (bounding box invalid or intersecting area calculation failing most likely)
-                 */
-                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
-                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea,currentWorld);
-                this.selectionArea = selectionArea;
-                Logger.log(LogLevel.debug, new String[] {"Drag to x:" + dragSelectEndX +
-                                          " y:" + dragSelectEndY,
-                                          "\tStarted, x:" + dragSelectStartX +
-                                          " y:" + dragSelectStartY});
-            }
+            UIElement element = uiStack.mouseDragged(paramMouseEvent);
+            //GridTile is the default unless the mouse event is over a non-selectable part of the world
+            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
     }
 
     @Override
     public void mouseMoved(MouseEvent paramMouseEvent)
     {
+        //See doWork() for usage, store coords for camera pan
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
-        boolean uiEvent = uiStack.mouseMoved(paramMouseEvent) != null;
-        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+
+        boolean isUIEventHandled;
+        {
+            UIElement element = uiStack.mouseMoved(paramMouseEvent);
+            //GridTile is the default unless the mouse event is over a non-selectable part of the world
+            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
+        }
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        boolean uiEvent = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
-        //paramMouseEvent.translatePoint(-(int)screenLocationX,-(int)screenLocationY);
+        boolean isUIEventHandled;
+        {
+            UIElement element = uiStack.mouseWheelMoved(paramMouseWheelEvent);
+            //GridTile is the default unless the mouse event is over a non-selectable part of the world
+            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
+        }
     }
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
@@ -343,43 +319,35 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
-        boolean uiEvent = uiStack.mouseReleased(paramMouseEvent) != null;
-        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+        boolean isUIEventHandled;
 
-        if(paramMouseEvent.getButton()==MouseEvent.BUTTON1)
+        UIElement element = uiStack.mouseReleased(paramMouseEvent);
+        //GridTile is the default unless the mouse event is over a non-selectable part of the world
+        isUIEventHandled = !(element instanceof World.GridTile) && element != null;
+
+        //Convert the mouse coordinates from screen to world coordinates
+        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+        //if right click
+        if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
         {
-            if(dragSelect)
+            if(!isUIEventHandled)
             {
-                dragSelectEndX=paramMouseEvent.getX();
-                dragSelectEndY=paramMouseEvent.getY();
-                dragSelect=false;
-                /* Rectangle must be created as if drawn from top left corner with positive width&height.
-                 * Not sure what step actually breaks otherwise (bounding box invalid or intersecting area calculation failing most likely)
-                 */
-                Rectangle selectionArea = new Rectangle(dragSelectStartX<dragSelectEndX?dragSelectStartX:dragSelectEndX,
-                        dragSelectStartY<dragSelectEndY?dragSelectStartY:dragSelectEndY,
-                        Math.max(Math.abs(dragSelectEndX-dragSelectStartX), 1),//at least 1, if the mouse isn't moved this guarantees at least a 1x1 area is selected
-                        Math.max(Math.abs(dragSelectEndY-dragSelectStartY), 1));
-                user.selectEntity(selectionArea,currentWorld);
-                this.selectionArea = null;
-                Logger.log(LogLevel.debug, new String[] {"Drag Ended, x:" + dragSelectEndX +
-                                          " y:" + dragSelectEndY,
-                                          "\tStarted, x:" + dragSelectStartX +
-                                          " y:" + dragSelectStartY});
+                selected = (World.GridTile) element;
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
         {
-            if(!uiEvent)
+            //if this event wasn't intercepted by overlaid UI elements
+            if(!isUIEventHandled)
             {
                 //TODO: refactor? to allow drag for target orientation
                 if(paramMouseEvent.isShiftDown())
                 {
-                    user.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selected.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
                 }
                 else
                 {
-                    user.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selected.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
                 }
             }
         }

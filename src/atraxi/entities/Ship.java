@@ -1,23 +1,22 @@
 package atraxi.entities;
 
-import java.math.BigDecimal;
-
-import atraxi.util.Logger;
-import atraxi.util.Logger.LogLevel;
-import atraxi.util.ResourceManager;
-import atraxi.game.world.World;
 import atraxi.entities.actionQueue.Action;
 import atraxi.entities.actionQueue.Action.ActionType;
 import atraxi.game.Player;
+import atraxi.game.world.World;
+import atraxi.util.Logger;
+import atraxi.util.Logger.LogLevel;
+
+import java.math.BigDecimal;
 
 public class Ship extends Entity
 {
     private static final double MAXROTATIONSPEED = 0.05;
     private static final double MAXTRAVELSPEED   = 2;
     
-    public Ship(String type, Player owner, double x, double y, World world)
+    public Ship(String type, Player owner, double x, double y, World.GridTile worldTile)
     {
-        super(type, x, y, owner, world);
+        super(type, x, y, owner, worldTile);
     }
     /**
      * Rotate to the target orientation stored in actionInProgress' data field,

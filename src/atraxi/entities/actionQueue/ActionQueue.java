@@ -35,14 +35,7 @@ public class ActionQueue
     
     public boolean isEmpty()
     {
-        if(head==null)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return head == null;
     }
     
     /**

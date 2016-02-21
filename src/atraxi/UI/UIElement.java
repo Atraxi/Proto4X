@@ -11,31 +11,31 @@ public interface UIElement
      * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseListener#mousePressed(MouseEvent)
      */
-    public UIElement mousePressed (MouseEvent paramMouseEvent);
+    UIElement mousePressed(MouseEvent paramMouseEvent);
 
     /**
      * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseListener#mouseReleased(MouseEvent)
      */
-    public UIElement mouseReleased (MouseEvent paramMouseEvent);
+    UIElement mouseReleased(MouseEvent paramMouseEvent);
 
     /**
      * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseMotionListener#mouseDragged(MouseEvent)
      */
-    public UIElement mouseDragged (MouseEvent paramMouseEvent);
+    UIElement mouseDragged(MouseEvent paramMouseEvent);
 
     /**
      * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseMotionListener#mouseMoved(MouseEvent)
      */
-    public UIElement mouseMoved (MouseEvent paramMouseEvent);
+    UIElement mouseMoved(MouseEvent paramMouseEvent);
 
     /**
      * @return if the event has been handled by this UIElement, then this, else null
      * @see java.awt.event.MouseWheelListener#mouseWheelMoved(MouseWheelEvent)
      */
-    public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
+    UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
 
-    public void paint(CheckedRender checkedRender);
+    void paint(CheckedRender checkedRender);
 }
