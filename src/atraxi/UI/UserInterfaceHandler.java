@@ -33,7 +33,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     private static int currentWorldIndex;
 
     //variables related to edge scrolling
-    private static double screenLocationX = 0, screenLocationY = 0;
+    private static int screenLocationX = 0, screenLocationY = 0;
     //initial value is mostly irrelevant, and will be set properly the instant the mouse is moved
     private static int mouseX = 200, mouseY = 200;
 
@@ -41,17 +41,17 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
-        this.user = user;
+        UserInterfaceHandler.user = user;
         uiStack = new UIStack();
         currentWorldIndex = defaultWorldIndex;
     }
 
-    public static double getScreenLocationX ()
+    public static int getScreenLocationX ()
     {
         return screenLocationX;
     }
 
-    public static double getScreenLocationY ()
+    public static int getScreenLocationY ()
     {
         return screenLocationY;
     }

@@ -21,6 +21,11 @@ public class World implements UIElement, UIStackNode
     private Rectangle tileBounds;
     private int sizeX, sizeY;
 
+    //Tiles cannot be relied upon to track this internally, as it is not feasible to have every tile update itself for every UI event (which includes mouse movement)
+    //We can mathematically determine newly focused tiles, and thus it can reliably set it's own state, but not implicitly know when to revert to default
+    //So we track tiles with special state and prompt them to check the conditions for reverting to default when relevant
+    private UIElement tileSelected, tileHover;
+
     /**
      * Instantiates a new game world
      *
@@ -45,6 +50,7 @@ public class World implements UIElement, UIStackNode
                 tiles[x][y] = new GridTile(x, y, tileBounds, tileDefault, tileHover, tileClick, tileSelected);
             }
         }
+
     }
 
     @Override
@@ -107,7 +113,7 @@ public class World implements UIElement, UIStackNode
         DEFAULT, HOVER, PRESSED, SELECTED
     }
 
-    public class GridTile implements UIElement
+    public static class GridTile implements UIElement
     {
         private ImageID imageDefault, imageHover, imageClick, imageSelected;
         private TileState state;
@@ -170,9 +176,15 @@ public class World implements UIElement, UIStackNode
         @Override
         public UIElement mouseMoved(MouseEvent paramMouseEvent)
         {
-            if(dim.contains(paramMouseEvent.getPoint()) && (state == TileState.DEFAULT))
+            //TODO: refactor so the dim position is constant relative to world, and set at tile initialization; account for scroll offset when matching against mouse coords
+            dim.setLocation( (x * dim.width) + UserInterfaceHandler.getScreenLocationX(),  (y * dim.height) + UserInterfaceHandler.getScreenLocationY());
+
+            if(dim.contains(paramMouseEvent.getPoint()))
             {
-                state = TileState.HOVER;
+                if(state == TileState.DEFAULT)
+                {
+                    state = TileState.HOVER;
+                }
                 return this;
             }
             else if(!dim.contains(paramMouseEvent.getPoint()) && state == TileState.HOVER)
@@ -214,7 +226,6 @@ public class World implements UIElement, UIStackNode
 
     }
 
-
     @Override
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
@@ -226,13 +237,17 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
-        int x = (int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
-            return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
-                    [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
-                    .mousePressed(paramMouseEvent);
+            if(tileHover != null )
+            {
+                tileHover.mouseMoved(paramMouseEvent);
+            }
+            tileHover = tiles[x][y].mouseMoved(paramMouseEvent);
+
+            return tileHover;
         }
         else
         {
@@ -243,8 +258,7 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        return tiles[(int) ((paramMouseWheelEvent.getX() + UserInterfaceHandler.getScreenLocationX()) /
-                            tileBounds.getWidth())]
+        return tiles[(int) ((paramMouseWheelEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
                 [(int) ((paramMouseWheelEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
                 .mousePressed(paramMouseWheelEvent);
     }
