@@ -1,7 +1,6 @@
 package atraxi.util;
 
 import javax.imageio.ImageIO;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
@@ -98,6 +97,18 @@ public class ResourceManager
                     case entityStructureDefault:
                         images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/baseBuildingClass.png"));
                         break;
+                    case gridDefault:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/gridDefault.png"));
+                        break;
+                    case gridHover:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/gridHover.png"));
+                        break;
+                    case gridClick:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/gridClick.png"));
+                        break;
+                    case gridSelected:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/gridSelected.png"));
+                        break;
                 }
             }
             catch(IOException e)
@@ -120,7 +131,7 @@ public class ResourceManager
         buttonDefault,buttonHover,buttonClick,
         menuBackground,
         entityShipDefault,
-        infoPanelDefault, entityStructureDefault, gridClick, gridHover, gridDefault;
+        infoPanelDefault, entityStructureDefault, gridClick, gridHover, gridDefault, gridSelected;
 
         /**
          * @return The {@link BufferedImage} represented by this enum.

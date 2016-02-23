@@ -1,17 +1,14 @@
 package atraxi.game;
 
 import atraxi.game.world.World;
-import atraxi.ui.InfoPanel;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
-import atraxi.util.ResourceManager.ImageID;
 
 import javax.swing.JPanel;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -28,15 +25,14 @@ public class Game extends JPanel implements Runnable
     private static ArrayList<World> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
-    public static final long SEED = System.nanoTime();
     private static CheckedRender checkedRender;
     
-    public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler)
+    public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler, ArrayList<World> worlds)
     {
         Game.players = players;
         Game.uiHandler = uiHandler;
-        worlds = new ArrayList<World>();
-        worlds.add(new World(SEED, new Rectangle(50, 50), 100, 100, ImageID.gridDefault, ImageID.gridHover, ImageID.gridClick));
+        Game.worlds = worlds;
+        UserInterfaceHandler.uiStack.push(worlds.get(UserInterfaceHandler.getCurrentWorldIndex()));
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
@@ -73,11 +69,11 @@ public class Game extends JPanel implements Runnable
 
         uiHandler.paintWorld(g2d);
         //Remove camera offset to draw UI
-        g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
+        //g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
         uiHandler.paintScreen(checkedRender);
 
-        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
-                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
+//        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
+//                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
 
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();

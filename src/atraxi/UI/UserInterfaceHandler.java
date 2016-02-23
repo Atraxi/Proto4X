@@ -24,24 +24,26 @@ import java.util.Random;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
-    private World.GridTile selected;
-    private Player user;
+    private static World.GridTile selected;
+    private static Player user;
     private static final ResourceManager.ImageID[] mapImages = {ImageID.background1A,ImageID.background1B,ImageID.background1C,ImageID.background1D,
                                                                 ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
                                                                 ImageID.background3A,ImageID.background3B,ImageID.background3C,ImageID.background3D,
                                                                 ImageID.background4A,ImageID.background4B,ImageID.background4C,ImageID.background4D};
-    private int currentWorld = 0;
+    private static int currentWorldIndex;
 
     //variables related to edge scrolling
     private static double screenLocationX = 0, screenLocationY = 0;
+    //initial value is mostly irrelevant, and will be set properly the instant the mouse is moved
     private static int mouseX = 200, mouseY = 200;
 
     public static UIStack uiStack;
     
-    public UserInterfaceHandler(Player user)
+    public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
         this.user = user;
         uiStack = new UIStack();
+        currentWorldIndex = defaultWorldIndex;
     }
 
     public static double getScreenLocationX ()
@@ -52,6 +54,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static double getScreenLocationY ()
     {
         return screenLocationY;
+    }
+
+    public static int getCurrentWorldIndex()
+    {
+        return currentWorldIndex;
     }
 
     /**
@@ -82,7 +89,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED);
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED);
                 g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -110,7 +117,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*2);
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*2);
                 g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -139,7 +146,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*3);
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*3);
                 g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -168,7 +175,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Game.SEED*5);
+                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*5);
                 g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -208,19 +215,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void doWork (BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX < 100 && screenLocationX<Game.getWorld(currentWorld).getSizeX()*Game.getWorld(currentWorld).getGridSize()/2)
+        if(mouseX < 100 && screenLocationX< Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
         {
             screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
         }
-        else if(mouseX > Proto.screen_Width - 100 && screenLocationX>-Game.getWorld(currentWorld).getSizeX()*Game.getWorld(currentWorld).getGridSize()/2)
+        else if(mouseX >= Proto.screen_Width - 100 && screenLocationX > -Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
         {
             screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
         }
-        if(mouseY < 100 && screenLocationY<Game.getWorld(currentWorld).getSizeY()*Game.getWorld(currentWorld).getGridSize()/2)
+        if(mouseY < 100 && screenLocationY< Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
         {
             screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
         }
-        else if(mouseY > Proto.screen_Height - 100 && screenLocationY>-Game.getWorld(currentWorld).getSizeY()*Game.getWorld(currentWorld).getGridSize()/2)
+        else if(mouseY >= Proto.screen_Height - 100 && screenLocationY > -Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
         {
             screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
         }

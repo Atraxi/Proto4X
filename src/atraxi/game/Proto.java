@@ -1,16 +1,20 @@
 package atraxi.game;
 
+import atraxi.game.world.World;
+import atraxi.ui.UserInterfaceHandler;
+import atraxi.util.Logger;
+import atraxi.util.ResourceManager.ImageID;
+
+import javax.swing.JFrame;
+import javax.swing.WindowConstants;
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.util.ArrayList;
-
-import javax.swing.*;
-
-import atraxi.ui.UserInterfaceHandler;
-import atraxi.util.Logger;
+import java.util.Random;
 
 public class Proto extends JFrame
 {
@@ -20,6 +24,9 @@ public class Proto extends JFrame
     public static boolean debug;
     public static Proto PROTO;
 
+    public static final long SEED = System.nanoTime();
+    public static Random random;
+
     public Proto()
     {
         super();
@@ -28,13 +35,18 @@ public class Proto extends JFrame
         //TEST: This is terrible, but will probably be replaced when proper resolution options are added
         screen_Width = (int) (dim.width*0.75);
         screen_Height = (int) (dim.height*0.75);
-        
+
+        random = new Random(SEED);
+
         Player user = new Player();
         ArrayList<Player> players = new ArrayList<Player>();
         players.add(user);
-        UserInterfaceHandler ui;
 
-        ui = new UserInterfaceHandler(user);
+        ArrayList<World> worlds = new ArrayList<World>();
+        worlds.add(new World(random.nextInt(), new Rectangle(ImageID.gridDefault.getImage().getWidth(), ImageID.gridDefault.getImage().getHeight()), 100, 100,
+                             ImageID.gridDefault, ImageID.gridHover, ImageID.gridClick, ImageID.gridSelected));
+
+        UserInterfaceHandler ui = new UserInterfaceHandler(user, 0);
         try
         {
             Robot robot = new Robot();
@@ -46,7 +58,7 @@ public class Proto extends JFrame
             e.printStackTrace();
         }
 
-        Game game = new Game(players, ui);
+        Game game = new Game(players, ui, worlds);
         addKeyListener(ui);
         //bind mouse to JPanel not JFrame to account for taskbar in mouse coords
         game.addMouseMotionListener(ui);
