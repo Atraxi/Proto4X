@@ -77,14 +77,6 @@ public class World implements UIElement, UIStackNode
         nextNode = node;
     }
 
-    @Override
-    public UIElement mousePressed(MouseEvent paramMouseEvent)
-    {
-        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
-                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
-                .mousePressed(paramMouseEvent);
-    }
-
     public int getSizeY()
     {
         return sizeY;
@@ -101,11 +93,113 @@ public class World implements UIElement, UIStackNode
     }
 
     @Override
+    public UIElement mousePressed(MouseEvent paramMouseEvent)
+    {
+        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            if(tileSelected != null )
+            {
+                tileSelected.mousePressed(paramMouseEvent);
+            }
+            tileSelected = tiles[x][y].mousePressed(paramMouseEvent);
+
+            return tileSelected;
+        }
+        else
+        {
+            return null;
+        }
+    }
+    @Override
     public UIElement mouseReleased(MouseEvent paramMouseEvent)
     {
-        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
-                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
-                .mousePressed(paramMouseEvent);
+        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            if(tileSelected != null )
+            {
+                tileSelected.mouseReleased(paramMouseEvent);
+            }
+            tileSelected = tiles[x][y].mouseReleased(paramMouseEvent);
+
+            return tileSelected;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public UIElement mouseDragged(MouseEvent paramMouseEvent)
+    {
+        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            if(tileHover != null )
+            {
+                tileHover.mouseDragged(paramMouseEvent);
+            }
+            tileHover = tiles[x][y].mouseDragged(paramMouseEvent);
+
+            return tileHover;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public UIElement mouseMoved(MouseEvent paramMouseEvent)
+    {
+        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            if(tileHover != null )
+            {
+                tileHover.mouseMoved(paramMouseEvent);
+            }
+            tileHover = tiles[x][y].mouseMoved(paramMouseEvent);
+
+            return tileHover;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
+    {
+        int x = (int) Math.floor((paramMouseWheelEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseWheelEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            return tiles[x][y].mouseWheelMoved(paramMouseWheelEvent);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public void paint(CheckedRender render)
+    {
+        for (GridTile[] tileRow : tiles)
+        {
+            for (GridTile tile : tileRow)
+            {
+                tile.paint(render);
+            }
+        }
     }
 
     private enum TileState
@@ -125,7 +219,7 @@ public class World implements UIElement, UIStackNode
         {
             this.x = x;
             this.y = y;
-            this.dim = dim;
+            this.dim = new Rectangle(x * dim.width, y * dim.height, dim.width, dim.height);
             this.imageDefault = imageDefault;
             this.imageHover = imageHover;
             this.imageClick = imageClick;
@@ -147,12 +241,6 @@ public class World implements UIElement, UIStackNode
             }
         }
 
-        @Override
-        public UIElement mousePressed(MouseEvent paramMouseEvent)
-        {
-            return null;
-        }
-
         public void replaceQueue(Action action)
         {
             for (Entity entity : entities)
@@ -162,9 +250,41 @@ public class World implements UIElement, UIStackNode
         }
 
         @Override
+        public UIElement mousePressed(MouseEvent paramMouseEvent)
+        {
+            if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+            {
+                state = TileState.PRESSED;
+
+                return this;
+            }
+            return null;
+        }
+
+        @Override
         public UIElement mouseReleased(MouseEvent paramMouseEvent)
         {
-            return null;
+            if(state == TileState.PRESSED)
+            {
+                if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+                {
+                    state = TileState.SELECTED;
+                    UserInterfaceHandler.setSelectedTile(this);
+                    return this;
+                }
+                else
+                {
+                    state = TileState.HOVER;
+                }
+            }
+            else if(state == TileState.SELECTED)
+            {
+                if(!dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+                {
+                    state = TileState.DEFAULT;
+                }
+            }
+            return  null;
         }
 
         @Override
@@ -176,10 +296,7 @@ public class World implements UIElement, UIStackNode
         @Override
         public UIElement mouseMoved(MouseEvent paramMouseEvent)
         {
-            //TODO: refactor so the dim position is constant relative to world, and set at tile initialization; account for scroll offset when matching against mouse coords
-            dim.setLocation( (x * dim.width) + UserInterfaceHandler.getScreenLocationX(),  (y * dim.height) + UserInterfaceHandler.getScreenLocationY());
-
-            if(dim.contains(paramMouseEvent.getPoint()))
+            if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
             {
                 if(state == TileState.DEFAULT)
                 {
@@ -187,7 +304,7 @@ public class World implements UIElement, UIStackNode
                 }
                 return this;
             }
-            else if(!dim.contains(paramMouseEvent.getPoint()) && state == TileState.HOVER)
+            else if(!dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) && state == TileState.HOVER)
             {
                 state = TileState.DEFAULT;
             }
@@ -220,57 +337,6 @@ public class World implements UIElement, UIStackNode
             for (Entity entity : entities)
             {
                 entity.paint(render);
-            }
-        }
-
-
-    }
-
-    @Override
-    public UIElement mouseDragged(MouseEvent paramMouseEvent)
-    {
-        return tiles[(int) ((paramMouseEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
-                [(int) ((paramMouseEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
-                .mousePressed(paramMouseEvent);
-    }
-
-    @Override
-    public UIElement mouseMoved(MouseEvent paramMouseEvent)
-    {
-        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
-        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
-        {
-            if(tileHover != null )
-            {
-                tileHover.mouseMoved(paramMouseEvent);
-            }
-            tileHover = tiles[x][y].mouseMoved(paramMouseEvent);
-
-            return tileHover;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    @Override
-    public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
-    {
-        return tiles[(int) ((paramMouseWheelEvent.getX() + UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth())]
-                [(int) ((paramMouseWheelEvent.getY() + UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight())]
-                .mousePressed(paramMouseWheelEvent);
-    }
-
-    @Override
-    public void paint(CheckedRender render)
-    {
-        for (GridTile[] tileRow : tiles)
-        {
-            for (GridTile tile : tileRow)
-            {
-                tile.paint(render);
             }
         }
     }

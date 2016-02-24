@@ -24,7 +24,7 @@ import java.util.Random;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
-    private static World.GridTile selected;
+    private static World.GridTile selectedTile;
     private static Player user;
     private static final ResourceManager.ImageID[] mapImages = {ImageID.background1A,ImageID.background1B,ImageID.background1C,ImageID.background1D,
                                                                 ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
@@ -59,6 +59,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static int getCurrentWorldIndex()
     {
         return currentWorldIndex;
+    }
+
+    public static void setSelectedTile(World.GridTile selectedTile)
+    {
+        UserInterfaceHandler.selectedTile = selectedTile;
     }
 
     /**
@@ -242,7 +247,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         switch (paramKeyEvent.getKeyCode())
         {
             case KeyEvent.VK_B:
-                selected.queueAction(new Action(Action.ActionType.BUILD, null));
+                selectedTile.queueAction(new Action(Action.ActionType.BUILD, null));
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
@@ -339,7 +344,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         {
             if(!isUIEventHandled)
             {
-                selected = (World.GridTile) element;
+                selectedTile = (World.GridTile) element;
             }
         }
         else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
@@ -350,11 +355,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 //TODO: refactor? to allow drag for target orientation
                 if(paramMouseEvent.isShiftDown())
                 {
-                    selected.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selectedTile.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
                 }
                 else
                 {
-                    selected.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selectedTile.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
                 }
             }
         }
