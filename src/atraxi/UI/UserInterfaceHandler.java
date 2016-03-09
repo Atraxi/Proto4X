@@ -202,10 +202,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     /**
      * Paint anything that moves relative to objects within the game world (ships, planets, etc)
-     * @param g2d
+     * @param checkedRender
      */
-    public void paintWorld(Graphics2D g2d)
+    public void paintWorld(CheckedRender checkedRender)
     {
+        Game.getWorld(currentWorldIndex).paint(checkedRender);
     }
 
     /**
@@ -282,6 +283,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             //GridTile is the default unless the mouse event is over a non-selectable part of the world
             isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
+
+        if(!isUIEventHandled)
+        {
+            Game.getWorld(currentWorldIndex).mousePressed(paramMouseEvent);
+        }
     }
     
     @Override
@@ -296,6 +302,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             UIElement element = uiStack.mouseDragged(paramMouseEvent);
             //GridTile is the default unless the mouse event is over a non-selectable part of the world
             isUIEventHandled = !(element instanceof World.GridTile) && element != null;
+        }
+
+        if(!isUIEventHandled)
+        {
+            Game.getWorld(currentWorldIndex).mouseDragged(paramMouseEvent);
         }
     }
 
@@ -312,6 +323,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             //GridTile is the default unless the mouse event is over a non-selectable part of the world
             isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
+
+        if(!isUIEventHandled)
+        {
+            Game.getWorld(currentWorldIndex).mouseMoved(paramMouseEvent);
+        }
     }
 
     @Override
@@ -323,6 +339,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             //GridTile is the default unless the mouse event is over a non-selectable part of the world
             isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
+
+        if(!isUIEventHandled)
+        {
+            Game.getWorld(currentWorldIndex).mouseWheelMoved(paramMouseWheelEvent);
+        }
     }
 
     @Override //Do not use, partially broken implementation. Moving the mouse between press and release will prevent the event firing
@@ -332,34 +353,33 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
         boolean isUIEventHandled;
-
-        UIElement element = uiStack.mouseReleased(paramMouseEvent);
-        //GridTile is the default unless the mouse event is over a non-selectable part of the world
-        isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-
-        //Convert the mouse coordinates from screen to world coordinates
-        paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
-        //if right click
-        if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
         {
-            if(!isUIEventHandled)
-            {
-                selectedTile = (World.GridTile) element;
-            }
+            UIElement element = uiStack.mouseReleased(paramMouseEvent);
+            //GridTile is the default unless the mouse event is over a non-selectable part of the world
+            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
         }
-        else if(paramMouseEvent.getButton()==MouseEvent.BUTTON3)
+        //if this event wasn't intercepted by overlaid UI elements
+        if(!isUIEventHandled)
         {
-            //if this event wasn't intercepted by overlaid UI elements
-            if(!isUIEventHandled)
+            //Convert the mouse coordinates from screen to world coordinates
+            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
+            //if left click
+            if (paramMouseEvent.getButton() == MouseEvent.BUTTON1)
+            {
+                selectedTile = (World.GridTile) Game.getWorld(currentWorldIndex).mouseReleased(paramMouseEvent);
+            }
+            //else if right click
+            else if (paramMouseEvent.getButton() == MouseEvent.BUTTON3)
             {
                 //TODO: refactor? to allow drag for target orientation
-                if(paramMouseEvent.isShiftDown())
+                if (paramMouseEvent.isShiftDown())
                 {
-                    selectedTile.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selectedTile.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
                 }
                 else
                 {
-                    selectedTile.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double)paramMouseEvent.getX(), (double)paramMouseEvent.getY()}));
+                    selectedTile.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
                 }
             }
         }

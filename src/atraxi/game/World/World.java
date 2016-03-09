@@ -50,7 +50,6 @@ public class World implements UIElement, UIStackNode
                 tiles[x][y] = new GridTile(x, y, tileBounds, tileDefault, tileHover, tileClick, tileSelected);
             }
         }
-
     }
 
     @Override

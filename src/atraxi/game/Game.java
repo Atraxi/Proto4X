@@ -32,7 +32,6 @@ public class Game extends JPanel implements Runnable
         Game.players = players;
         Game.uiHandler = uiHandler;
         Game.worlds = worlds;
-        UserInterfaceHandler.uiStack.push(worlds.get(UserInterfaceHandler.getCurrentWorldIndex()));
         setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
         setDoubleBuffered(true);
         paused = false;
@@ -67,9 +66,9 @@ public class Game extends JPanel implements Runnable
         //Offset to camera position to draw any world objects
         g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
 
-        uiHandler.paintWorld(g2d);
+        uiHandler.paintWorld(checkedRender);
         //Remove camera offset to draw UI
-        //g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
+        g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
         uiHandler.paintScreen(checkedRender);
 
 //        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
