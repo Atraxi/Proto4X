@@ -248,7 +248,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         switch (paramKeyEvent.getKeyCode())
         {
             case KeyEvent.VK_B:
-                selectedTile.queueAction(new Action(Action.ActionType.BUILD, null));
+                if(selectedTile != null)
+                {
+                    selectedTile.queueAction(new Action(Action.ActionType.BUILD, null));
+                }
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused=!Game.paused;
