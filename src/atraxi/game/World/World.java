@@ -6,6 +6,7 @@ import atraxi.ui.UIElement;
 import atraxi.ui.UIStackNode;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.util.CheckedRender;
+import atraxi.util.Logger;
 import atraxi.util.ResourceManager.ImageID;
 
 import java.awt.Rectangle;
@@ -21,10 +22,14 @@ public class World implements UIElement, UIStackNode
     private Rectangle tileBounds;
     private int sizeX, sizeY;
 
-    //Tiles cannot be relied upon to track this internally, as it is not feasible to have every tile update itself for every UI event (which includes mouse movement)
-    //We can mathematically determine newly focused tiles, and thus it can reliably set it's own state, but not implicitly know when to revert to default
+    //Tiles cannot be relied upon to update their state internally in all cases (especially reverting state), as it is not feasible to have every tile process every UI event
+    // (which includes mouse movement)
+    //We can mathematically determine newly focused tiles, and thus it can reliably set it's own state, but not implicitly know when to revert to default (as there is no 'out of
+    // focus' event)
     //So we track tiles with special state and prompt them to check the conditions for reverting to default when relevant
-    private UIElement tileSelected, tileHover;
+
+    //This is effectively registering tiles to always receive specific events
+    private UIElement tileSelected, tileHover, tilePressed;
 
     /**
      * Instantiates a new game world
@@ -94,17 +99,12 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
-        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
-            if(tileSelected != null )
-            {
-                tileSelected.mousePressed(paramMouseEvent);
-            }
-            tileSelected = tiles[x][y].mousePressed(paramMouseEvent);
-
-            return tileSelected;
+            tilePressed = tiles[x][y].mousePressed(paramMouseEvent);
+            return tilePressed;
         }
         else
         {
@@ -114,29 +114,34 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseReleased(MouseEvent paramMouseEvent)
     {
-        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
-            if(tileSelected != null )
+            if(tilePressed != null)
             {
-                tileSelected.mouseReleased(paramMouseEvent);
-            }
-            tileSelected = tiles[x][y].mouseReleased(paramMouseEvent);
+                tilePressed = tilePressed.mouseReleased(paramMouseEvent);
+                if (tilePressed != null)
+                {
+                    if(tileSelected != null && tilePressed != tileSelected)
+                    {
+                        tileSelected.mouseReleased(paramMouseEvent);
+                    }
+                    tileSelected = tilePressed;
+                }
+                tilePressed = null;
 
-            return tileSelected;
+                return tileSelected;
+            }
         }
-        else
-        {
-            return null;
-        }
+        return null;
     }
 
     @Override
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
-        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             if(tileHover != null )
@@ -156,8 +161,8 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
-        int x = (int) Math.floor((paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             if(tileHover != null )
@@ -177,8 +182,8 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        int x = (int) Math.floor((paramMouseWheelEvent.getX() - UserInterfaceHandler.getScreenLocationX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseWheelEvent.getY() - UserInterfaceHandler.getScreenLocationY()) / tileBounds.getHeight());
+        int x = (int) Math.floor((paramMouseWheelEvent.getX()) / tileBounds.getWidth());
+        int y = (int) Math.floor((paramMouseWheelEvent.getY()) / tileBounds.getHeight());
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             return tiles[x][y].mouseWheelMoved(paramMouseWheelEvent);
@@ -209,7 +214,8 @@ public class World implements UIElement, UIStackNode
     public static class GridTile implements UIElement
     {
         private ImageID imageDefault, imageHover, imageClick, imageSelected;
-        private TileState state;
+        //previousState is used to roll rollback a mouse press+drag
+        private TileState state, previousState;
         private int x, y;
         private Rectangle dim;
         private LinkedList<Entity> entities;
@@ -251,13 +257,25 @@ public class World implements UIElement, UIStackNode
         @Override
         public UIElement mousePressed(MouseEvent paramMouseEvent)
         {
-            if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+            if(dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()))
             {
+                if(state != TileState.HOVER)
+                {
+                    previousState = state;
+                }
+                else
+                {
+                    previousState = TileState.DEFAULT;
+                }
                 state = TileState.PRESSED;
-
                 return this;
             }
-            return null;
+            else
+            {
+                Logger.log(Logger.LogLevel.debug, new String[] {"World.GridTile mousePressed called without mouse in bounds. Should never happen."});
+                state = TileState.DEFAULT;
+                return null;
+            }
         }
 
         @Override
@@ -265,7 +283,7 @@ public class World implements UIElement, UIStackNode
         {
             if(state == TileState.PRESSED)
             {
-                if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+                if(dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()))
                 {
                     state = TileState.SELECTED;
                     UserInterfaceHandler.setSelectedTile(this);
@@ -273,15 +291,13 @@ public class World implements UIElement, UIStackNode
                 }
                 else
                 {
-                    state = TileState.HOVER;
+                    state = previousState;
                 }
             }
             else if(state == TileState.SELECTED)
             {
-                if(!dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
-                {
-                    state = TileState.DEFAULT;
-                }
+                state = TileState.DEFAULT;
+                previousState = state;
             }
             return  null;
         }
@@ -295,7 +311,7 @@ public class World implements UIElement, UIStackNode
         @Override
         public UIElement mouseMoved(MouseEvent paramMouseEvent)
         {
-            if(dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()))
+            if(dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()))
             {
                 if(state == TileState.DEFAULT)
                 {
@@ -303,7 +319,7 @@ public class World implements UIElement, UIStackNode
                 }
                 return this;
             }
-            else if(!dim.contains(paramMouseEvent.getX() - UserInterfaceHandler.getScreenLocationX(), paramMouseEvent.getY() - UserInterfaceHandler.getScreenLocationY()) && state == TileState.HOVER)
+            else if(!dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()) && state == TileState.HOVER)
             {
                 state = TileState.DEFAULT;
             }

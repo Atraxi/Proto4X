@@ -277,15 +277,14 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mousePressed(MouseEvent paramMouseEvent)
     {
-        boolean isUIEventHandled;
-        {
-            UIElement element = uiStack.mousePressed(paramMouseEvent);
-            //GridTile is the default unless the mouse event is over a non-selectable part of the world
-            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-        }
+        boolean isUIEventHandled = uiStack.mousePressed(paramMouseEvent) != null;
 
+        //if this event wasn't intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
+            //Convert the mouse coordinates from screen to world coordinates
+            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
             Game.getWorld(currentWorldIndex).mousePressed(paramMouseEvent);
         }
     }
@@ -297,15 +296,14 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
 
-        boolean isUIEventHandled;
-        {
-            UIElement element = uiStack.mouseDragged(paramMouseEvent);
-            //GridTile is the default unless the mouse event is over a non-selectable part of the world
-            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-        }
+        //if this event wasn't intercepted by overlaid UI elements
+        boolean isUIEventHandled = uiStack.mouseDragged(paramMouseEvent) != null;
 
         if(!isUIEventHandled)
         {
+            //Convert the mouse coordinates from screen to world coordinates
+            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
             Game.getWorld(currentWorldIndex).mouseDragged(paramMouseEvent);
         }
     }
@@ -317,15 +315,14 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
 
-        boolean isUIEventHandled;
-        {
-            UIElement element = uiStack.mouseMoved(paramMouseEvent);
-            //GridTile is the default unless the mouse event is over a non-selectable part of the world
-            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-        }
+        //if this event wasn't intercepted by overlaid UI elements
+        boolean isUIEventHandled = uiStack.mouseMoved(paramMouseEvent) != null;
 
         if(!isUIEventHandled)
         {
+            //Convert the mouse coordinates from screen to world coordinates
+            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
             Game.getWorld(currentWorldIndex).mouseMoved(paramMouseEvent);
         }
     }
@@ -333,15 +330,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        boolean isUIEventHandled;
-        {
-            UIElement element = uiStack.mouseWheelMoved(paramMouseWheelEvent);
-            //GridTile is the default unless the mouse event is over a non-selectable part of the world
-            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-        }
+        boolean isUIEventHandled = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
 
+        //if this event wasn't intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
+            //Convert the mouse coordinates from screen to world coordinates
+            paramMouseWheelEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
             Game.getWorld(currentWorldIndex).mouseWheelMoved(paramMouseWheelEvent);
         }
     }
@@ -352,12 +347,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
-        boolean isUIEventHandled;
-        {
-            UIElement element = uiStack.mouseReleased(paramMouseEvent);
-            //GridTile is the default unless the mouse event is over a non-selectable part of the world
-            isUIEventHandled = !(element instanceof World.GridTile) && element != null;
-        }
+        boolean isUIEventHandled = uiStack.mouseReleased(paramMouseEvent) != null;
+
         //if this event wasn't intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
