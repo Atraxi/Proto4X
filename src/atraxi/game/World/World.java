@@ -3,7 +3,6 @@ package atraxi.game.world;
 import atraxi.entities.Entity;
 import atraxi.entities.actionQueue.Action;
 import atraxi.ui.UIElement;
-import atraxi.ui.UIStackNode;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
@@ -14,10 +13,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.LinkedList;
 
-public class World implements UIElement, UIStackNode
+public class World implements UIElement
 {
     public final long seed;
-    private UIStackNode nextNode = null, previousNode = null;
     private GridTile[][] tiles;
     private Rectangle tileBounds;
     private int sizeX, sizeY;
@@ -57,30 +55,6 @@ public class World implements UIElement, UIStackNode
         }
     }
 
-    @Override
-    public UIStackNode getNextNode()
-    {
-        return nextNode;
-    }
-
-    @Override
-    public UIStackNode getPreviousNode()
-    {
-        return previousNode;
-    }
-
-    @Override
-    public void setPreviousNode(UIStackNode node)
-    {
-        previousNode = node;
-    }
-
-    @Override
-    public void setNextNode(UIStackNode node)
-    {
-        nextNode = node;
-    }
-
     public int getSizeY()
     {
         return sizeY;
@@ -99,10 +73,14 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
+        //index of the tile
         int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
         int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
+            //state tracking
+            //tile is always set to pressed, but cannot be assumed to receive mouseReleased() event.
             tilePressed = tiles[x][y].mousePressed(paramMouseEvent);
             return tilePressed;
         }
@@ -114,34 +92,50 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseReleased(MouseEvent paramMouseEvent)
     {
+        //index of the tile
+        /* //mouseReleased doesn't care about the location, it is instead a trigger to finish or cancel what mousePressed() started
         int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
         int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+
+        //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
-        {
+        {*/
+            //if the mousePressed() event was within the playable area. if not the linked mouseReleased() is irrelevant
             if(tilePressed != null)
             {
+                //pass this event to the tile that actually cares about it
                 tilePressed = tilePressed.mouseReleased(paramMouseEvent);
+                //if the pressed tile was 'clicked' (mouseDown+Up in the same region) the tile will return itself
+                //a clicked tile is the 'select' action, thus we need to clear the previous selection
                 if (tilePressed != null)
                 {
+                    //if there is a tile already selected, and is not the same as the 'newly' selected tile
                     if(tileSelected != null && tilePressed != tileSelected)
                     {
+                        //mouseReleased() always fires on a previously pressed tile (i.e. mousePressed())
+                        //therefore mouseReleased() on a 'selected' tile can be used to tell us to clear selection
                         tileSelected.mouseReleased(paramMouseEvent);
                     }
+                    //update the selected tile the the new selected tile
                     tileSelected = tilePressed;
                 }
+                //the mouse click has been fully handled, clear the mousePressed() state tracking
                 tilePressed = null;
 
+                //we did something with this event
                 return tileSelected;
             }
-        }
+        /*}*/
         return null;
     }
 
     @Override
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
+        //index of the tile
         int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
         int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             if(tileHover != null )
@@ -161,8 +155,10 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
+        //index of the tile
         int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
         int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             if(tileHover != null )
@@ -182,8 +178,10 @@ public class World implements UIElement, UIStackNode
     @Override
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
+        //index of the tile
         int x = (int) Math.floor((paramMouseWheelEvent.getX()) / tileBounds.getWidth());
         int y = (int) Math.floor((paramMouseWheelEvent.getY()) / tileBounds.getHeight());
+        //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
             return tiles[x][y].mouseWheelMoved(paramMouseWheelEvent);
@@ -197,6 +195,7 @@ public class World implements UIElement, UIStackNode
     @Override
     public void paint(CheckedRender render)
     {
+        //TODO: Culling, maybe select tiles at top/left + bottom/right corners for relevant tile ranges?
         for (GridTile[] tileRow : tiles)
         {
             for (GridTile tile : tileRow)
@@ -259,20 +258,24 @@ public class World implements UIElement, UIStackNode
         {
             if(dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()))
             {
-                if(state != TileState.HOVER)
+                //store previous tile state in-case the click is cancelled
+                //hover is not a meaningful state for us to revert to, so just set to default for that case
+                if (state == TileState.HOVER)
                 {
-                    previousState = state;
+                    previousState = TileState.DEFAULT;
                 }
                 else
                 {
-                    previousState = TileState.DEFAULT;
+                    previousState = state;
                 }
                 state = TileState.PRESSED;
                 return this;
             }
+            //should never happen unless math fails to determine the correct tile
             else
             {
-                Logger.log(Logger.LogLevel.debug, new String[] {"World.GridTile mousePressed called without mouse in bounds. Should never happen."});
+                Logger.log(Logger.LogLevel.debug, new String[] {"World.GridTile mousePressed called without mouse in bounds. Should never happen. Indicates an error/edge case in" +
+                                                                " click coordinates -> tile index math"});
                 state = TileState.DEFAULT;
                 return null;
             }
@@ -281,19 +284,27 @@ public class World implements UIElement, UIStackNode
         @Override
         public UIElement mouseReleased(MouseEvent paramMouseEvent)
         {
+            //if we are finishing up from a mousePressed() event on this tile
             if(state == TileState.PRESSED)
             {
+                //if the start (assumed at this point since we are 'pressed') of the click and the end are both on this tile
+                //i.e. we are clicked
                 if(dim.contains(paramMouseEvent.getX(), paramMouseEvent.getY()))
                 {
+                    //set the selected state
                     state = TileState.SELECTED;
                     UserInterfaceHandler.setSelectedTile(this);
                     return this;
                 }
+                //the click was cancelled
                 else
                 {
+                    //revert the state
                     state = previousState;
                 }
             }
+            //mouseReleased() always fires on a previously pressed tile (i.e. mousePressed())
+            //therefore mouseReleased() on a 'selected' tile can be used to tell us to clear selection
             else if(state == TileState.SELECTED)
             {
                 state = TileState.DEFAULT;
