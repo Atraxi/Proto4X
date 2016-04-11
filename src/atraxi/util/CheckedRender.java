@@ -97,7 +97,8 @@ public class CheckedRender
     }
 
     /**
-     * Draw the specified {@link java.awt.image.BufferedImage Image} to the screen at the given x, y co-ordinates, checking if the Image dimensions are fully contained within it's container bounding area, and logging a warning if not
+     * Draw the specified {@link java.awt.image.BufferedImage Image} to the screen at the given x, y co-ordinates in world space, checking if the Image dimensions are fully
+     * contained within it's container bounding area, and logging a warning if not
      * @param imageID
      * @param x
      * @param y

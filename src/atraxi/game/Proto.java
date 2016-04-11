@@ -33,8 +33,8 @@ public class Proto extends JFrame
         PROTO = this;
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         //TEST: This is terrible, but will probably be replaced when proper resolution options are added
-        screen_Width = (int) (dim.width*0.75);
-        screen_Height = (int) (dim.height*0.75);
+        screen_Width = (int) (dim.width * 0.75);
+        screen_Height = (int) (dim.height * 0.75);
 
         random = new Random(SEED);
 
@@ -50,9 +50,9 @@ public class Proto extends JFrame
         try
         {
             Robot robot = new Robot();
-            robot.mouseMove((int) (dim.width*0.5),(int)(dim.height * 0.5));
+            robot.mouseMove((int) (dim.width * 0.5), (int) (dim.height * 0.5));
         }
-        catch(AWTException e)
+        catch (AWTException e)
         {
             //TODO: environment either doesn't support, or doesn't allow, controlling mouse input. Log this, and disable features or quit if needed
             e.printStackTrace();
@@ -64,10 +64,10 @@ public class Proto extends JFrame
         game.addMouseMotionListener(ui);
         game.addMouseListener(ui);
         game.addMouseWheelListener(ui);
-        
+
         //add a JPanel to this JFrame
         add(game);
-        
+
         setFocusable(true);
         //TODO: toggle windowed mode, add resizing and resolution options. This can probably wait for the main menu
         //setUndecorated(true);
@@ -78,18 +78,18 @@ public class Proto extends JFrame
         setResizable(false);
     }
 
-    public void setDimensions (int width, int height)
+    public void setDimensions(int width, int height)
     {
-        screen_Width=width;
-        screen_Height=height;
-        setSize(screen_Width,screen_Height);
+        screen_Width = width;
+        screen_Height = height;
+        setSize(screen_Width, screen_Height);
     }
-    
+
     public static void main(String[] args)
     {
-        if(args.length>0 && args[0].equals("-debug"))
+        if (args.length > 0 && args[0].equals("-debug"))
         {
-            Logger.log(Logger.LogLevel.debug, new String[] {"Debug enabled"});
+            Logger.log(Logger.LogLevel.debug, new String[]{"Debug enabled"});
             debug = true;
         }
         else

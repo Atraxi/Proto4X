@@ -38,7 +38,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     private static int mouseX = 200, mouseY = 200;
 
     public static UIStack uiStack;
-    
+    private static boolean isScrollEnabled = true;
+
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
         UserInterfaceHandler.user = user;
@@ -221,21 +222,25 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void doWork (BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        if(mouseX < 100 && screenLocationX< Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+        //TODO: scroll down is slower than up, why? fix it
+        if(isScrollEnabled && !paused)
         {
-            screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
-        }
-        else if(mouseX >= Proto.screen_Width - 100 && screenLocationX > -Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
-        {
-            screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
-        }
-        if(mouseY < 100 && screenLocationY< Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
-        {
-            screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
-        }
-        else if(mouseY >= Proto.screen_Height - 100 && screenLocationY > -Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
-        {
-            screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
+            if (mouseX < 100 && screenLocationX < Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            {
+                screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
+            }
+            else if (mouseX >= Proto.screen_Width - 100 && screenLocationX > -Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            {
+                screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
+            }
+            if (mouseY < 100 && screenLocationY < Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            {
+                screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
+            }
+            else if (mouseY >= Proto.screen_Height - 100 && screenLocationY > -Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            {
+                screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
+            }
         }
     }
 
@@ -271,6 +276,18 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             case KeyEvent.VK_A:
                 Logger.log(LogLevel.debug, new String[] {"Creating test menu"});
                 uiStack.push(UIStack.getNewTestMenu());
+                break;
+            case KeyEvent.VK_SPACE:
+                isScrollEnabled = !isScrollEnabled;
+                if(isScrollEnabled)
+                {
+                    Logger.log(LogLevel.debug, new String[]{"Camera pan enabled"});
+                }
+                else
+                {
+                    Logger.log(LogLevel.debug, new String[]{"Camera pan disabled"});
+                }
+                break;
         }
     }
 
