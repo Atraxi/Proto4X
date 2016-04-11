@@ -104,8 +104,8 @@ public class World implements UIElement
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
+        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -163,8 +163,8 @@ public class World implements UIElement
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
+        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -186,8 +186,8 @@ public class World implements UIElement
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
+        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -209,8 +209,8 @@ public class World implements UIElement
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
         //index of the tile
-        int x = (int) Math.floor((paramMouseWheelEvent.getX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseWheelEvent.getY()) / tileBounds.getHeight());
+        int y = (int) Math.floor((paramMouseWheelEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
+        int x = (int) Math.floor(paramMouseWheelEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
