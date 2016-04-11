@@ -73,7 +73,7 @@ public class Proto extends JFrame
                                          6),
                              10,
                              10,
-                             ImageID.hexagonDefault, ImageID.hexagonDefault, ImageID.hexagonDefault, ImageID.hexagonDefault));
+                             ImageID.hexagonDefault, ImageID.hexagonHover, ImageID.hexagonClick, ImageID.hexagonSelected));
 
         UserInterfaceHandler ui = new UserInterfaceHandler(user, 0);
         try
