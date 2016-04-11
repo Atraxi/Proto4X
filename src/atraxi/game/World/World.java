@@ -8,7 +8,9 @@ import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.ResourceManager.ImageID;
 
+import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.LinkedList;
@@ -18,6 +20,7 @@ public class World implements UIElement
     public final long seed;
     private GridTile[][] tiles;
     private Rectangle tileBounds;
+    private Shape tileTemp;
     private int sizeX, sizeY;
 
     //Tiles cannot be relied upon to update their state internally in all cases (especially reverting state), as it is not feasible to have every tile process every UI event
@@ -53,6 +56,33 @@ public class World implements UIElement
                 tiles[x][y] = new GridTile(x, y, tileBounds, tileDefault, tileHover, tileClick, tileSelected);
             }
         }
+    }
+
+    /**
+     * Instantiates a new game world
+     *
+     * @param tileBounds  The bounding shape of each tile
+     * @param sizeX       The number of tiles wide
+     * @param sizeY       The number of tiles tall
+     * @param tileDefault The default image for each tile
+     * @param tileHover   The image used to indicate mouseover of a tile
+     * @param tileClick   The image used when the player clicks a tile
+     */
+    public World(long seed, Polygon tileBounds, int sizeX, int sizeY, ImageID tileDefault, ImageID tileHover, ImageID tileClick, ImageID tileSelected)
+    {
+        this.seed = seed;
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+        this.tileBounds = tileBounds.getBounds();
+        tiles = new GridTile[sizeX][sizeY];
+        for (int x = 0; x < tiles.length; x++)
+        {
+            for (int y = 0; y < tiles[x].length; y++)
+            {
+                tiles[x][y] = new GridTile(x, y, tileBounds, tileDefault, tileHover, tileClick, tileSelected);
+            }
+        }
+        tileTemp = tileBounds;
     }
 
     public int getSizeY()
@@ -94,11 +124,11 @@ public class World implements UIElement
     {
         //index of the tile
         /* //mouseReleased doesn't care about the location, it is instead a trigger to finish or cancel what mousePressed() started
-        int x = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
-        int y = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        int xIndex = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
+        int yIndex = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
 
         //avoid index out of bounds errors
-        if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        if (xIndex >= 0 && yIndex >= 0 && xIndex < tiles.length && yIndex < tiles[0].length)
         {*/
             //if the mousePressed() event was within the playable area. if not the linked mouseReleased() is irrelevant
             if(tilePressed != null)
@@ -215,15 +245,36 @@ public class World implements UIElement
         private ImageID imageDefault, imageHover, imageClick, imageSelected;
         //previousState is used to roll rollback a mouse press+drag
         private TileState state, previousState;
-        private int x, y;
-        private Rectangle dim;
+        private int xIndex, yIndex, xCoord, yCoord;
+        private Shape dim;
         private LinkedList<Entity> entities;
 
-        public GridTile(int x, int y, Rectangle dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
+        public GridTile(int xIndex, int yIndex, Rectangle dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
         {
-            this.x = x;
-            this.y = y;
-            this.dim = new Rectangle(x * dim.width, y * dim.height, dim.width, dim.height);
+            this(xIndex, yIndex, imageDefault, imageHover, imageClick, imageSelected);
+            xCoord = xIndex * dim.width;
+            yCoord = yIndex * dim.height;
+            this.dim = new Rectangle(xCoord, yCoord, dim.width, dim.height);
+        }
+
+        public GridTile(int xIndex, int yIndex, Polygon dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
+        {
+            this(xIndex, yIndex, imageDefault, imageHover, imageClick, imageSelected);
+            Rectangle dimBounds = dim.getBounds();
+            //horizontally is the same as rectangles
+            xCoord = xIndex * dimBounds.width
+                     //except offset by half the width of a hex every second row
+                     //if xIndex is even, then add 0, else add dimBounds.width/2
+                     + ((yIndex % 2) * dimBounds.width/2);
+            yCoord = yIndex * (3 * dimBounds.height / 4);
+            this.dim = new Polygon(dim.xpoints, dim.ypoints, dim.npoints);
+            ((Polygon)this.dim).translate(xCoord, yCoord);
+        }
+
+        private GridTile(int xIndex, int yIndex, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
+        {
+            this.xIndex = xIndex;
+            this.yIndex = yIndex;
             this.imageDefault = imageDefault;
             this.imageHover = imageHover;
             this.imageClick = imageClick;
@@ -349,16 +400,16 @@ public class World implements UIElement
             switch (state)
             {
                 case DEFAULT:
-                    render.drawImage(imageDefault, x * dim.width, y * dim.height, null);
+                    render.drawImage(imageDefault, xCoord, yCoord, null);
                     break;
                 case HOVER:
-                    render.drawImage(imageHover, x * dim.width, y * dim.height, null);
+                    render.drawImage(imageHover, xCoord, yCoord, null);
                     break;
                 case PRESSED:
-                    render.drawImage(imageClick, x * dim.width, y * dim.height, null);
+                    render.drawImage(imageClick, xCoord, yCoord, null);
                     break;
                 case SELECTED:
-                    render.drawImage(imageSelected, x * dim.width, y * dim.height, null);
+                    render.drawImage(imageSelected, xCoord, yCoord, null);
             }
             for (Entity entity : entities)
             {

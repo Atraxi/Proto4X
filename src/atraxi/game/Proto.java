@@ -3,18 +3,19 @@ package atraxi.game;
 import atraxi.game.world.World;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.util.Logger;
-import atraxi.util.ResourceManager.ImageID;
 
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.Rectangle;
+import java.awt.Polygon;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.Random;
+
+import static atraxi.util.ResourceManager.ImageID;
 
 public class Proto extends JFrame
 {
@@ -43,8 +44,36 @@ public class Proto extends JFrame
         players.add(user);
 
         ArrayList<World> worlds = new ArrayList<World>();
+        //Rectangle
+        /*
         worlds.add(new World(random.nextInt(), new Rectangle(ImageID.gridDefault.getImage().getWidth(), ImageID.gridDefault.getImage().getHeight()), 100, 100,
                              ImageID.gridDefault, ImageID.gridHover, ImageID.gridClick, ImageID.gridSelected));
+        */
+
+        //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
+        worlds.add(new World(random.nextInt(),
+                             new Polygon(new int[]
+                                                 {
+                                                         ImageID.hexagonDefault.getImage().getWidth() / 2,
+                                                         ImageID.hexagonDefault.getImage().getWidth(),
+                                                         ImageID.hexagonDefault.getImage().getWidth(),
+                                                         ImageID.hexagonDefault.getImage().getWidth() / 2,
+                                                         0,
+                                                         0
+                                                 },
+                                         new int[]
+                                                 {
+                                                         0,
+                                                         ImageID.hexagonDefault.getImage().getHeight() / 4,
+                                                         3 * ImageID.hexagonDefault.getImage().getHeight() / 4,
+                                                         ImageID.hexagonDefault.getImage().getHeight(),
+                                                         3 * ImageID.hexagonDefault.getImage().getHeight() / 4,
+                                                         ImageID.hexagonDefault.getImage().getHeight() / 4
+                                                 },
+                                         6),
+                             10,
+                             10,
+                             ImageID.hexagonDefault, ImageID.hexagonDefault, ImageID.hexagonDefault, ImageID.hexagonDefault));
 
         UserInterfaceHandler ui = new UserInterfaceHandler(user, 0);
         try

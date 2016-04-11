@@ -109,6 +109,9 @@ public class ResourceManager
                     case gridSelected:
                         images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/gridSelected.png"));
                         break;
+                    case hexagonDefault:
+                        images[id.ordinal()] = ImageIO.read(ResourceManager.class.getResourceAsStream("/resources/hexagonDefault.png"));
+                        break;
                 }
             }
             catch(IOException e)
@@ -131,7 +134,9 @@ public class ResourceManager
         buttonDefault,buttonHover,buttonClick,
         menuBackground,
         entityShipDefault,
-        infoPanelDefault, entityStructureDefault, gridClick, gridHover, gridDefault, gridSelected;
+        infoPanelDefault, entityStructureDefault,
+        gridClick, gridHover, gridDefault, gridSelected,
+        hexagonDefault;
 
         /**
          * @return The {@link BufferedImage} represented by this enum.
