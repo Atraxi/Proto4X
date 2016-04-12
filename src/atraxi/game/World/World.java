@@ -8,6 +8,7 @@ import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.ResourceManager.ImageID;
 
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -22,6 +23,11 @@ public class World implements UIElement
     private Rectangle tileBounds;
     private Shape tileTemp;
     private int sizeX, sizeY;
+
+    //constants for standard y=mx+c line equation, used in getGridTileIndex()
+    private static final double rise = ImageID.hexagonDefault.getImage().getHeight() / 4;
+    private static final double run = ImageID.hexagonDefault.getImage().getWidth() / 2;
+    private static final double gradient = rise / run;
 
     //Tiles cannot be relied upon to update their state internally in all cases (especially reverting state), as it is not feasible to have every tile process every UI event
     // (which includes mouse movement)
@@ -100,12 +106,63 @@ public class World implements UIElement
         return tileBounds.width;
     }
 
+    private Point getGridTileIndex(int mouseX, int mouseY, int tileHeight, int tileWidth)
+    {
+        int x, y;
+        //start with a re-arranged version of the code from GridTile constructor
+        //used here to convert pixel location back to GridTile index
+        //not a perfect solution yet due to working with rectangle bounding box containing a hexagon
+
+        //a useful estimate however with inaccuracies between top left/right corners of
+        //hex/rect bounds (bottom of hex/rect is the next row by this approximation)
+        y = mouseY / ((3 * tileHeight) / 4);
+        x = (mouseX - ((y % 2) * tileWidth) / 2) / tileWidth;
+
+        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        {
+            //use the estimate to offset our coordinates to [0,0]
+            //in order to simplify math with gradients to divide overlapping hex bounds
+            int translatedX = mouseX - tiles[x][y].xCoord;
+            int translatedY = mouseY - tiles[x][y].yCoord;
+
+            //using pre-calculated constants for y=mx+c equation
+            //determine which corner we are in, if any, and offset index
+            //as needed to compensate for above mentioned inaccuracies with initial approximation
+            if (translatedY < (-gradient * translatedX + rise))
+            {
+                //move up a row
+                y--;
+                //due to the coordinate system chosen and the general oddities of a hexagon grid
+                //this situation does not always require incrementing horizontally, rather it depends
+                //on the parity of the row we are on in reality
+                x -= y % 2;
+            }
+            //cursor is actually in the top right corner of the rectangle
+            else if (translatedY < gradient * translatedX - rise)
+            {
+                //due to the coordinate system chosen and the general oddities of a hexagon grid
+                //this situation does not always require incrementing horizontally, rather it depends
+                //on the parity of the row we thought we were on
+                x += y % 2;
+                //move up a row
+                y--;
+            }
+
+            return new Point(x, y);
+        }
+        else
+        {
+            return new Point(-1, -1);
+        }
+    }
+
     @Override
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
-        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        int x = gridIndex.x;
+        int y = gridIndex.y;
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -124,8 +181,9 @@ public class World implements UIElement
     {
         //index of the tile
         /* //mouseReleased doesn't care about the location, it is instead a trigger to finish or cancel what mousePressed() started
-        int xIndex = (int) Math.floor((paramMouseEvent.getX()) / tileBounds.getWidth());
-        int yIndex = (int) Math.floor((paramMouseEvent.getY()) / tileBounds.getHeight());
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        int x = gridIndex.x;
+        int y = gridIndex.y;
 
         //avoid index out of bounds errors
         if (xIndex >= 0 && yIndex >= 0 && xIndex < tiles.length && yIndex < tiles[0].length)
@@ -163,8 +221,9 @@ public class World implements UIElement
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
-        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        int x = gridIndex.x;
+        int y = gridIndex.y;
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -186,8 +245,9 @@ public class World implements UIElement
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        int y = (int) Math.floor((paramMouseEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
-        int x = (int) Math.floor(paramMouseEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        int x = gridIndex.x;
+        int y = gridIndex.y;
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
@@ -209,8 +269,9 @@ public class World implements UIElement
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
         //index of the tile
-        int y = (int) Math.floor((paramMouseWheelEvent.getY()) / ((3 * tileBounds.getHeight()) / 4));
-        int x = (int) Math.floor(paramMouseWheelEvent.getX() / (tileBounds.getWidth() + (((y % 2) * tileBounds.getWidth()) / 2)));
+        Point gridIndex = getGridTileIndex(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), tileBounds.height, tileBounds.width);
+        int x = gridIndex.x;
+        int y = gridIndex.y;
         //avoid index out of bounds errors
         if (x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
         {
