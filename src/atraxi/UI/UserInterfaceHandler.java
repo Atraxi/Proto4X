@@ -40,6 +40,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static UIStack uiStack;
     private static boolean isScrollEnabled = true;
 
+    //Used in paintBackground(), avoids recreating an instance ~100 times a frame
+    private static final Random rand = new Random();
+
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
         UserInterfaceHandler.user = user;
@@ -95,7 +98,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED);
+                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED);
                 g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -123,7 +126,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*2);
+                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*2);
                 g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -152,7 +155,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*3);
+                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*3);
                 g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
@@ -181,7 +184,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
-                Random rand = new Random((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*5);
+                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*5);
                 g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
                 {
