@@ -208,7 +208,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      * Paint anything that moves relative to objects within the game world (ships, planets, etc)
      * @param checkedRender
      */
-    public void paintWorld(CheckedRender checkedRender)
+    public static void paintWorld(CheckedRender checkedRender)
     {
         Game.getWorld(currentWorldIndex).paint(checkedRender);
     }
@@ -217,12 +217,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      * Paint anything that is positioned relative to the screen (probably exclusively UI buttons and menus)
      * @param render
      */
-    public void paintScreen(CheckedRender render)
+    public static void paintScreen(CheckedRender render)
     {
         uiStack.paint(render);
     }
 
-    public void doWork (BigDecimal timeAdjustment, boolean paused)
+    public static void doWork(BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
         //TODO: scroll down is slower than up, why? fix it
@@ -274,6 +274,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 break;
             case KeyEvent.VK_ESCAPE:
                 Logger.log(LogLevel.debug, new String[] {"escape"});
+                //TODO: a proper 'quit' method to save, prompt user etc
                 System.exit(0);
                 break;
             case KeyEvent.VK_A:
@@ -291,6 +292,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     Logger.log(LogLevel.debug, new String[]{"Camera pan disabled"});
                 }
                 break;
+            case KeyEvent.VK_R:
+                Logger.log(LogLevel.info, new String[]{"Reloading all resource files"});
+                ResourceManager.resetLoadedImages();
         }
     }
 
@@ -360,6 +364,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         {
             //Convert the mouse coordinates from screen to world coordinates
             paramMouseWheelEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+
             Game.getWorld(currentWorldIndex).mouseWheelMoved(paramMouseWheelEvent);
         }
     }

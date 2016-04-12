@@ -13,9 +13,9 @@ import java.io.InputStream;
  */
 public class ResourceManager
 {
-    //TODO: pre-load this
-    //TODO: throw some sort of error if the file isn't found
-    //TODO: implement imageObserver or similar, and verify all resources are properly loaded
+    //TODO: pre-load this - is this even needed? keep watching it as size increases
+    //TODO: throw some sort of managed error if the file isn't found
+    //TODO: implement imageObserver or similar, and verify all resources are properly loaded - done already via null check loading?
     private static BufferedImage[] images = new BufferedImage[ImageID.values().length];
 
     public static void resetLoadedImages()
@@ -33,97 +33,97 @@ public class ResourceManager
                 switch (id)
                 {
                     case background1A:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background1A.png"));
+                        images[id.ordinal()] = loadImage("background1A.png");
                         break;
                     case background1B:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background1B.png"));
+                        images[id.ordinal()] = loadImage("background1B.png");
                         break;
                     case background1C:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background1C.png"));
+                        images[id.ordinal()] = loadImage("background1C.png");
                         break;
                     case background1D:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background1D.png"));
+                        images[id.ordinal()] = loadImage("background1D.png");
                         break;
                     case background2A:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background2A.png"));
+                        images[id.ordinal()] = loadImage("background2A.png");
                         break;
                     case background2B:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background2B.png"));
+                        images[id.ordinal()] = loadImage("background2B.png");
                         break;
                     case background2C:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background2C.png"));
+                        images[id.ordinal()] = loadImage("background2C.png");
                         break;
                     case background2D:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background2D.png"));
+                        images[id.ordinal()] = loadImage("background2D.png");
                         break;
                     case background3A:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background3A.png"));
+                        images[id.ordinal()] = loadImage("background3A.png");
                         break;
                     case background3B:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background3B.png"));
+                        images[id.ordinal()] = loadImage("background3B.png");
                         break;
                     case background3C:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background3C.png"));
+                        images[id.ordinal()] = loadImage("background3C.png");
                         break;
                     case background3D:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background3D.png"));
+                        images[id.ordinal()] = loadImage("background3D.png");
                         break;
                     case background4A:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background4A.png"));
+                        images[id.ordinal()] = loadImage("background4A.png");
                         break;
                     case background4B:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background4B.png"));
+                        images[id.ordinal()] = loadImage("background4B.png");
                         break;
                     case background4C:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background4C.png"));
+                        images[id.ordinal()] = loadImage("background4C.png");
                         break;
                     case background4D:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("background4D.png"));
+                        images[id.ordinal()] = loadImage("background4D.png");
                         break;
                     case buttonDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseButtonClass.png"));
+                        images[id.ordinal()] = loadImage("baseButtonClass.png");
                         break;
                     case buttonHover:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseButtonClassHover.png"));
+                        images[id.ordinal()] = loadImage("baseButtonClassHover.png");
                         break;
                     case buttonClick:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseButtonClassClick.png"));
+                        images[id.ordinal()] = loadImage("baseButtonClassClick.png");
                         break;
                     case menuBackground:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseMenuClass.png"));
+                        images[id.ordinal()] = loadImage("baseMenuClass.png");
                         break;
                     case entityShipDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseShipClass.png"));
+                        images[id.ordinal()] = loadImage("baseShipClass.png");
                         break;
                     case infoPanelDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseShipClass.png"));
+                        images[id.ordinal()] = loadImage("baseShipClass.png");
                         break;
                     case entityStructureDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("baseBuildingClass.png"));
+                        images[id.ordinal()] = loadImage("baseBuildingClass.png");
                         break;
                     case gridDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("gridDefault.png"));
+                        images[id.ordinal()] = loadImage("gridDefault.png");
                         break;
                     case gridHover:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("gridHover.png"));
+                        images[id.ordinal()] = loadImage("gridHover.png");
                         break;
                     case gridClick:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("gridClick.png"));
+                        images[id.ordinal()] = loadImage("gridClick.png");
                         break;
                     case gridSelected:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("gridSelected.png"));
+                        images[id.ordinal()] = loadImage("gridSelected.png");
                         break;
                     case hexagonClick:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("hexagonClick.png"));
+                        images[id.ordinal()] = loadImage("hexagonClick.png");
                         break;
                     case hexagonHover:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("hexagonHover.png"));
+                        images[id.ordinal()] = loadImage("hexagonHover.png");
                         break;
                     case hexagonDefault:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("hexagonDefault.png"));
+                        images[id.ordinal()] = loadImage("hexagonDefault.png");
                         break;
                     case hexagonSelected:
-                        images[id.ordinal()] = ImageIO.read(getStreamForResource("hexagonSelected.png"));
+                        images[id.ordinal()] = loadImage("hexagonSelected.png");
                         break;
                 }
             }
@@ -135,16 +135,24 @@ public class ResourceManager
         return images[id.ordinal()];
     }
 
+    private static BufferedImage loadImage(String imageName) throws IOException
+    {
+        InputStream inputStream = getStreamForResource(imageName);
+        BufferedImage image = ImageIO.read(inputStream);
+        inputStream.close();
+        return image;
+    }
+
     private static InputStream getStreamForResource(String resourceName) throws FileNotFoundException
     {
-        File file = new File("resources\\" + resourceName);
+        File file = new File("resources" + File.separator + resourceName);
         if(file.canRead())
         {
-            return new FileInputStream(new File("resources\\" + resourceName));
+            return new FileInputStream(new File("resources" + File.separator + resourceName));
         }
         else
         {
-            Logger.log(Logger.LogLevel.warning, new String[]{"Unable to find resource " + resourceName + ", using default.", "Checked at: " + file.getAbsolutePath()});
+            Logger.log(Logger.LogLevel.warning, new String[]{"Unable to find resource " + resourceName + ", using default.", "\tSearched at: " + file.getAbsolutePath()});
             return ResourceManager.class.getResourceAsStream("/resources/" + resourceName);
         }
     }

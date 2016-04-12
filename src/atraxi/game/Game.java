@@ -66,10 +66,10 @@ public class Game extends JPanel implements Runnable
         //Offset to camera position to draw any world objects
         g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
 
-        uiHandler.paintWorld(checkedRender);
+        UserInterfaceHandler.paintWorld(checkedRender);
         //Remove camera offset to draw UI
         g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
-        uiHandler.paintScreen(checkedRender);
+        UserInterfaceHandler.paintScreen(checkedRender);
 
 //        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
 //                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
@@ -87,7 +87,7 @@ public class Game extends JPanel implements Runnable
 //                entity.doWork(timeAdjustment, paused);
 //            }
 //        }
-        uiHandler.doWork(timeAdjustment, paused);
+        UserInterfaceHandler.doWork(timeAdjustment, paused);
     }
     
     @Override
