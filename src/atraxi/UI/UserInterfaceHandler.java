@@ -70,6 +70,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         UserInterfaceHandler.selectedTile = selectedTile;
     }
 
+    public static int getMouseX()
+    {
+        return mouseX;
+    }
+
+    public static int getMouseY()
+    {
+        return mouseY;
+    }
+
     /**
      * Paint the background layer, everything else will draw above this
      * @param g2d
@@ -220,6 +230,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static void paintScreen(CheckedRender render)
     {
         uiStack.paint(render);
+
     }
 
     public static void doWork(BigDecimal timeAdjustment, boolean paused)
@@ -306,11 +317,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         boolean isUIEventHandled = uiStack.mousePressed(paramMouseEvent) != null;
 
-        //if this event wasn't intercepted by overlaid UI elements
+        //if this event was intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
 
             Game.getWorld(currentWorldIndex).mousePressed(paramMouseEvent);
         }
@@ -323,13 +334,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
 
-        //if this event wasn't intercepted by overlaid UI elements
+        //if this event was intercepted by overlaid UI elements
         boolean isUIEventHandled = uiStack.mouseDragged(paramMouseEvent) != null;
 
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
 
             Game.getWorld(currentWorldIndex).mouseDragged(paramMouseEvent);
         }
@@ -342,13 +353,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         mouseX = paramMouseEvent.getX();
         mouseY = paramMouseEvent.getY();
 
-        //if this event wasn't intercepted by overlaid UI elements
+        //if this event was intercepted by overlaid UI elements
         boolean isUIEventHandled = uiStack.mouseMoved(paramMouseEvent) != null;
 
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
 
             Game.getWorld(currentWorldIndex).mouseMoved(paramMouseEvent);
         }
@@ -359,11 +370,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         boolean isUIEventHandled = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
 
-        //if this event wasn't intercepted by overlaid UI elements
+        //if this event was intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseWheelEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+            paramMouseWheelEvent.translatePoint(-screenLocationX, -screenLocationY);
 
             Game.getWorld(currentWorldIndex).mouseWheelMoved(paramMouseWheelEvent);
         }
@@ -377,11 +388,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         boolean isUIEventHandled = uiStack.mouseReleased(paramMouseEvent) != null;
 
-        //if this event wasn't intercepted by overlaid UI elements
+        //if this event was intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-(int) screenLocationX, -(int) screenLocationY);
+            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
 
             //if left click
             if (paramMouseEvent.getButton() == MouseEvent.BUTTON1)
