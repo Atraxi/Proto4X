@@ -125,15 +125,39 @@ public class World implements UIElement
 
         //a useful estimate however with inaccuracies between top left/right corners of
         //hex/rect bounds (bottom of hex/rect is the next row by this approximation)
-        y = mouseY / ((3 * tileHeight) / 4);
-        x = (mouseX - ((y % 2) * tileWidth) / 2) / tileWidth;
+        y = (int) Math.floor(mouseY / ((3.0 * tileHeight) / 4));
+        x = (int) Math.floor((mouseX - ((y % 2) * (double)tileWidth) / 2) / tileWidth);
 
-        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        //x = (int) Math.floor(xDouble);
+        //y = (int) Math.floor(yDouble);
+
+        if(x >= -1 && y >= -1 && x <= tiles.length && y <= tiles[0].length)
         {
             //use the estimate to offset our coordinates to [0,0]
             //in order to simplify math with gradients to divide overlapping hex bounds
-            int translatedX = mouseX - tiles[x][y].xCoord;
-            int translatedY = mouseY - tiles[x][y].yCoord;
+            int translatedX;
+            int translatedY;
+            //We have the distance to offset for each GridTile stored in each GridTile (otherwise known as the GridTile's position)
+            if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+            {
+                translatedX = mouseX - tiles[x][y].xCoord;
+                translatedY = mouseY - tiles[x][y].yCoord;
+            }
+            //Except around the edges of the world, where we have to deal with locations outside the edge of the map, and thus have no pre-calculated values to use
+            else
+            {
+                //So we just re-use the calculation from the GridTile constructor
+                //This is also the original calculation for the re-arranged version a few lines above
+                //The re-use here is sort-of an abuse of rounding, to get the top-left corner of the GridTile the mouse is currently over
+                //horizontally is the same as rectangles
+                int xCoord = x * tileWidth
+                         //except offset by half the width of a hex every second row
+                         //if xIndex is even, then add 0, else add dimBounds.width/2
+                         + ((y % 2) * tileWidth / 2);
+                int yCoord = y * (3 * tileHeight / 4);
+                translatedX = mouseX - xCoord;
+                translatedY = mouseY - yCoord;
+            }
 
             //using pre-calculated constants for y=mx+c equation
             //determine which corner we are in, if any, and offset index
@@ -157,7 +181,6 @@ public class World implements UIElement
                 //move up a row
                 y--;
             }
-
             return new Point(x, y);
         }
         else
