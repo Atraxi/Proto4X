@@ -11,7 +11,6 @@ import atraxi.util.ResourceManager.ImageID;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
-import java.awt.Shape;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.LinkedList;
@@ -25,7 +24,6 @@ public class World implements UIElement
     public final long seed;
     private GridTile[][] tiles;
     private Rectangle tileBounds;
-    private Shape tileTemp;
     private int sizeX, sizeY;
 
     //Tiles cannot be relied upon to update their state internally in all cases (especially reverting state), as it is not feasible to have every tile process every UI event
@@ -39,19 +37,22 @@ public class World implements UIElement
     /**
      * Instantiates a new game world
      *
-     * @param tileBounds  The dimensions of each tile
+     * @param tileBounds  The bounding shape of each tile
      * @param sizeX       The number of tiles wide
      * @param sizeY       The number of tiles tall
      * @param tileDefault The default image for each tile
      * @param tileHover   The image used to indicate mouseover of a tile
-     * @param tileClick   The image used when the player clicks a tile
+     * @param tileClick   The image used when the player clicks a tile, but has not released the click
+     * @param tileSelected The image used for the currently selected tile
      */
-    public World(long seed, Rectangle tileBounds, int sizeX, int sizeY, ImageID tileDefault, ImageID tileHover, ImageID tileClick, ImageID tileSelected)
+    public World(long seed, Polygon tileBounds, int sizeX, int sizeY, ImageID tileDefault, ImageID tileHover, ImageID tileClick, ImageID tileSelected)
     {
         this.seed = seed;
         this.sizeX = sizeX;
         this.sizeY = sizeY;
-        this.tileBounds = tileBounds;
+        this.tileBounds = tileBounds.getBounds();
+        assert Math.abs(this.tileBounds.getHeight() - tileDefault.getImage().getHeight()) < 0.001;
+        assert Math.abs(this.tileBounds.getWidth() - tileDefault.getImage().getWidth()) < 0.001;
         tiles = new GridTile[sizeX][sizeY];
         for(int x = 0; x < tiles.length; x++)
         {
@@ -63,45 +64,35 @@ public class World implements UIElement
     }
 
     /**
-     * Instantiates a new game world
-     *
-     * @param tileBounds  The bounding shape of each tile
-     * @param sizeX       The number of tiles wide
-     * @param sizeY       The number of tiles tall
-     * @param tileDefault The default image for each tile
-     * @param tileHover   The image used to indicate mouseover of a tile
-     * @param tileClick   The image used when the player clicks a tile
+     * @return The number of rows for this world
      */
-    public World(long seed, Polygon tileBounds, int sizeX, int sizeY, ImageID tileDefault, ImageID tileHover, ImageID tileClick, ImageID tileSelected)
-    {
-        this.seed = seed;
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
-        this.tileBounds = tileBounds.getBounds();
-        tiles = new GridTile[sizeX][sizeY];
-        for(int x = 0; x < tiles.length; x++)
-        {
-            for(int y = 0; y < tiles[x].length; y++)
-            {
-                tiles[x][y] = new GridTile(x, y, tileBounds, tileDefault, tileHover, tileClick, tileSelected);
-            }
-        }
-        tileTemp = tileBounds;
-    }
-
     public int getSizeY()
     {
         return sizeY;
     }
 
+    /**
+     * @return The number of columns wide for this world
+     */
     public int getSizeX()
     {
         return sizeX;
     }
 
-    public int getGridSize()
+    /**
+     * @return The width of each tile
+     */
+    public int getTileWidth()
     {
         return tileBounds.width;
+    }
+
+    /**
+     * @return The height of each tile
+     */
+    public int getTileHeight()
+    {
+        return tileBounds.height;
     }
 
     @Override
@@ -186,16 +177,8 @@ public class World implements UIElement
         //previousState is used to roll rollback a mouse press+drag
         private TileState state, previousState;
         private int xIndex, yIndex, xCoord, yCoord;
-        private Shape dim;
+        private Polygon dim;
         private LinkedList<Entity> entities;
-
-        public GridTile(int xIndex, int yIndex, Rectangle dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
-        {
-            this(xIndex, yIndex, imageDefault, imageHover, imageClick, imageSelected);
-            xCoord = xIndex * dim.width;
-            yCoord = yIndex * dim.height;
-            this.dim = new Rectangle(xCoord, yCoord, dim.width, dim.height);
-        }
 
         private GridTile(int xIndex, int yIndex, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
         {
@@ -209,7 +192,7 @@ public class World implements UIElement
             entities = new LinkedList<>();
         }
 
-        public GridTile(int xIndex, int yIndex, Polygon dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
+        GridTile(int xIndex, int yIndex, Polygon dim, ImageID imageDefault, ImageID imageHover, ImageID imageClick, ImageID imageSelected)
         {
             this(xIndex, yIndex, imageDefault, imageHover, imageClick, imageSelected);
             Rectangle dimBounds = dim.getBounds();
@@ -220,7 +203,7 @@ public class World implements UIElement
                      + ((yIndex % 2) * dimBounds.width / 2);
             yCoord = yIndex * (3 * dimBounds.height / 4);
             this.dim = new Polygon(dim.xpoints, dim.ypoints, dim.npoints);
-            ((Polygon) this.dim).translate(xCoord, yCoord);
+            this.dim.translate(xCoord, yCoord);
         }
 
         public void addEntity(Entity newEntity)

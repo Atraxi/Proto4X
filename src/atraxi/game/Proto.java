@@ -44,12 +44,7 @@ public class Proto extends JFrame
         players.add(user);
 
         ArrayList<World> worlds = new ArrayList<World>();
-        //Rectangle
-        /*
-        worlds.add(new World(random.nextInt(), new Rectangle(ImageID.gridDefault.getImage().getWidth(), ImageID.gridDefault.getImage().getHeight()), 100, 100,
-                             ImageID.gridDefault, ImageID.gridHover, ImageID.gridClick, ImageID.gridSelected));
-        */
-
+        
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
         worlds.add(new World(random.nextInt(),
                              new Polygon(new int[]
