@@ -30,6 +30,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                                                                 ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
                                                                 ImageID.background3A,ImageID.background3B,ImageID.background3C,ImageID.background3D,
                                                                 ImageID.background4A,ImageID.background4B,ImageID.background4C,ImageID.background4D};
+    private static final int edgeScrollArea = 50;
     private static int currentWorldIndex;
 
     //variables related to edge scrolling
@@ -239,21 +240,27 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //TODO: scroll down is slower than up, why? fix it
         if(isScrollEnabled && !paused)
         {
-            if (mouseX < 100 && screenLocationX < Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            if (mouseX < edgeScrollArea && screenLocationX < Game.getWorld(currentWorldIndex).getTileWidth()/2)
             {
-                screenLocationX += timeAdjustment.multiply(new BigDecimal((100 - mouseX) / 10)).doubleValue();
+                //Logger.log(LogLevel.info, new String[] {"moving left"});
+                screenLocationX += timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            else if (mouseX >= Proto.screen_Width - 100 && screenLocationX > -Game.getWorld(currentWorldIndex).getSizeX() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            else if (mouseX >= Proto.screen_Width - edgeScrollArea && screenLocationX > Proto.screen_Width -(Game.getWorld(currentWorldIndex).getTileWidth() * (Game.getWorld
+                    (currentWorldIndex).getSizeX() + 1)))
             {
-                screenLocationX -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Width + mouseX) / 10)).doubleValue();
+                //Logger.log(LogLevel.info, new String[] {"moving right"});
+                screenLocationX -= timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            if (mouseY < 100 && screenLocationY < Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            if (mouseY < edgeScrollArea && screenLocationY < Game.getWorld(currentWorldIndex).getTileHeight()/2)
             {
-                screenLocationY += timeAdjustment.multiply(new BigDecimal((100 - mouseY) / 10)).doubleValue();
+                //Logger.log(LogLevel.info, new String[] {"moving up"});
+                screenLocationY += timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            else if (mouseY >= Proto.screen_Height - 100 && screenLocationY > -Game.getWorld(currentWorldIndex).getSizeY() * Game.getWorld(currentWorldIndex).getGridSize() / 2)
+            else if (mouseY >= Proto.screen_Height - edgeScrollArea && screenLocationY > Proto.screen_Height - ((3 * Game.getWorld(currentWorldIndex).getTileHeight() / 4) * (Game.getWorld
+                    (currentWorldIndex).getSizeY() + 1)))
             {
-                screenLocationY -= timeAdjustment.multiply(new BigDecimal((100 - Proto.screen_Height + mouseY) / 10)).doubleValue();
+                //Logger.log(LogLevel.info, new String[] {"moving down"});
+                screenLocationY -= timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
         }
     }
