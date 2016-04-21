@@ -6,10 +6,10 @@ import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 
 import javax.swing.JPanel;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
@@ -32,9 +32,9 @@ public class Game extends JPanel implements Runnable
         Game.players = players;
         Game.uiHandler = uiHandler;
         Game.worlds = worlds;
-        setPreferredSize(new Dimension(Proto.screen_Width, Proto.screen_Height));
+        //setPreferredSize(new Dimension(Proto.getScreenWidth(), Proto.getScreenHeight()));
         setDoubleBuffered(true);
-        paused = false;
+        paused = true;
         checkedRender = new CheckedRender();
     }
     
@@ -58,17 +58,21 @@ public class Game extends JPanel implements Runnable
         {//zoom out, show a box where the edge of the screen would normally be
             g2d.scale(0.75, 0.75);
             g2d.translate(250, 100);
-            g2d.drawRect(0, 0, Proto.screen_Width, Proto.screen_Height);
+            g2d.drawRect(0, 0, Proto.getScreenWidth(), Proto.getScreenHeight());
         }
         //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
         // so the camera offset is managed inside it's paint method
         uiHandler.paintBackground(g2d);
-        //Offset to camera position to draw any world objects
-        g2d.translate(UserInterfaceHandler.getScreenLocationX(), UserInterfaceHandler.getScreenLocationY());
+
+        //Transform camera position/scale/rotation to draw any world objects
+        AffineTransform g2dTransformBackup = g2d.getTransform();
+        g2d.transform(UserInterfaceHandler.getWorldTransform());
 
         UserInterfaceHandler.paintWorld(checkedRender);
-        //Remove camera offset to draw UI
-        g2d.translate(-UserInterfaceHandler.getScreenLocationX(), -UserInterfaceHandler.getScreenLocationY());
+
+        //Remove/reset camera transform to draw UI
+        g2d.setTransform(g2dTransformBackup);
+
         UserInterfaceHandler.paintScreen(checkedRender);
 
 //        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),

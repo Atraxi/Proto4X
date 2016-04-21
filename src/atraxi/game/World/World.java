@@ -99,7 +99,7 @@ public class World implements UIElement
     public UIElement mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
         int x = gridIndex.x;
         int y = gridIndex.y;
         //avoid index out of bounds errors
@@ -116,7 +116,7 @@ public class World implements UIElement
         }
     }
 
-    private Point getGridTileIndex(int mouseX, int mouseY, int tileHeight, int tileWidth)
+    private Point getGridTileIndex(int mouseX, int mouseY, int tileWidth, int tileHeight)
     {
         int x, y;
         //start with a re-arranged version of the code from GridTile constructor
@@ -253,8 +253,7 @@ public class World implements UIElement
         @Override
         public UIElement mousePressed(MouseEvent paramMouseEvent)
         {
-            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), imageClick.getImage().getHeight(), imageClick.getImage().getTileWidth())
-                    .equals(new Point(xIndex, yIndex));
+            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height).equals(new Point(xIndex, yIndex));
             if(mouseInBounds)
             {
                 //store previous tile state in-case the click is cancelled
@@ -286,8 +285,7 @@ public class World implements UIElement
             //if we are finishing up from a mousePressed() event on this tile
             if(state == TileState.PRESSED)
             {
-                boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), imageClick.getImage().getHeight(), imageClick.getImage().getTileWidth())
-                        .equals(new Point(xIndex, yIndex));
+                boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height).equals(new Point(xIndex, yIndex));
                 //if the start (assumed at this point since we are 'pressed') of the click and the end are both on this tile
                 //i.e. we are clicked
                 if(mouseInBounds)
@@ -323,8 +321,7 @@ public class World implements UIElement
         @Override
         public UIElement mouseMoved(MouseEvent paramMouseEvent)
         {
-            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), imageClick.getImage().getHeight(), imageClick.getImage().getTileWidth())
-                    .equals(new Point(xIndex, yIndex));
+            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height).equals(new Point(xIndex, yIndex));
             if(mouseInBounds)
             {
                 if(state == TileState.DEFAULT)
@@ -415,7 +412,7 @@ public class World implements UIElement
     public UIElement mouseDragged(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
         int x = gridIndex.x;
         int y = gridIndex.y;
         //avoid index out of bounds errors
@@ -439,7 +436,7 @@ public class World implements UIElement
     public UIElement mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.height, tileBounds.width);
+        Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
         int x = gridIndex.x;
         int y = gridIndex.y;
         //avoid index out of bounds errors
@@ -463,7 +460,7 @@ public class World implements UIElement
     public UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndex(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), tileBounds.height, tileBounds.width);
+        Point gridIndex = getGridTileIndex(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), tileBounds.width, tileBounds.height);
         int x = gridIndex.x;
         int y = gridIndex.y;
         //avoid index out of bounds errors

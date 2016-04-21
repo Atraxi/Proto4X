@@ -20,8 +20,6 @@ import static atraxi.util.ResourceManager.ImageID;
 public class Proto extends JFrame
 {
     private static final long serialVersionUID = 1L;
-    public static int screen_Width;
-    public static int screen_Height;
     public static boolean debug;
     public static Proto PROTO;
 
@@ -126,5 +124,20 @@ public class Proto extends JFrame
             Proto frame = new Proto();
             frame.setVisible(true);
         });
+    }
+    /**
+     * Get the width of the active game area (i.e. without the title bar etc)
+     */
+    public static int getScreenWidth()
+    {
+        return PROTO.getContentPane().getWidth();
+    }
+
+    /**
+     * Get the height of the active game area (i.e. without the title bar etc)
+     */
+    public static int getScreenHeight()
+    {
+        return PROTO.getContentPane().getHeight();
     }
 }

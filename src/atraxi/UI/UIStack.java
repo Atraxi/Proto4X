@@ -1,12 +1,11 @@
 package atraxi.ui;
 
+import atraxi.game.Proto;
 import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.Logger.LogLevel;
-import atraxi.game.Proto;
 import atraxi.util.ResourceManager.ImageID;
 
-import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 
@@ -167,8 +166,8 @@ public class UIStack implements UIElement
     public static UIStackNode getNewTestMenu()
     {
         return new Menu(ImageID.menuBackground,
-                        (Proto.screen_Width / 2) - 30,
-                        (Proto.screen_Height / 2) - 30,
+                        (Proto.getScreenWidth() / 2) - 30,
+                        (Proto.getScreenHeight() / 2) - 30,
                         new Button[]{
                                 new Button(
                                         ImageID.buttonDefault,

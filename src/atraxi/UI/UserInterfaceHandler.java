@@ -12,6 +12,8 @@ import atraxi.util.ResourceManager;
 import atraxi.util.ResourceManager.ImageID;
 
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -19,6 +21,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import java.math.BigDecimal;
 import java.util.Random;
 
@@ -34,12 +38,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     private static int currentWorldIndex;
 
     //variables related to edge scrolling
-    private static int screenLocationX = 0, screenLocationY = 0;
+    private static AffineTransform worldTransform = new AffineTransform();
     //initial value is mostly irrelevant, and will be set properly the instant the mouse is moved
-    private static int mouseX = 200, mouseY = 200;
+    private static Point mouseLocation = new Point(200, 200);
 
-    public static UIStack uiStack;
-    private static boolean isScrollEnabled = true;
+    public static UIStack uiStack = new UIStack();
+    private static boolean isScrollEnabled = false;
 
     //Used in paintBackground(), avoids recreating an instance ~100 times a frame
     private static final Random rand = new Random();
@@ -47,18 +51,18 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
         UserInterfaceHandler.user = user;
-        uiStack = new UIStack();
+
         currentWorldIndex = defaultWorldIndex;
     }
 
     public static int getScreenLocationX ()
     {
-        return screenLocationX;
+        return (int) worldTransform.getTranslateX();
     }
 
     public static int getScreenLocationY ()
     {
-        return screenLocationY;
+        return (int) worldTransform.getTranslateY();
     }
 
     public static int getCurrentWorldIndex()
@@ -71,14 +75,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         UserInterfaceHandler.selectedTile = selectedTile;
     }
 
-    public static int getMouseX()
+    public static Point getMouseLocation()
     {
-        return mouseX;
-    }
-
-    public static int getMouseY()
-    {
-        return mouseY;
+        return mouseLocation;
     }
 
     /**
@@ -99,16 +98,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         int mapImageHeight = mapImages[0].getImage().getHeight(null);
         int indexX;
         int indexY;
-        for(double backgroundOffsetX = (screenLocationX % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.screen_Width;
+        for(double backgroundOffsetX = (getScreenLocationX() % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.getScreenWidth();
             backgroundOffsetX += mapImageWidth)
         {
-            for(double backgroundOffsetY = (screenLocationY % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.screen_Height;
+            for(double backgroundOffsetY = (getScreenLocationY() % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.getScreenHeight();
                 backgroundOffsetY += mapImageHeight)
             {
-                indexX = (int)((backgroundOffsetX-screenLocationX+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-screenLocationY+10)/mapImageHeight);
+                indexX = (int)((backgroundOffsetX-getScreenLocationX()+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-getScreenLocationY()+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED);
                 g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
@@ -117,26 +116,26 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 60);*/
                     g2d.scale(0.25, 0.25);
                 }
             }
         }
-        for(double backgroundOffsetX = (screenLocationX/2 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.screen_Width;
+        for(double backgroundOffsetX = (getScreenLocationX()/2 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.getScreenWidth();
             backgroundOffsetX += mapImageWidth)
         {
-            for(double backgroundOffsetY = (screenLocationY/2 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.screen_Height;
+            for(double backgroundOffsetY = (getScreenLocationY()/2 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.getScreenHeight();
                 backgroundOffsetY += mapImageHeight)
             {
-                indexX = (int)((backgroundOffsetX-(screenLocationX/2)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(screenLocationY/2)+10)/mapImageHeight);
+                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/2)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/2)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*2);
                 g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
@@ -145,10 +144,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 60);*/
                     g2d.scale(0.25, 0.25);
@@ -156,16 +155,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             }
         }
 
-        for(double backgroundOffsetX = (screenLocationX/3 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.screen_Width;
+        for(double backgroundOffsetX = (getScreenLocationX()/3 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.getScreenWidth();
             backgroundOffsetX += mapImageWidth)
         {
-            for(double backgroundOffsetY = (screenLocationY/3 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.screen_Height;
+            for(double backgroundOffsetY = (getScreenLocationY()/3 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.getScreenHeight();
                 backgroundOffsetY += mapImageHeight)
             {
-                indexX = (int)((backgroundOffsetX-(screenLocationX/3)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(screenLocationY/3)+10)/mapImageHeight);
+                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/3)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/3)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*3);
                 g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
@@ -174,10 +173,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 60);*/
                     g2d.scale(0.25, 0.25);
@@ -185,16 +184,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             }
         }
 
-        for(double backgroundOffsetX = (screenLocationX/5 % mapImageWidth) - (screenLocationX>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.screen_Width;
+        for(double backgroundOffsetX = (getScreenLocationX()/5 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+            backgroundOffsetX <= Proto.getScreenWidth();
             backgroundOffsetX += mapImageWidth)
         {
-            for(double backgroundOffsetY = (screenLocationY/5 % mapImageHeight) - (screenLocationY>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.screen_Height;
+            for(double backgroundOffsetY = (getScreenLocationY()/5 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                backgroundOffsetY <= Proto.getScreenHeight();
                 backgroundOffsetY += mapImageHeight)
             {
-                indexX = (int)((backgroundOffsetX-(screenLocationX/5)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(screenLocationY/5)+10)/mapImageHeight);
+                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/5)+10)/mapImageWidth);
+                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/5)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*5);
                 g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Proto.debug)
@@ -203,10 +202,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     g2d.drawString("x:" + indexX + " y:" + indexY,
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)screenLocationX,
+                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-screenLocationX),
+                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
                                    (int) backgroundOffsetX/4 + 20,
                                    (int) backgroundOffsetY/4 + 60);*/
                     g2d.scale(0.25, 0.25);
@@ -240,28 +239,37 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         //TODO: scroll down is slower than up, why? fix it
         if(isScrollEnabled && !paused)
         {
-            if (mouseX < edgeScrollArea && screenLocationX < Game.getWorld(currentWorldIndex).getTileWidth()/2)
+            int xTranslation = 0, yTranslation = 0;
+            if (mouseLocation.x < edgeScrollArea &&
+                getScreenLocationX() / worldTransform.getScaleX() <
+                Game.getWorld(currentWorldIndex).getTileWidth()/2)
             {
                 //Logger.log(LogLevel.info, new String[] {"moving left"});
-                screenLocationX += timeAdjustment.multiply(new BigDecimal(10)).intValue();
+                xTranslation = timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            else if (mouseX >= Proto.screen_Width - edgeScrollArea && screenLocationX > Proto.screen_Width -(Game.getWorld(currentWorldIndex).getTileWidth() * (Game.getWorld
-                    (currentWorldIndex).getSizeX() + 1)))
+            else if (mouseLocation.x >= Proto.getScreenWidth() - edgeScrollArea &&
+                     getScreenLocationX() / worldTransform.getScaleX() >
+                     Proto.getScreenWidth() - (Game.getWorld(currentWorldIndex).getTileWidth() * (Game.getWorld(currentWorldIndex).getSizeX() + 1)))
             {
                 //Logger.log(LogLevel.info, new String[] {"moving right"});
-                screenLocationX -= timeAdjustment.multiply(new BigDecimal(10)).intValue();
+                xTranslation = -timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            if (mouseY < edgeScrollArea && screenLocationY < Game.getWorld(currentWorldIndex).getTileHeight()/2)
+            if (mouseLocation.y < edgeScrollArea &&
+                getScreenLocationY() / worldTransform.getScaleY() <
+                Game.getWorld(currentWorldIndex).getTileHeight()/2)
             {
                 //Logger.log(LogLevel.info, new String[] {"moving up"});
-                screenLocationY += timeAdjustment.multiply(new BigDecimal(10)).intValue();
+                yTranslation = timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            else if (mouseY >= Proto.screen_Height - edgeScrollArea && screenLocationY > Proto.screen_Height - ((3 * Game.getWorld(currentWorldIndex).getTileHeight() / 4) * (Game.getWorld
+            else if (mouseLocation.y >= Proto.getScreenHeight() - edgeScrollArea &&
+                     getScreenLocationY() / worldTransform.getScaleY() >
+                     Proto.getScreenHeight() - ((3 * Game.getWorld(currentWorldIndex).getTileHeight() / 4) * (Game.getWorld
                     (currentWorldIndex).getSizeY() + 1)))
             {
                 //Logger.log(LogLevel.info, new String[] {"moving down"});
-                screenLocationY -= timeAdjustment.multiply(new BigDecimal(10)).intValue();
+                yTranslation = -timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
+            worldTransform.translate(xTranslation, yTranslation);
         }
     }
 
@@ -328,7 +336,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
+            transformMouseEvent(paramMouseEvent, worldTransform);
 
             Game.getWorld(currentWorldIndex).mousePressed(paramMouseEvent);
         }
@@ -338,8 +346,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mouseDragged(MouseEvent paramMouseEvent)
     {
         //See doWork() for usage, store coords for camera pan
-        mouseX = paramMouseEvent.getX();
-        mouseY = paramMouseEvent.getY();
+        mouseLocation = paramMouseEvent.getPoint();
 
         //if this event was intercepted by overlaid UI elements
         boolean isUIEventHandled = uiStack.mouseDragged(paramMouseEvent) != null;
@@ -347,7 +354,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
+            transformMouseEvent(paramMouseEvent, worldTransform);
 
             Game.getWorld(currentWorldIndex).mouseDragged(paramMouseEvent);
         }
@@ -357,8 +364,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mouseMoved(MouseEvent paramMouseEvent)
     {
         //See doWork() for usage, store coords for camera pan
-        mouseX = paramMouseEvent.getX();
-        mouseY = paramMouseEvent.getY();
+        mouseLocation = paramMouseEvent.getPoint();
 
         //if this event was intercepted by overlaid UI elements
         boolean isUIEventHandled = uiStack.mouseMoved(paramMouseEvent) != null;
@@ -366,7 +372,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
+            transformMouseEvent(paramMouseEvent, worldTransform);
 
             Game.getWorld(currentWorldIndex).mouseMoved(paramMouseEvent);
         }
@@ -376,13 +382,21 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
         boolean isUIEventHandled = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
-
         //if this event was intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
-            //Convert the mouse coordinates from screen to world coordinates
-            paramMouseWheelEvent.translatePoint(-screenLocationX, -screenLocationY);
+            double scaleFactor = paramMouseWheelEvent.getWheelRotation() > 0.0 ? 0.9 * paramMouseWheelEvent.getWheelRotation() : (10.0 / 9.0) * -paramMouseWheelEvent
+                .getPreciseWheelRotation();
 
+            if(((worldTransform.getScaleX() < 2) && (worldTransform.getScaleY() < 2) && (scaleFactor > 1)) ||
+               ((worldTransform.getScaleX() > 0.5) && (worldTransform.getScaleY() > 0.5) && (scaleFactor < 1)))
+            {
+                worldTransform.translate(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY());
+                worldTransform.scale(scaleFactor, scaleFactor);
+                worldTransform.translate(-paramMouseWheelEvent.getX(), -paramMouseWheelEvent.getY());
+            }
+            //Convert the mouse coordinates from screen to world coordinates
+            transformMouseEvent(paramMouseWheelEvent, worldTransform);
             Game.getWorld(currentWorldIndex).mouseWheelMoved(paramMouseWheelEvent);
         }
     }
@@ -399,7 +413,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
-            paramMouseEvent.translatePoint(-screenLocationX, -screenLocationY);
+            transformMouseEvent(paramMouseEvent, worldTransform);
 
             //if left click
             if (paramMouseEvent.getButton() == MouseEvent.BUTTON1)
@@ -427,4 +441,23 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     @Override//Not relevant with a custom UI stack
     public void mouseExited(MouseEvent paramMouseEvent) {}
+
+    private static void transformMouseEvent(MouseEvent event, AffineTransform transform)
+    {
+        Point point = new Point(event.getX(), event.getY());
+        try
+        {
+            transform.createInverse().transform(point, point);
+        }
+        catch(NoninvertibleTransformException e)
+        {
+            e.printStackTrace();
+        }
+        event.translatePoint((int) (point.getX() - event.getX()), (int) point.getY() - event.getY());
+    }
+
+    public static AffineTransform getWorldTransform()
+    {
+        return worldTransform;
+    }
 }
