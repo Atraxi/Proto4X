@@ -69,8 +69,8 @@ public class CheckedRender
         {
             throw new NullPointerException("containingArea cannot be null");
         }
-        if(Proto.debug &&
-                (x < containingArea.x ||
+        if(Proto.debug.getDetailedInfoLevel() > 0 &&
+           (x < containingArea.x ||
                         y < containingArea.y ||
                         containingArea.getWidth() + containingArea.x < stringDim.getWidth() + x ||
                         containingArea.getHeight() + containingArea.y < stringDim.getHeight()+ y))
@@ -88,7 +88,7 @@ public class CheckedRender
         }
 
         g2d.drawString(stringToDraw, x, y);
-        if(Proto.debug)
+        if(Proto.debug.getDetailedInfoLevel() >= 4)
         {
             g2d.drawRect(x, (int)(y - stringDim.getHeight() + g2d.getFontMetrics().getMaxDescent()),
                          (int) stringDim.getWidth(),
@@ -106,7 +106,7 @@ public class CheckedRender
      */
     public void drawImage(ResourceManager.ImageID imageID, int x, int y, Rectangle containingArea)
     {
-        if(Proto.debug && containingArea != null && (
+        if(Proto.debug.getDetailedInfoLevel() > 0 && containingArea != null && (
                 x < containingArea.x ||
                         y < containingArea.y ||
                         x + imageID.getImage().getWidth() > containingArea.x + containingArea.width ||

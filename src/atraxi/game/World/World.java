@@ -2,6 +2,7 @@ package atraxi.game.world;
 
 import atraxi.entities.Entity;
 import atraxi.entities.actionQueue.Action;
+import atraxi.game.Proto;
 import atraxi.ui.UIElement;
 import atraxi.ui.UserInterfaceHandler;
 import atraxi.util.CheckedRender;
@@ -346,6 +347,11 @@ public class World implements UIElement
         @Override
         public void paint(CheckedRender render)
         {
+            if(Proto.debug.getDetailedInfoLevel() > 3)
+            {
+                render.drawString("x:" + xIndex, xCoord + 50, yCoord + 50, dim.getBounds());
+                render.drawString("y:" + yIndex, xCoord + 50, yCoord + 60, dim.getBounds());
+            }
             switch(state)
             {
                 case DEFAULT:

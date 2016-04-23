@@ -1,10 +1,9 @@
 package atraxi.ui;
 
 import atraxi.game.Proto;
-import atraxi.util.ResourceManager.ImageID;
 import atraxi.util.CheckedRender;
+import atraxi.util.ResourceManager.ImageID;
 
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -85,7 +84,7 @@ public class InfoPanel implements UIElement
         render.drawString(Integer.toString(health), 5 + dim.x, icon.getHeight(null) + 10 + dim.y, dim);
         render.drawString(Integer.toString(supply), 5 + dim.x, icon.getHeight(null) + 20 + dim.y, dim);
         render.drawString(Integer.toString(ammunition), 5 + dim.x, icon.getHeight(null) + 30 + dim.y, dim);
-        if (Proto.debug)
+        if (Proto.debug.getDetailedInfoLevel() > 4)
         {
             render.drawRect(dim.x, dim.y, dim.width, dim.height);
         }

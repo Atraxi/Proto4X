@@ -54,7 +54,7 @@ public class Game extends JPanel implements Runnable
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
         checkedRender.setG2d(g2d);
-        if(Proto.debug)
+        if(Proto.debug.isExpandedZoomEnabled())
         {//zoom out, show a box where the edge of the screen would normally be
             g2d.scale(0.75, 0.75);
             g2d.translate(250, 100);

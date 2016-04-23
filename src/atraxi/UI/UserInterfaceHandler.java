@@ -110,7 +110,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexY = (int)((backgroundOffsetY-getScreenLocationY()+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED);
                 g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Proto.debug)
+                if(Proto.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
                     g2d.drawString("x:" + indexX + " y:" + indexY,
@@ -138,7 +138,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/2)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*2);
                 g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Proto.debug)
+                if(Proto.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
                     g2d.drawString("x:" + indexX + " y:" + indexY,
@@ -167,7 +167,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/3)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*3);
                 g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Proto.debug)
+                if(Proto.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
                     g2d.drawString("x:" + indexX + " y:" + indexY,
@@ -196,7 +196,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/5)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Proto.SEED*5);
                 g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Proto.debug)
+                if(Proto.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
                     g2d.drawString("x:" + indexX + " y:" + indexY,
@@ -230,7 +230,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static void paintScreen(CheckedRender render)
     {
         uiStack.paint(render);
-
+        if(Proto.debug.getDetailedInfoLevel() > 2)
+        {
+            render.drawString("mouseX:" + mouseLocation.x, 50, 50, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
+            render.drawString("mouseY:" + mouseLocation.y, 50, 60, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
+        }
     }
 
     public static void doWork(BigDecimal timeAdjustment, boolean paused)

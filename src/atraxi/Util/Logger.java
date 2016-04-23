@@ -19,7 +19,7 @@ public class Logger
         switch (logLevel)
         {
             case debug:
-                if(Proto.debug)
+                if(Proto.debug.getDetailedInfoLevel() > 0)
                 {
                     for(String message : messages)
                     {

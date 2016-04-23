@@ -20,7 +20,7 @@ import static atraxi.util.ResourceManager.ImageID;
 public class Proto extends JFrame
 {
     private static final long serialVersionUID = 1L;
-    public static boolean debug;
+    public static DebugState debug;
     public static Proto PROTO;
 
     public static final long SEED = System.nanoTime();
@@ -110,14 +110,40 @@ public class Proto extends JFrame
     public static void main(String[] args)
     {
         //TODO: a debug object/enum to toggle various debug features
-        if (args.length > 0 && args[0].equals("-debug"))
+        if (args.length > 0)
         {
-            Logger.log(Logger.LogLevel.debug, new String[]{"Debug enabled"});
-            debug = true;
+            for(int i = 0; i < args.length; i++)
+            {
+                switch(args[i])
+                {
+                    case "-debug":
+                        boolean expandedZoom = false;
+                        int infoLevel = 0;
+                        while(!args[i+1].startsWith("-"))
+                        {
+                            i++;
+                            String[] splitArgs = args[i].split("=");
+                            switch(splitArgs[0])
+                            {
+                                case "expandedZoom":
+                                    expandedZoom = Boolean.valueOf(splitArgs[1]);
+                                    break;
+                                case "infoLevel":
+                                    infoLevel = Integer.valueOf(splitArgs[1]);
+                                    break;
+                                default:
+                                    Logger.log(Logger.LogLevel.warning, new String[]{"Unknown debug flag \"" + args[i] + "\""});
+                            }
+                        }
+                        debug = new DebugState(expandedZoom, infoLevel);
+                        Logger.log(Logger.LogLevel.debug, new String[]{"Debug enabled, " + debug});
+                        break;
+                }
+            }
         }
         else
         {
-            debug = false;
+            debug = new DebugState(false, 0);
         }
 
         EventQueue.invokeLater(() -> {
@@ -125,6 +151,41 @@ public class Proto extends JFrame
             frame.setVisible(true);
         });
     }
+
+    public static class DebugState
+    {
+        private boolean expandedZoom;
+        private int infoLevel;
+
+        private DebugState(boolean expandedZoom, int infoLevel)
+        {
+            this.expandedZoom = expandedZoom;
+            this.infoLevel = infoLevel;
+        }
+
+        public boolean isExpandedZoomEnabled()
+        {
+            return expandedZoom;
+        }
+
+        /**
+         * @return An indication of how verbose various info displays should be, where 0 is the absolute minimum
+         */
+        public int getDetailedInfoLevel()
+        {
+            return infoLevel;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "DebugState{" +
+                   "expandedZoom=" + expandedZoom +
+                   ", detailedInfoLevel=" + infoLevel +
+                   '}';
+        }
+    }
+
     /**
      * Get the width of the active game area (i.e. without the title bar etc)
      */
