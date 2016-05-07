@@ -1,10 +1,12 @@
 package atraxi.ui;
 
-import atraxi.entities.actionQueue.Action;
+import atraxi.entities.actionQueue.Actions.ActionMove;
 import atraxi.game.Game;
 import atraxi.game.Player;
 import atraxi.game.Proto;
 import atraxi.game.world.World;
+import atraxi.networking.ClientUtil;
+import atraxi.networking.ServerUtil;
 import atraxi.util.CheckedRender;
 import atraxi.util.Logger;
 import atraxi.util.Logger.LogLevel;
@@ -23,6 +25,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Random;
 
@@ -47,6 +50,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     //Used in paintBackground(), avoids recreating an instance ~100 times a frame
     private static final Random rand = new Random();
+
+    ClientUtil clientUtil = null;
+    ServerUtil serverUtil = null;
 
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
     {
@@ -288,27 +294,28 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             case KeyEvent.VK_B:
                 if(selectedTile != null)
                 {
-                    selectedTile.queueAction(new Action(Action.ActionType.BUILD, null));
+                    //selectedTile.queueAction(new ActionBuild(null));
+                    Logger.log(LogLevel.debug, new String[]{"build temporarily disabled"});
                 }
                 break;
             case KeyEvent.VK_PAUSE:
-                Game.paused=!Game.paused;
+                Game.paused = !Game.paused;
                 if(Game.paused)
                 {
-                    Logger.log(LogLevel.debug, new String[] {"Game Paused."});
+                    Logger.log(LogLevel.debug, new String[]{"Game Paused."});
                 }
                 else
                 {
-                    Logger.log(LogLevel.debug, new String[] {"Game Resumed."});
+                    Logger.log(LogLevel.debug, new String[]{"Game Resumed."});
                 }
                 break;
             case KeyEvent.VK_ESCAPE:
-                Logger.log(LogLevel.debug, new String[] {"escape"});
+                Logger.log(LogLevel.debug, new String[]{"escape"});
                 //TODO: a proper 'quit' method to save, prompt user etc
                 System.exit(0);
                 break;
             case KeyEvent.VK_A:
-                Logger.log(LogLevel.debug, new String[] {"Creating test menu"});
+                Logger.log(LogLevel.debug, new String[]{"Creating test menu"});
                 uiStack.push(UIStack.getNewTestMenu());
                 break;
             case KeyEvent.VK_SPACE:
@@ -325,6 +332,44 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             case KeyEvent.VK_R:
                 Logger.log(LogLevel.info, new String[]{"Reloading all resource files"});
                 ResourceManager.resetLoadedImages();
+                break;
+            case KeyEvent.VK_0:
+                Logger.log(LogLevel.debug, new String[]{"Starting multiplayer server thread"});
+                serverUtil = new ServerUtil(2);
+                Thread serverThread = new Thread(serverUtil);
+                serverThread.setName("Server");
+                serverThread.start();
+                break;
+            case KeyEvent.VK_9:
+                Logger.log(LogLevel.debug, new String[]{"Starting multiplayer client thread"});
+                try
+                {
+                    clientUtil = new ClientUtil(user);
+                    Thread clientThread = new Thread(clientUtil);
+                    clientThread.setName("Client");
+                    clientThread.start();
+                }
+                catch(IOException e)
+                {
+                    Logger.log(LogLevel.debug, new String[]{"error"});
+                    e.printStackTrace();
+                }
+                break;
+            case KeyEvent.VK_8:
+                Logger.log(LogLevel.debug, new String[]{"Attempt sending client->server"});
+                try
+                {
+                    clientUtil.sendToServer("client->server test");
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+                break;
+            case KeyEvent.VK_7:
+                Logger.log(LogLevel.debug, new String[]{"Attempt sending server->client"});
+                serverUtil.sendToPlayer(user, "server->client test");
+                break;
         }
     }
 
@@ -430,11 +475,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 //TODO: refactor? to allow drag for target orientation
                 if (paramMouseEvent.isShiftDown())
                 {
-                    selectedTile.queueAction(new Action(Action.ActionType.MOVE, new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
+                    selectedTile.queueAction(new ActionMove(new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
                 }
                 else
                 {
-                    selectedTile.replaceQueue(new Action(Action.ActionType.MOVE, new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
+                    selectedTile.replaceQueue(new ActionMove(new Object[]{(double) paramMouseEvent.getX(), (double) paramMouseEvent.getY()}));
                 }
             }
         }
