@@ -1,7 +1,7 @@
 package atraxi.client.ui;
 
-import atraxi.client.util.CheckedRender;
-import atraxi.client.util.ResourceManager.ImageID;
+import atraxi.client.util.RenderUtil;
+import atraxi.client.util.ResourceManager;
 import atraxi.core.util.Globals;
 
 import java.awt.Rectangle;
@@ -15,20 +15,20 @@ import java.awt.image.BufferedImage;
 public class InfoPanel implements UIElement
 {
     private Rectangle dim;
-    private ImageID background;
-    private ImageID icon;
+    private Globals.Identifiers background;
+    private Globals.Identifiers icon;
     private int health;
     private int supply;
     private int ammunition;
     private String[] specialModules;
 
 
-    public InfoPanel(Rectangle dim, ImageID icon, int health, int supply, int ammunition)
+    public InfoPanel(Rectangle dim, Globals.Identifiers icon, int health, int supply, int ammunition)
     {
-        this(dim, ImageID.infoPanelDefault, icon, health, supply, ammunition, new String[0]);
+        this(dim, Globals.Identifiers.infoPanelDefault, icon, health, supply, ammunition, new String[0]);
     }
 
-    public InfoPanel(Rectangle dim, ImageID background, ImageID icon, int health, int supply, int ammunition,
+    public InfoPanel(Rectangle dim, Globals.Identifiers background, Globals.Identifiers icon, int health, int supply, int ammunition,
                      String[] specialModules)
     {
         this.dim = dim;
@@ -71,12 +71,12 @@ public class InfoPanel implements UIElement
     }
 
     @Override
-    public void paint(CheckedRender render)
+    public void paint(RenderUtil render)
     {
-        //TODO CheckedRender with a single public method taking a lambda equivalent of this paint method, and a Rectangle to set Graphics2D clip area
+        //TODO RenderUtil with a single public method taking a lambda equivalent of this paint method, and a Rectangle to set Graphics2D clip area
         render.drawImage(background, dim.x, dim.y, dim);
         render.drawImage(icon, dim.x + 5, dim.y + 5, dim);
-        BufferedImage icon = this.icon.getImage();
+        BufferedImage icon = ResourceManager.getImage(this.icon);
         for (String module : specialModules)
         {
             render.drawString(module, icon.getWidth() + 10 + dim.x, 5 + dim.y, dim);

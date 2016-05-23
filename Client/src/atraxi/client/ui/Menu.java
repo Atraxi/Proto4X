@@ -1,7 +1,8 @@
 package atraxi.client.ui;
 
-import atraxi.client.util.CheckedRender;
-import atraxi.client.util.ResourceManager.ImageID;
+import atraxi.client.util.RenderUtil;
+import atraxi.client.util.ResourceManager;
+import atraxi.core.util.Globals;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -13,18 +14,18 @@ public class Menu implements UIElement, UIStackNode
     //TODO: implement image scaling, try "image.getScaledInstance(width,height,algorithm(enum));"
     private Button[] buttons;
     //private int x, y;
-    private ImageID backgroundID;
+    private Globals.Identifiers backgroundID;
     private Rectangle dim;
     private UIStackNode nextNode = null, previousNode = null;
     private Point movePoint = null;
 
-    public Menu(ImageID imageID, int x, int y, Button[] buttons)
+    public Menu(Globals.Identifiers imageID, int x, int y, Button[] buttons)
     {
         this.backgroundID=imageID;
         this.buttons = buttons;
 
-        int width = backgroundID.getImage().getWidth(null);
-        int height = backgroundID.getImage().getHeight(null);
+        int width = ResourceManager.getImage(backgroundID).getWidth(null);
+        int height = ResourceManager.getImage(backgroundID).getHeight(null);
 
         dim = new Rectangle(x-(width/2),y-(height/2),width,height);
 
@@ -36,7 +37,7 @@ public class Menu implements UIElement, UIStackNode
     }
 
     @Override
-    public void paint(CheckedRender render)
+    public void paint(RenderUtil render)
     {
         render.drawImage(backgroundID, dim.x, dim.y, dim);
         for(Button button : buttons)

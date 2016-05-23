@@ -1,8 +1,8 @@
 package atraxi.client.ui;
 
 import atraxi.client.Proto;
-import atraxi.client.util.CheckedRender;
-import atraxi.client.util.ResourceManager.ImageID;
+import atraxi.client.util.RenderUtil;
+import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 
 import java.awt.event.MouseEvent;
@@ -113,7 +113,7 @@ public class UIStack implements UIElement
     }
 
     @Override
-    public void paint(CheckedRender render)
+    public void paint(RenderUtil render)
     {
         if(head!=null)
         {
@@ -164,14 +164,14 @@ public class UIStack implements UIElement
 
     public static UIStackNode getNewTestMenu()
     {
-        return new Menu(ImageID.menuBackground,
+        return new Menu(Globals.Identifiers.menuBackground,
                         (Proto.getScreenWidth() / 2) - 30,
                         (Proto.getScreenHeight() / 2) - 30,
                         new Button[]{
                                 new Button(
-                                        ImageID.buttonDefault,
-                                        ImageID.buttonHover,
-                                        ImageID.buttonClick,
+                                        Globals.Identifiers.buttonDefault,
+                                        Globals.Identifiers.buttonHover,
+                                        Globals.Identifiers.buttonClick,
                                         60,
                                         80,
                                         "empty",
@@ -180,9 +180,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        ImageID.buttonDefault,
-                                        ImageID.buttonHover,
-                                        ImageID.buttonClick,
+                                        Globals.Identifiers.buttonDefault,
+                                        Globals.Identifiers.buttonHover,
+                                        Globals.Identifiers.buttonClick,
                                         60,
                                         150,
                                         "empty",
@@ -191,9 +191,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        ImageID.buttonDefault,
-                                        ImageID.buttonHover,
-                                        ImageID.buttonClick,
+                                        Globals.Identifiers.buttonDefault,
+                                        Globals.Identifiers.buttonHover,
+                                        Globals.Identifiers.buttonClick,
                                         60,
                                         220,
                                         "Return to game",
@@ -203,9 +203,9 @@ public class UIStack implements UIElement
                                             return null;
                                         }),
                                 new Button(
-                                        ImageID.buttonDefault,
-                                        ImageID.buttonHover,
-                                        ImageID.buttonClick,
+                                        Globals.Identifiers.buttonDefault,
+                                        Globals.Identifiers.buttonHover,
+                                        Globals.Identifiers.buttonClick,
                                         60,
                                         290,
                                         "Quit game",

@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class ServerUtil implements Runnable
 {
-    Map<Player, ClientConnection> clientConnections;
+    private final Map<Player, ClientConnection> clientConnections;
     private int endTurnCount, playerCount;
 
     public ServerUtil(int playerCount)
@@ -39,6 +39,7 @@ public class ServerUtil implements Runnable
         ArrayList<Player> players = Game.getPlayerList();
         try(ServerSocket welcomeSocket = new ServerSocket(6789))
         {
+
             while(true)
             {
                 Socket connectionSocket = welcomeSocket.accept();
@@ -147,11 +148,15 @@ public class ServerUtil implements Runnable
                                 break;
                             case Globals.JSONMessageTypeValue_EndTurn:
                                 player.endTurn();
-                                endTurnCount++;
-                                if(endTurnCount >= playerCount)
+                                synchronized(clientConnections)
                                 {
-                                    Game.processTurn();
+                                    endTurnCount++;
+                                    if(endTurnCount >= playerCount)
+                                    {
+                                        Game.processTurn();
+                                    }
                                 }
+                                break;
                         }
                     }
                 }

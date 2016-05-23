@@ -1,7 +1,8 @@
 package atraxi.client.ui;
 
-import atraxi.client.util.CheckedRender;
-import atraxi.client.util.ResourceManager.ImageID;
+import atraxi.client.util.RenderUtil;
+import atraxi.client.util.ResourceManager;
+import atraxi.core.util.Globals;
 
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -9,7 +10,7 @@ import java.awt.event.MouseWheelEvent;
 
 public class Button implements UIElement
 {
-    private ImageID imageIDDefault, imageIDHover, imageIDPressed;
+    private Globals.Identifiers imageIDDefault, imageIDHover, imageIDPressed;
     //protected int x, y;
     protected Rectangle dim;
     protected ButtonState state = ButtonState.DEFAULT;
@@ -27,7 +28,7 @@ public class Button implements UIElement
      * @param buttonText
      * @param action Executed when pressed
      */
-    public Button(ImageID imageIDDefault, ImageID imageIDHover, ImageID imageIDPressed, int x, int y, String buttonText, CustomCallable<UIStackNode, Void> action)
+    public Button(Globals.Identifiers imageIDDefault, Globals.Identifiers imageIDHover, Globals.Identifiers imageIDPressed, int x, int y, String buttonText, CustomCallable<UIStackNode, Void> action)
     {
         this.imageIDDefault = imageIDDefault;
         this.imageIDHover = imageIDHover;
@@ -35,13 +36,13 @@ public class Button implements UIElement
         this.action=action;
         this.buttonText = buttonText;
 
-        int width = imageIDDefault.getImage().getWidth(null);
-        int height = imageIDDefault.getImage().getHeight(null);
+        int width = ResourceManager.getImage(imageIDDefault).getWidth(null);
+        int height = ResourceManager.getImage(imageIDDefault).getHeight(null);
 
         dim=new Rectangle(x,y,width,height);
     }
 
-    public ImageID getImageID ()
+    public Globals.Identifiers getImageID ()
     {
         switch (state)
         {
@@ -117,7 +118,7 @@ public class Button implements UIElement
     }
 
     @Override
-    public void paint(CheckedRender render)
+    public void paint(RenderUtil render)
     {
         render.drawImage(getImageID(), dim.x, dim.y, dim);
         render.drawString(buttonText, dim);

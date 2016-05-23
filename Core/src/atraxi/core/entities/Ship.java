@@ -2,6 +2,7 @@ package atraxi.core.entities;
 
 import atraxi.core.Player;
 import atraxi.core.entities.action.definitions.Action;
+import atraxi.core.util.Globals;
 import atraxi.core.world.GridTile;
 
 import java.math.BigDecimal;
@@ -11,7 +12,7 @@ public class Ship extends Entity
     private static final double MAXROTATIONSPEED = 0.05;
     private static final double MAXTRAVELSPEED   = 2;
     
-    public Ship(String type, Player owner, double x, double y, GridTile worldTile)
+    public Ship(Globals.Identifiers type, Player owner, double x, double y, GridTile worldTile)
     {
         super(type, owner, worldTile);
     }

@@ -1,5 +1,6 @@
 package atraxi.client.util;
 
+import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 
 import javax.imageio.ImageIO;
@@ -18,14 +19,14 @@ public class ResourceManager
     //TODO: pre-load this - is this even needed? keep watching it as size increases
     //TODO: throw some sort of managed error if the file isn't found
     //TODO: implement imageObserver or similar, and verify all resources are properly loaded - done already via null check loading?
-    private static BufferedImage[] images = new BufferedImage[ImageID.values().length];
+    private static BufferedImage[] images = new BufferedImage[Globals.Identifiers.values().length];
 
     public static void resetLoadedImages()
     {
-        images = new BufferedImage[ImageID.values().length];
+        images = new BufferedImage[Globals.Identifiers.values().length];
     }
 
-    private static BufferedImage getImage(ImageID id)
+    public static BufferedImage getImage(Globals.Identifiers id)
     {
         //All images will be pre-loaded, null-check is for a utility method for artists/texture packs/debugging to be able to reload textures
         if(images[id.ordinal()] == null)
@@ -156,31 +157,6 @@ public class ResourceManager
         {
             Logger.log(Logger.LogLevel.warning, new String[]{"Unable to find resource " + resourceName + ", using default.", "\tSearched at: " + file.getAbsolutePath()});
             return ResourceManager.class.getResourceAsStream("/resources/" + resourceName);
-        }
-    }
-
-    /**
-     * Allows access to the {@link BufferedImage} represented by this enum via {@link ImageID#getImage()}.
-     */
-    public enum ImageID
-    {
-        background1A,background1B,background1C,background1D,
-        background2A,background2B,background2C,background2D,
-        background3A,background3B,background3C,background3D,
-        background4A,background4B,background4C,background4D,
-        buttonDefault,buttonHover,buttonClick,
-        menuBackground,
-        entityShipDefault,
-        infoPanelDefault, entityStructureDefault,
-        gridClick, gridHover, gridDefault, gridSelected,
-        hexagonClick, hexagonHover, hexagonDefault, hexagonSelected;
-
-        /**
-         * @return The {@link BufferedImage} represented by this enum.
-         */
-        public BufferedImage getImage()
-        {
-            return ResourceManager.getImage(this);
         }
     }
 }

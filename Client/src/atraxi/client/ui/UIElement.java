@@ -1,6 +1,6 @@
 package atraxi.client.ui;
 
-import atraxi.client.util.CheckedRender;
+import atraxi.client.util.RenderUtil;
 
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -37,5 +37,5 @@ public interface UIElement
      */
     UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
 
-    void paint(CheckedRender checkedRender);
+    void paint(RenderUtil renderUtil);
 }

@@ -5,34 +5,12 @@ import atraxi.core.util.DebugState;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 import atraxi.core.world.World;
-import atraxi.server.networking.ServerUtil;
 
-import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Proto
 {
-    public Proto()
-    {
-        super();
-
-        Globals.random = new Random(Globals.SEED);
-
-        Player user = new Player();
-        ArrayList<Player> players = new ArrayList<Player>();
-        players.add(user);
-
-        ArrayList<World> worlds = new ArrayList<World>();
-
-        //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new World(Globals.random.nextInt(), 100, 100));
-
-        Game game = new Game(players, worlds);
-
-        new Thread(new ServerUtil(players.size())).start();
-    }
-
     public static void main(String[] args)
     {
         Globals.debug = new DebugState(false, 0);
@@ -69,8 +47,17 @@ public class Proto
             }
         }
 
-        EventQueue.invokeLater(() -> {
-            Proto frame = new Proto();
-        });
+        Globals.random = new Random(Globals.SEED);
+
+        Player user = new Player();
+        ArrayList<Player> players = new ArrayList<Player>();
+        players.add(user);
+
+        ArrayList<World> worlds = new ArrayList<World>();
+
+        //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
+        worlds.add(new World(Globals.random.nextInt(), 100, 100));
+
+        Game game = new Game(players, worlds);
     }
 }

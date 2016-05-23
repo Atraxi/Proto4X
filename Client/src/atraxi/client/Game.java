@@ -3,7 +3,7 @@ package atraxi.client;
 import atraxi.client.networking.ClientUtil;
 import atraxi.client.ui.UserInterfaceHandler;
 import atraxi.client.ui.wrappers.WorldUIWrapper;
-import atraxi.client.util.CheckedRender;
+import atraxi.client.util.RenderUtil;
 import atraxi.core.Player;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
@@ -28,7 +28,7 @@ public class Game extends JPanel implements Runnable
     private static ArrayList<WorldUIWrapper> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
-    private static CheckedRender checkedRender;
+    private static RenderUtil renderUtil;
     private static ClientUtil clientUtil;
 
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler, ArrayList<WorldUIWrapper> worlds)
@@ -39,7 +39,7 @@ public class Game extends JPanel implements Runnable
         //setPreferredSize(new Dimension(Proto.getScreenWidth(), Proto.getScreenHeight()));
         setDoubleBuffered(true);
         paused = true;
-        checkedRender = new CheckedRender();
+        renderUtil = new RenderUtil();
     }
     
     public static ArrayList<Player> getPlayerList()
@@ -62,12 +62,12 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
-        checkedRender.setG2d(g2d);
+        renderUtil.setG2d(g2d);
         if(Globals.debug.isExpandedZoomEnabled())
         {//zoom out, show a box where the edge of the screen would normally be
             g2d.scale(0.75, 0.75);
             g2d.translate(250, 100);
-            g2d.drawRect(0, 0, Proto.getScreenWidth(), Proto.getScreenHeight());
+            g2d.drawRect(0, 0, getWidth(), getHeight());
         }
         //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
         // so the camera offset is managed inside it's paint method
@@ -77,15 +77,15 @@ public class Game extends JPanel implements Runnable
         AffineTransform g2dTransformBackup = g2d.getTransform();
         g2d.transform(UserInterfaceHandler.getWorldTransform());
 
-        UserInterfaceHandler.paintWorld(checkedRender);
+        UserInterfaceHandler.paintWorld(renderUtil);
 
         //Remove/reset camera transform to draw UI
         g2d.setTransform(g2dTransformBackup);
 
-        UserInterfaceHandler.paintScreen(checkedRender);
+        UserInterfaceHandler.paintScreen(renderUtil);
 
 //        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
-//                      ImageID.infoPanelDefault,0,0,0).paint(checkedRender);
+//                      ImageID.infoPanelDefault,0,0,0).paint(renderUtil);
 
         Toolkit.getDefaultToolkit().sync();
         g2d.dispose();

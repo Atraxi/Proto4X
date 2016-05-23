@@ -24,7 +24,7 @@ public class Game implements Runnable
         Game.players = players;
         Game.worlds = worlds;
         serverUtil = new ServerUtil(players.size());
-        new Thread(serverUtil).start();
+        new Thread(serverUtil, "Server").start();
     }
     
     public static ArrayList<Player> getPlayerList()

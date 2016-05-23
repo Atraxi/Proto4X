@@ -2,13 +2,14 @@ package atraxi.core.entities;
 
 import atraxi.core.Player;
 import atraxi.core.entities.action.definitions.Action;
+import atraxi.core.util.Globals;
 import atraxi.core.world.GridTile;
 
 import java.math.BigDecimal;
 
 public class Structure extends Entity
 {
-    public Structure(String type, Player owner, int x, int y, GridTile worldTile)
+    public Structure(Globals.Identifiers type, Player owner, int x, int y, GridTile worldTile)
     {
         super(type, owner, worldTile);
     }

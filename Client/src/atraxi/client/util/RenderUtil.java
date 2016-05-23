@@ -1,6 +1,7 @@
 package atraxi.client.util;
 
 import atraxi.client.ui.UIElement;
+import atraxi.core.entities.Entity;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 
@@ -18,7 +19,7 @@ import java.util.Arrays;
 /**
  * Created by Atraxi on 10/10/2015.
  */
-public class CheckedRender
+public class RenderUtil
 {
     /**
      * The current graphics context
@@ -104,13 +105,13 @@ public class CheckedRender
      * @param y
      * @param containingArea
      */
-    public void drawImage(ResourceManager.ImageID imageID, int x, int y, Rectangle containingArea)
+    public void drawImage(Globals.Identifiers imageID, int x, int y, Rectangle containingArea)
     {
         if(Globals.debug.getDetailedInfoLevel() > 0 && containingArea != null && (
                 x < containingArea.x ||
                         y < containingArea.y ||
-                        x + imageID.getImage().getWidth() > containingArea.x + containingArea.width ||
-                        y + imageID.getImage().getHeight() > containingArea.y + containingArea.height))
+                        x + ResourceManager.getImage(imageID).getWidth() > containingArea.x + containingArea.width ||
+                        y + ResourceManager.getImage(imageID).getHeight() > containingArea.y + containingArea.height))
         {
             ArrayList<String> stackTrace = new ArrayList<String>();
             stackTrace.add("Image overflowed container");
@@ -122,7 +123,7 @@ public class CheckedRender
             });
             Logger.log(Logger.LogLevel.warning, stackTrace.toArray(new String[stackTrace.size()]));
         }
-        g2d.drawImage(imageID.getImage(), x, y, null);
+        g2d.drawImage(ResourceManager.getImage(imageID), x, y, null);
     }
 
     /**
@@ -157,7 +158,7 @@ public class CheckedRender
     }
 
     /**
-     * This calls {@link UIElement#paint(CheckedRender render) paint()} on the provided {@link UIElement}, but sets the {@link Graphics2D} clip area set to the {@link Rectangle} dim.
+     * This calls {@link UIElement#paint(RenderUtil render) paint()} on the provided {@link UIElement}, but sets the {@link Graphics2D} clip area set to the {@link Rectangle} dim.
      * The original clip area is stored internally and restored before this method returns.
      * @see Graphics2D#setClip(Shape)
      * @see Graphics2D#getClip()
@@ -177,8 +178,17 @@ public class CheckedRender
         g2d.setClip(originalClip);
     }
 
-    public void drawImage(ResourceManager.ImageID imageID, AffineTransform transform, ImageObserver observer)
+    public void drawImage(Globals.Identifiers imageID, AffineTransform transform, ImageObserver observer)
     {
-        g2d.drawImage(imageID.getImage(), transform, observer);
+        g2d.drawImage(ResourceManager.getImage(imageID), transform, observer);
+    }
+
+    public void paintEntity(Entity entity)
+    {
+        drawImage(entity.getType(),
+                         AffineTransform.getRotateInstance(entity.getOrientationInRadians(),
+                                                           ResourceManager.getImage(entity.getType()).getWidth() / 2,
+                                                           ResourceManager.getImage(entity.getType()).getHeight() / 2),
+                         null);
     }
 }

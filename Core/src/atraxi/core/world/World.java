@@ -4,7 +4,7 @@ public class World
 {
 
     public final long seed;
-    private GridTile[][] tiles;
+    protected GridTile[][] tiles;
     private int sizeX, sizeY;
 
     /**
@@ -27,6 +27,14 @@ public class World
                 tiles[x][y] = new GridTile(x, y);
             }
         }
+    }
+
+    public World(World world)
+    {
+        this.seed = world.seed;
+        this.sizeX = world.sizeX;
+        this.sizeY = world.sizeY;
+        this.tiles = world.tiles;
     }
 
     /**

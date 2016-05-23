@@ -1,5 +1,14 @@
 package atraxi.client;
 
+import atraxi.client.ui.UserInterfaceHandler;
+import atraxi.client.ui.wrappers.WorldUIWrapper;
+import atraxi.client.util.ResourceManager;
+import atraxi.core.Player;
+import atraxi.core.util.DebugState;
+import atraxi.core.util.Globals;
+import atraxi.core.util.Logger;
+import atraxi.core.world.World;
+
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import java.awt.AWTException;
@@ -16,6 +25,7 @@ public class Proto extends JFrame
 {
     private static final long serialVersionUID = 1L;
     private static Dimension physicalScreenSize;
+    private static Proto PROTO;
 
     public Proto()
     {
@@ -28,32 +38,30 @@ public class Proto extends JFrame
         ArrayList<Player> players = new ArrayList<Player>();
         players.add(user);
 
-        ArrayList<World> worlds = new ArrayList<World>();
+        ArrayList<WorldUIWrapper> worlds = new ArrayList<WorldUIWrapper>();
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new World(Globals.random.nextInt(),
-                             new Polygon(new int[]
+        worlds.add(new WorldUIWrapper(new World(Globals.random.nextInt(), 100, 100),
+                                      new Polygon(new int[]
                                                  {
-                                                         ImageID.hexagonDefault.getImage().getWidth() / 2,
-                                                         ImageID.hexagonDefault.getImage().getWidth(),
-                                                         ImageID.hexagonDefault.getImage().getWidth(),
-                                                         ImageID.hexagonDefault.getImage().getWidth() / 2,
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2,
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2,
                                                          0,
                                                          0
                                                  },
                                          new int[]
                                                  {
                                                          0,
-                                                         ImageID.hexagonDefault.getImage().getHeight() / 4,
-                                                         3 * ImageID.hexagonDefault.getImage().getHeight() / 4,
-                                                         ImageID.hexagonDefault.getImage().getHeight(),
-                                                         3 * ImageID.hexagonDefault.getImage().getHeight() / 4,
-                                                         ImageID.hexagonDefault.getImage().getHeight() / 4
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
+                                                         3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight(),
+                                                         3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
+                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4
                                                  },
                                          6),
-                             100,
-                             100,
-                             ImageID.hexagonDefault, ImageID.hexagonHover, ImageID.hexagonClick, ImageID.hexagonSelected));
+                                      Globals.Identifiers.hexagonDefault, Globals.Identifiers.hexagonHover, Globals.Identifiers.hexagonClick, Globals.Identifiers.hexagonSelected));
 
         UserInterfaceHandler ui = new UserInterfaceHandler(user, 0);
 
@@ -118,24 +126,26 @@ public class Proto extends JFrame
 
         EventQueue.invokeLater(() -> {
             Proto frame = new Proto();
-            frame.setIconImage(ImageID.entityShipDefault.getImage());
+            frame.setIconImage(ResourceManager.getImage(Globals.Identifiers.entityShipDefault));
             frame.setLocationByPlatform(true);
             frame.setVisible(true);
             Insets insets = frame.getInsets();
             frame.getContentPane().setSize((int) (physicalScreenSize.width * 0.75), (int) (physicalScreenSize.height * 0.75));
             frame.setSize((int) ((physicalScreenSize.width * 0.75) + insets.left + insets.right), (int) ((physicalScreenSize.height * 0.75) + insets.top + insets.bottom));
-            Logger.log(Logger.LogLevel.info, new String[]{"screen_Width:" + getScreenWidth(),"screen_Height:" + getScreenHeight()});
+            Logger.log(Logger.LogLevel.info, new String[]{"screen_Width:" + frame.getContentPane().getWidth(), "screen_Height:" + frame.getContentPane().getHeight()});
 
             try
             {
                 Robot robot = new Robot();
-                robot.mouseMove(getScreenWidth()/2 + frame.getContentPane().getLocationOnScreen().x, getScreenHeight()/2 + frame.getContentPane().getLocationOnScreen().y);
+                robot.mouseMove(frame.getContentPane().getWidth()/2 + frame.getContentPane().getLocationOnScreen().x,
+                                frame.getContentPane().getHeight()/2 + frame.getContentPane().getLocationOnScreen().y);
             }
             catch(AWTException e)
             {
                 //TODO: environment either doesn't support, or doesn't allow, controlling mouse input. Log this, and disable features or quit if needed
                 e.printStackTrace();
             }
+            PROTO = frame;
         });
     }
 
@@ -144,7 +154,7 @@ public class Proto extends JFrame
      */
     public static int getScreenWidth()
     {
-        return getContentPane().getWidth();
+        return PROTO.getContentPane().getWidth();
     }
 
     /**
@@ -152,6 +162,6 @@ public class Proto extends JFrame
      */
     public static int getScreenHeight()
     {
-        return getContentPane().getHeight();
+        return PROTO.getContentPane().getHeight();
     }
 }

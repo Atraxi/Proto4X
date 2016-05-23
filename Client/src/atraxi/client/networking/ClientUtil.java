@@ -1,8 +1,10 @@
 package atraxi.client.networking;
 
-import atraxi.core.entities.action.definitions.ActionMove;
 import atraxi.client.Game;
 import atraxi.core.Player;
+import atraxi.core.entities.action.definitions.ActionMove;
+import atraxi.core.util.Globals;
+import atraxi.core.util.Logger;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;

@@ -1,7 +1,8 @@
 package atraxi.client.ui;
 
-import atraxi.client.util.CheckedRender;
-import atraxi.client.util.ResourceManager.ImageID;
+import atraxi.client.util.RenderUtil;
+import atraxi.client.util.ResourceManager;
+import atraxi.core.util.Globals;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -28,11 +29,11 @@ public class ScrollBar implements UIElement
      * @param buttonHover
      * @param buttonPressed
      */
-    public ScrollBar(int length, Color backgroundColor, boolean isVertical, int x, int y, UIElement parent, ImageID buttonDefault, ImageID buttonHover, ImageID buttonPressed)
+    public ScrollBar(int length, Color backgroundColor, boolean isVertical, int x, int y, UIElement parent, Globals.Identifiers buttonDefault, Globals.Identifiers buttonHover, Globals.Identifiers buttonPressed)
     {
         this.parent = parent;
         this.length = length;
-        dim = new Rectangle(length, buttonDefault.getImage().getHeight());
+        dim = new Rectangle(length, ResourceManager.getImage(buttonDefault).getHeight());
         this.backgroundColor = backgroundColor;
         this.isVertical = isVertical;
         buttonA = new Button(buttonDefault, buttonHover, buttonPressed, x, y, "", (scrollBar) -> {
@@ -172,7 +173,7 @@ public class ScrollBar implements UIElement
     }
 
     @Override
-    public void paint(CheckedRender render)
+    public void paint(RenderUtil render)
     {
         render.fill(Color.GRAY, dim);
         buttonA.paint(render);

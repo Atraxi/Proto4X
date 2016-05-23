@@ -2,15 +2,14 @@ package atraxi.client.ui;
 
 import atraxi.client.Game;
 import atraxi.client.Proto;
-import atraxi.client.ui.wrappers.GridTileUIWrapper;
-import atraxi.client.util.CheckedRender;
+import atraxi.client.ui.wrappers.WorldUIWrapper;
+import atraxi.client.util.RenderUtil;
 import atraxi.client.util.ResourceManager;
-import atraxi.client.util.ResourceManager.ImageID;
 import atraxi.core.Player;
 import atraxi.core.entities.action.ActionMoveTestImpl;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
-import atraxi.core.world.World;
+import atraxi.core.util.Logger;
 
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -30,12 +29,13 @@ import java.util.Random;
 
 public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWheelListener, MouseMotionListener
 {
-    private static GridTileUIWrapper selectedTile;
+    private static WorldUIWrapper.GridTileUIWrapper selectedTile;
     private static Player user;
-    private static final ImageID[] mapImages = {ImageID.background1A,ImageID.background1B,ImageID.background1C,ImageID.background1D,
-                                                                ImageID.background2A,ImageID.background2B,ImageID.background2C,ImageID.background2D,
-                                                                ImageID.background3A,ImageID.background3B,ImageID.background3C,ImageID.background3D,
-                                                                ImageID.background4A,ImageID.background4B,ImageID.background4C,ImageID.background4D};
+    private static final Globals.Identifiers[] mapImages = {
+            Globals.Identifiers.background1A,Globals.Identifiers.background1B,Globals.Identifiers.background1C,Globals.Identifiers.background1D,
+            Globals.Identifiers.background2A,Globals.Identifiers.background2B,Globals.Identifiers.background2C,Globals.Identifiers.background2D,
+            Globals.Identifiers.background3A,Globals.Identifiers.background3B,Globals.Identifiers.background3C,Globals.Identifiers.background3D,
+            Globals.Identifiers.background4A,Globals.Identifiers.background4B,Globals.Identifiers.background4C,Globals.Identifiers.background4D};
     private static final int edgeScrollArea = 50;
     private static int currentWorldIndex;
 
@@ -72,7 +72,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         return currentWorldIndex;
     }
 
-    public static void setSelectedTile(GridTileUIWrapper selectedTile)
+    public static void setSelectedTile(WorldUIWrapper.GridTileUIWrapper selectedTile)
     {
         UserInterfaceHandler.selectedTile = selectedTile;
     }
@@ -90,14 +90,14 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     {
         //Good luck anyone reading this. It creates the illusion of parallax for the scrolling backdrop
         //I (mostly) understood it while writing, but I have no idea how to explain the logic behind this math
-        //At it's atraxi.core it determines the top/left most position for a background tile where it will still be visible (most complex part, loop variable initialization)
+        //At it's core it determines the top/left most position for a background tile where it will still be visible (most complex part, loop variable initialization)
         //then iterates across the screen until reaching the point where the image will no longer be visible
 
         //Also picks a random background image to draw from a selection, seeded buy the x,y index of the image in the background
         //the image index must be calculated as needed, due to the images not being in an indexed list that corresponds to the location they are drawn
 
-        int mapImageWidth = mapImages[0].getImage().getWidth(null);
-        int mapImageHeight = mapImages[0].getImage().getHeight(null);
+        int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
+        int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
         int indexX;
         int indexY;
         for(double backgroundOffsetX = (getScreenLocationX() % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
@@ -111,7 +111,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-getScreenLocationX()+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-getScreenLocationY()+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED);
-                g2d.drawImage(mapImages[rand.nextInt(4)].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Globals.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
@@ -139,7 +139,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(getScreenLocationX()/2)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/2)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*2);
-                g2d.drawImage(mapImages[rand.nextInt(4)+4].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Globals.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
@@ -168,7 +168,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(getScreenLocationX()/3)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/3)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*3);
-                g2d.drawImage(mapImages[rand.nextInt(4)+8].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Globals.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
@@ -197,7 +197,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 indexX = (int)((backgroundOffsetX-(getScreenLocationX()/5)+10)/mapImageWidth);
                 indexY = (int)((backgroundOffsetY-(getScreenLocationY()/5)+10)/mapImageHeight);
                 rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*5);
-                g2d.drawImage(mapImages[rand.nextInt(4)+12].getImage(), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
                 if(Globals.debug.getDetailedInfoLevel() >= 4)
                 {
                     g2d.scale(4, 4);
@@ -218,21 +218,21 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
     /**
      * Paint anything that moves relative to objects within the game world (ships, planets, etc)
-     * @param checkedRender
+     * @param renderUtil
      */
-    public static void paintWorld(CheckedRender checkedRender)
+    public static void paintWorld(RenderUtil renderUtil)
     {
-        Game.getWorld(currentWorldIndex).paint(checkedRender);
+        Game.getWorld(currentWorldIndex).paint(renderUtil);
     }
 
     /**
      * Paint anything that is positioned relative to the screen (probably exclusively UI buttons and menus)
      * @param render
      */
-    public static void paintScreen(CheckedRender render)
+    public static void paintScreen(RenderUtil render)
     {
         uiStack.paint(render);
-        if(Proto.debug.getDetailedInfoLevel() > 2)
+        if(Globals.debug.getDetailedInfoLevel() > 2)
         {
             render.drawString("mouseX:" + mouseLocation.x, 50, 50, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
             render.drawString("mouseY:" + mouseLocation.y, 50, 60, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
@@ -291,42 +291,42 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 if(selectedTile != null)
                 {
                     //selectedTile.queueAction(new ActionBuild(null));
-                    Logger.log(LogLevel.debug, new String[]{"build temporarily disabled"});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"build temporarily disabled"});
                 }
                 break;
             case KeyEvent.VK_PAUSE:
                 Game.paused = !Game.paused;
                 if(Game.paused)
                 {
-                    Logger.log(LogLevel.debug, new String[]{"Game Paused."});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Game Paused."});
                 }
                 else
                 {
-                    Logger.log(LogLevel.debug, new String[]{"Game Resumed."});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Game Resumed."});
                 }
                 break;
             case KeyEvent.VK_ESCAPE:
-                Logger.log(LogLevel.debug, new String[]{"escape"});
+                Logger.log(Logger.LogLevel.debug, new String[]{"escape"});
                 //TODO: a proper 'quit' method to save, prompt user etc
                 System.exit(0);
                 break;
             case KeyEvent.VK_A:
-                Logger.log(LogLevel.debug, new String[]{"Creating test menu"});
+                Logger.log(Logger.LogLevel.debug, new String[]{"Creating test menu"});
                 uiStack.push(UIStack.getNewTestMenu());
                 break;
             case KeyEvent.VK_SPACE:
                 isScrollEnabled = !isScrollEnabled;
                 if(isScrollEnabled)
                 {
-                    Logger.log(LogLevel.debug, new String[]{"Camera pan enabled"});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Camera pan enabled"});
                 }
                 else
                 {
-                    Logger.log(LogLevel.debug, new String[]{"Camera pan disabled"});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Camera pan disabled"});
                 }
                 break;
             case KeyEvent.VK_R:
-                Logger.log(LogLevel.info, new String[]{"Reloading all resource files"});
+                Logger.log(Logger.LogLevel.info, new String[]{"Reloading all resource files"});
                 ResourceManager.resetLoadedImages();
                 break;
 //            case KeyEvent.VK_0:
@@ -472,7 +472,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             //if left click
             if (paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
-                selectedTile = (World.GridTile) Game.getWorld(currentWorldIndex).mouseReleased(paramMouseEvent);
+                selectedTile = (WorldUIWrapper.GridTileUIWrapper) Game.getWorld(currentWorldIndex).mouseReleased(paramMouseEvent);
             }
             //else if right click
             else if (paramMouseEvent.getButton() == MouseEvent.BUTTON3)
@@ -491,7 +491,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         e.printStackTrace();
                     }
                 }
-                else { Logger.log(LogLevel.debug, new String[]{"Invalid action"}); }
+                else { Logger.log(Logger.LogLevel.debug, new String[]{"Invalid action"}); }
             }
         }
     }

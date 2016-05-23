@@ -2,24 +2,33 @@ package atraxi.core.entities;
 
 import atraxi.core.Player;
 import atraxi.core.entities.action.definitions.Action;
+import atraxi.core.util.Globals;
 import atraxi.core.world.GridTile;
 
 import java.math.BigDecimal;
 
 public abstract class Entity
 {
-    private String type;
+    private Globals.Identifiers type;
     private GridTile worldTile;
     private int orientation;
     private Player owner;
     
-    public Entity(String type, Player owner, GridTile worldTile)
+    public Entity(Globals.Identifiers type, Player owner, GridTile worldTile)
     {
         this.owner = owner;
         this.type = type;
         this.worldTile = worldTile;
     }
-    
+
+    public Entity(Entity entity)
+    {
+        this.owner = entity.owner;
+        this.type = entity.type;
+        this.worldTile = entity.worldTile;
+        this.orientation = entity.orientation;
+    }
+
     public abstract boolean canAcceptAction(Action action);
     protected abstract void startActionFromQueue(Action action);
 
@@ -53,7 +62,7 @@ public abstract class Entity
 //    }
 
 
-    public String getType()
+    public Globals.Identifiers getType()
     {
         return type;
     }

@@ -16,9 +16,21 @@ public class GridTile
         this.yIndex = yIndex;
     }
 
+    public GridTile(GridTile gridTile)
+    {
+        this.entity = gridTile.entity;
+        this.xIndex = gridTile.xIndex;
+        this.yIndex = gridTile.yIndex;
+    }
+
     public Entity getEntity()
     {
         return entity;
+    }
+
+    public void setEntity(Entity entity)
+    {
+        this.entity = entity;
     }
 
     public int getXIndex()
