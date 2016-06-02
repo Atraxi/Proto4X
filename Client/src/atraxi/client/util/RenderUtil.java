@@ -158,14 +158,14 @@ public class RenderUtil
     }
 
     /**
-     * This calls {@link UIElement#paint(RenderUtil render) paint()} on the provided {@link UIElement}, but sets the {@link Graphics2D} clip area set to the {@link Rectangle} dim.
+     * This calls {@link UIElement#paint(RenderUtil, boolean) paint()} on the provided {@link UIElement}, but sets the {@link Graphics2D} clip area set to the {@link Rectangle} dim.
      * The original clip area is stored internally and restored before this method returns.
      * @see Graphics2D#setClip(Shape)
      * @see Graphics2D#getClip()
      * @param uiElement
      * @param dim
      */
-    public void paintWithinBounds(UIElement uiElement, Rectangle dim)
+    public void paintWithinBounds(UIElement uiElement, Rectangle dim, boolean hasTurnEnded)
     {
         Shape originalClip = g2d.getClip();
         if(dim != null)
@@ -173,7 +173,7 @@ public class RenderUtil
             g2d.setClip(dim);
         }
 
-        uiElement.paint(this);
+        uiElement.paint(this, hasTurnEnded);
 
         g2d.setClip(originalClip);
     }

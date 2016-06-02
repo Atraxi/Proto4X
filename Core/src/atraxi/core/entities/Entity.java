@@ -32,6 +32,16 @@ public abstract class Entity
     public abstract boolean canAcceptAction(Action action);
     protected abstract void startActionFromQueue(Action action);
 
+    /**
+     * Attempt to find a path to the given location
+     * @param gridTile The location to path towards
+     * @return The distance to the target location, or -1 if the target cannot be reached
+     */
+    public int pathToTile(GridTile gridTile)
+    {
+        return -1;
+    }
+
     public void doWork(BigDecimal timeAdjustment, boolean paused)
     {
 //        if(actionInProgress == null && !actionQueue.isEmpty())
@@ -44,7 +54,7 @@ public abstract class Entity
     @Override
     public String toString()
     {
-        return "["+type + " Pos:"+worldTile.getXIndex()+","+worldTile.getYIndex()+" Orientation:"+orientation+"]";
+        return "[" + type + " Pos:" + worldTile.getXIndex() + "," + worldTile.getYIndex() + " Orientation:" + orientation + "]";
     }
 
 //    public void queueAction(Action action)

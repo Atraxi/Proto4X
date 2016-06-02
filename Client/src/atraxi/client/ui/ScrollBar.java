@@ -173,11 +173,11 @@ public class ScrollBar implements UIElement
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         render.fill(Color.GRAY, dim);
-        buttonA.paint(render);
-        buttonB.paint(render);
-        drag.paint(render);
+        buttonA.paint(render, hasTurnEnded);
+        buttonB.paint(render, hasTurnEnded);
+        drag.paint(render, hasTurnEnded);
     }
 }

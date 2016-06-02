@@ -7,12 +7,14 @@ import atraxi.client.util.RenderUtil;
 import atraxi.core.Player;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
+import org.json.JSONObject;
 
 import javax.swing.JPanel;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
@@ -30,6 +32,7 @@ public class Game extends JPanel implements Runnable
     private static UserInterfaceHandler uiHandler;
     private static RenderUtil renderUtil;
     private static ClientUtil clientUtil;
+    private static boolean hasTurnEnded;
 
     public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler, ArrayList<WorldUIWrapper> worlds)
     {
@@ -40,6 +43,18 @@ public class Game extends JPanel implements Runnable
         setDoubleBuffered(true);
         paused = true;
         renderUtil = new RenderUtil();
+
+        try
+        {
+            clientUtil = new ClientUtil(players.get(0));
+            new Thread(clientUtil, "Client");
+        }
+        catch(IOException e)
+        {
+            Logger.log(Logger.LogLevel.debug, new String[]{"Failed to initialize connection to server"});
+            e.printStackTrace();
+            System.exit(0);
+        }
     }
     
     public static ArrayList<Player> getPlayerList()
@@ -77,12 +92,12 @@ public class Game extends JPanel implements Runnable
         AffineTransform g2dTransformBackup = g2d.getTransform();
         g2d.transform(UserInterfaceHandler.getWorldTransform());
 
-        UserInterfaceHandler.paintWorld(renderUtil);
+        UserInterfaceHandler.paintWorld(renderUtil, hasTurnEnded);
 
         //Remove/reset camera transform to draw UI
         g2d.setTransform(g2dTransformBackup);
 
-        UserInterfaceHandler.paintScreen(renderUtil);
+        UserInterfaceHandler.paintScreen(renderUtil, hasTurnEnded);
 
 //        new InfoPanel(new Rectangle(40, 40, ImageID.infoPanelDefault.getImage().getWidth(null)+200, ImageID.infoPanelDefault.getImage().getHeight(null)+200),
 //                      ImageID.infoPanelDefault,0,0,0).paint(renderUtil);
@@ -155,6 +170,22 @@ public class Game extends JPanel implements Runnable
 
                 beforeTime = currentTime;
             }
+        }
+    }
+
+    public static void endTurn()
+    {
+        hasTurnEnded = true;
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_EndTurn);
+        try
+        {
+            clientUtil.sendToServer(jsonObject);
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
         }
     }
 }

@@ -18,7 +18,7 @@ public abstract class Action
     public abstract void execute();
 
     /**
-     * Fully simulates {@link Action#execute()} without modifying any game state
+     * Verifies {@link Action#execute()} can run without issue, however without modifying any game state
      * @return true if this action is fully valid for the specific data it contains
      */
     public abstract boolean isValid();

@@ -8,8 +8,10 @@ import atraxi.core.world.GridTile;
  */
 public abstract class ActionMove extends Action
 {
+    protected GridTile target;
     public ActionMove(Entity source, GridTile target)
     {
         super(source);
+        this.target = target;
     }
 }

@@ -49,7 +49,7 @@ public class Proto
 
         Globals.random = new Random(Globals.SEED);
 
-        Player user = new Player();
+        Player user = new Player("");
         ArrayList<Player> players = new ArrayList<Player>();
         players.add(user);
 

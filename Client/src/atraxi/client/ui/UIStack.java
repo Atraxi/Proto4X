@@ -113,14 +113,14 @@ public class UIStack implements UIElement
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         if(head!=null)
         {
             UIStackNode currentNode = head;
             do
             {
-                currentNode.paint(render);
+                currentNode.paint(render, hasTurnEnded);
                 currentNode = currentNode.getNextNode();
             }
             while(currentNode != null);

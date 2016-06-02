@@ -25,7 +25,7 @@ public class ActionMoveTestImpl extends ActionMove
     @Override
     public boolean isValid()
     {
-        return false;
+        return source.pathToTile(target) >= 0;
     }
 
     @Override

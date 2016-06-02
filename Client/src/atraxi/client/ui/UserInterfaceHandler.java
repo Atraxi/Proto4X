@@ -72,11 +72,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         return currentWorldIndex;
     }
 
-    public static void setSelectedTile(WorldUIWrapper.GridTileUIWrapper selectedTile)
-    {
-        UserInterfaceHandler.selectedTile = selectedTile;
-    }
-
     public static Point getMouseLocation()
     {
         return mouseLocation;
@@ -220,18 +215,19 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      * Paint anything that moves relative to objects within the game world (ships, planets, etc)
      * @param renderUtil
      */
-    public static void paintWorld(RenderUtil renderUtil)
+public static void paintWorld(RenderUtil renderUtil, boolean hasTurnEnded)
     {
-        Game.getWorld(currentWorldIndex).paint(renderUtil);
+        Game.getWorld(currentWorldIndex).paint(renderUtil, hasTurnEnded);
     }
 
     /**
      * Paint anything that is positioned relative to the screen (probably exclusively UI buttons and menus)
      * @param render
+     * @param hasTurnEnded
      */
-    public static void paintScreen(RenderUtil render)
+    public static void paintScreen(RenderUtil render, boolean hasTurnEnded)
     {
-        uiStack.paint(render);
+        uiStack.paint(render, hasTurnEnded);
         if(Globals.debug.getDetailedInfoLevel() > 2)
         {
             render.drawString("mouseX:" + mouseLocation.x, 50, 50, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
@@ -328,6 +324,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             case KeyEvent.VK_R:
                 Logger.log(Logger.LogLevel.info, new String[]{"Reloading all resource files"});
                 ResourceManager.resetLoadedImages();
+                break;
+            case KeyEvent.VK_ENTER:
+                Game.endTurn();
                 break;
 //            case KeyEvent.VK_0:
 //                Logger.log(LogLevel.debug, new String[]{"Starting multiplayer atraxi.server thread"});
@@ -469,16 +468,18 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             //Convert the mouse coordinates from screen to world coordinates
             transformMouseEvent(paramMouseEvent, worldTransform);
 
+            WorldUIWrapper.GridTileUIWrapper releasedTile = (WorldUIWrapper.GridTileUIWrapper) Game.getWorld(currentWorldIndex).mouseReleased(paramMouseEvent);
+
             //if left click
             if (paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
-                selectedTile = (WorldUIWrapper.GridTileUIWrapper) Game.getWorld(currentWorldIndex).mouseReleased(paramMouseEvent);
+                selectedTile = releasedTile;
             }
             //else if right click
             else if (paramMouseEvent.getButton() == MouseEvent.BUTTON3)
             {
                 //TODO: refactor? to allow drag for target orientation
-                Action action = new ActionMoveTestImpl(selectedTile.getEntity(), selectedTile);//TODO: change to (selectedTile.getEntity(), ***TARGET***Tile)
+                Action action = new ActionMoveTestImpl(selectedTile.getEntity(), releasedTile);//TODO: change to (selectedTile.getEntity(), ***TARGET***Tile)
                 if(action.isValid())
                 {
                     user.queueAction(action);

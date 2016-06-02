@@ -24,7 +24,7 @@ public class Game implements Runnable
         Game.players = players;
         Game.worlds = worlds;
         serverUtil = new ServerUtil(players.size());
-        new Thread(serverUtil, "Server").start();
+        new Thread(serverUtil, "ServerSocket").start();
     }
     
     public static ArrayList<Player> getPlayerList()
@@ -94,6 +94,7 @@ public class Game implements Runnable
 
     public static void processTurn()
     {
+        Logger.log(Logger.LogLevel.debug, new String[]{"End turn received from all players, processing all actions."});
         players.parallelStream().forEach(Player::processSetStatesThisTurn);
         players.parallelStream().forEach(Player::processBuildsThisTurn);
         players.parallelStream().forEach(Player::processAttacksThisTurn);

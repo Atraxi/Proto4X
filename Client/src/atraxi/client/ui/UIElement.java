@@ -37,5 +37,5 @@ public interface UIElement
      */
     UIElement mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent);
 
-    void paint(RenderUtil renderUtil);
+    void paint(RenderUtil render, boolean hasTurnEnded);
 }

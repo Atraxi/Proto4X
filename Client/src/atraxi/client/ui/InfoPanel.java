@@ -71,7 +71,7 @@ public class InfoPanel implements UIElement
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         //TODO RenderUtil with a single public method taking a lambda equivalent of this paint method, and a Rectangle to set Graphics2D clip area
         render.drawImage(background, dim.x, dim.y, dim);

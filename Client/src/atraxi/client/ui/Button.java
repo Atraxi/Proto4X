@@ -118,7 +118,7 @@ public class Button implements UIElement
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         render.drawImage(getImageID(), dim.x, dim.y, dim);
         render.drawString(buttonText, dim);

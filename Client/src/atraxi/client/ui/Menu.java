@@ -37,12 +37,12 @@ public class Menu implements UIElement, UIStackNode
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         render.drawImage(backgroundID, dim.x, dim.y, dim);
         for(Button button : buttons)
         {
-            button.paint(render);
+            render.paintWithinBounds(button, dim, hasTurnEnded);
         }
     }
 

@@ -2,7 +2,6 @@ package atraxi.core.world;
 
 public class World
 {
-
     public final long seed;
     protected GridTile[][] tiles;
     private int sizeX, sizeY;

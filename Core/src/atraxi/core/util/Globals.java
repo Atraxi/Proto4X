@@ -9,17 +9,19 @@ public class Globals
     public static Random random;
 
     //Networking layer JSON tag names
-    public static final String JSONPlayerIndex = "playerIndex";
-    public static final String JSONPlayerName = "playerName";
+    public static final String JSON_KEY_PlayerIndex = "playerIndex";
+    public static final String JSON_KEY_PlayerName = "playerName";
 
-    public static final String JSONActionClassName = "actionType";
+    public static final String JSON_KEY_ActionClassName = "actionType";
+    public static final String JSON_KEY_ActionData = "actionData";
 
-    public static final String JSONMessageTypeKey = "messageType";
+    public static final String JSON_KEY_MessageType = "messageType";
 
-    public static final String JSONMessageTypeValue_Action = "action";
-    public static final String JSONMessageTypeValue_EndTurn = "endTurn";
-    public static final String JSONMessageTypeValue_Error = "error";
+    public static final String JSON_VALUE_MessageType_Action = "action";
+    public static final String JSON_VALUE_MessageType_EndTurn = "endTurn";
+    public static final String JSON_VALUE_MessageType_Error = "error";
 
+    //TODO: split by category
     public enum Identifiers
     {
         background1A,background1B,background1C,background1D,

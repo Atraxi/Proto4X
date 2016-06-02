@@ -1,7 +1,6 @@
 package atraxi.client.ui.wrappers;
 
 import atraxi.client.ui.UIElement;
-import atraxi.client.ui.UserInterfaceHandler;
 import atraxi.client.util.RenderUtil;
 import atraxi.client.util.ResourceManager;
 import atraxi.core.entities.Entity;
@@ -22,9 +21,11 @@ import java.awt.event.MouseWheelEvent;
 public class WorldUIWrapper extends World implements UIElement
 {
     // constants for standard y=mx+c line equation, used in getGridTileIndex()
-    /** ImageID.hexagonDefault.getImage().getHeight() / 4 */
+    /** <code>ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4</code> */
     private static final double rise = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4;
+    /** <code>ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2</code> */
     private static final double run = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2;
+    /** {@link #rise} / {@link #run} */
     private static final double gradient = rise / run;
 
     //Tiles cannot be relied upon to update their state internally in all cases (especially reverting state), as it is not feasible to have every tile process every UI event
@@ -89,14 +90,12 @@ public class WorldUIWrapper extends World implements UIElement
     {
         //index of the tile
         Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
-        int x = gridIndex.x;
-        int y = gridIndex.y;
         //avoid index out of bounds errors
-        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < tiles.length && gridIndex.y < tiles[0].length)
         {
             //state tracking
             //tile is always set to pressed, but cannot be assumed to receive mouseReleased() event.
-            tilePressed = ((GridTileUIWrapper)tiles[x][y]).mousePressed(paramMouseEvent);
+            tilePressed = ((GridTileUIWrapper)tiles[gridIndex.x][gridIndex.y]).mousePressed(paramMouseEvent);
             return tilePressed;
         }
         else
@@ -105,7 +104,7 @@ public class WorldUIWrapper extends World implements UIElement
         }
     }
 
-    Point getGridTileIndex(int mouseX, int mouseY, int tileWidth, int tileHeight)
+    private Point getGridTileIndex(int mouseX, int mouseY, int tileWidth, int tileHeight)
     {
         int x, y;
         //start with a re-arranged version of the code from GridTile constructor
@@ -190,11 +189,11 @@ public class WorldUIWrapper extends World implements UIElement
         //if the mousePressed() event was within the playable area. if not the linked mouseReleased() is irrelevant
         if(tilePressed != null)
         {
-            //pass this event to the tile that actually cares about it
+            //pass this event to the tile that actually cares about it, this will return itself if the mouse is still in bounds
             tilePressed = tilePressed.mouseReleased(paramMouseEvent);
             //if the pressed tile was 'clicked' (mouseDown+Up in the same region) the tile will return itself
             //a clicked tile is the 'select' action, thus we need to clear the previous selection
-            if(tilePressed != null)
+            if(tilePressed != null && paramMouseEvent.getButton() == MouseEvent.BUTTON1)
             {
                 //if there is a tile already selected, and is not the same as the 'newly' selected tile
                 if(tileSelected != null && tilePressed != tileSelected)
@@ -203,7 +202,7 @@ public class WorldUIWrapper extends World implements UIElement
                     //therefore mouseReleased() on a 'selected' tile can be used to tell us to clear selection
                     tileSelected.mouseReleased(paramMouseEvent);
                 }
-                //update the selected tile the the new selected tile
+                //update the selected tile to the new selected tile
                 tileSelected = tilePressed;
             }
             //the mouse click has been fully handled, clear the mousePressed() state tracking
@@ -221,16 +220,14 @@ public class WorldUIWrapper extends World implements UIElement
     {
         //index of the tile
         Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
-        int x = gridIndex.x;
-        int y = gridIndex.y;
         //avoid index out of bounds errors
-        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < tiles.length && gridIndex.y < tiles[0].length)
         {
             if(tileHover != null)
             {
                 tileHover.mouseDragged(paramMouseEvent);
             }
-            tileHover = ((GridTileUIWrapper)tiles[x][y]).mouseDragged(paramMouseEvent);
+            tileHover = ((GridTileUIWrapper)tiles[gridIndex.x][gridIndex.y]).mouseDragged(paramMouseEvent);
 
             return tileHover;
         }
@@ -245,16 +242,14 @@ public class WorldUIWrapper extends World implements UIElement
     {
         //index of the tile
         Point gridIndex = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height);
-        int x = gridIndex.x;
-        int y = gridIndex.y;
         //avoid index out of bounds errors
-        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < tiles.length && gridIndex.y < tiles[0].length)
         {
             if(tileHover != null)
             {
                 tileHover.mouseMoved(paramMouseEvent);
             }
-            tileHover = ((GridTileUIWrapper)tiles[x][y]).mouseMoved(paramMouseEvent);
+            tileHover = ((GridTileUIWrapper)tiles[gridIndex.x][gridIndex.y]).mouseMoved(paramMouseEvent);
 
             return tileHover;
         }
@@ -269,12 +264,10 @@ public class WorldUIWrapper extends World implements UIElement
     {
         //index of the tile
         Point gridIndex = getGridTileIndex(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), tileBounds.width, tileBounds.height);
-        int x = gridIndex.x;
-        int y = gridIndex.y;
         //avoid index out of bounds errors
-        if(x >= 0 && y >= 0 && x < tiles.length && y < tiles[0].length)
+        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < tiles.length && gridIndex.y < tiles[0].length)
         {
-            return ((GridTileUIWrapper)tiles[x][y]).mouseWheelMoved(paramMouseWheelEvent);
+            return ((GridTileUIWrapper)tiles[gridIndex.x][gridIndex.y]).mouseWheelMoved(paramMouseWheelEvent);
         }
         else
         {
@@ -283,14 +276,14 @@ public class WorldUIWrapper extends World implements UIElement
     }
 
     @Override
-    public void paint(RenderUtil render)
+    public void paint(RenderUtil render, boolean hasTurnEnded)
     {
         //TODO: Culling, maybe select tiles at top/left + bottom/right corners for relevant tile ranges?
         for(GridTile[] tileRow : tiles)
         {
             for(GridTile tile : tileRow)
             {
-                ((GridTileUIWrapper)tile).paint(render);
+                ((GridTileUIWrapper)tile).paint(render, hasTurnEnded);
             }
         }
     }
@@ -335,9 +328,8 @@ public class WorldUIWrapper extends World implements UIElement
         @Override
         public UIElement mousePressed(MouseEvent paramMouseEvent)
         {
-            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), WorldUIWrapper.getTileBounds().width, WorldUIWrapper
-                    .getTileBounds().height)
-                                                  .equals(new Point(getXIndex(), getYIndex()));
+            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height)
+                    .equals(new Point(getXIndex(), getYIndex()));
             if(mouseInBounds)
             {
                 //store previous tile state in-case the click is cancelled
@@ -369,15 +361,18 @@ public class WorldUIWrapper extends World implements UIElement
             //if we are finishing up from a mousePressed() event on this tile
             if(state == TileState.PRESSED)
             {
-                boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height).equals(new Point(getXIndex(),
-                                                                                                                                                               getYIndex()));
-                //if the start (assumed at this point since we are 'pressed') of the click and the end are both on this tile
-                //i.e. we are clicked
+                boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height)
+                        .equals(new Point(getXIndex(), getYIndex()));
+                //if the start of the click (assumed at this point since we are already 'pressed') and the end are both on this tile
+                //i.e. we have been clicked
+
                 if(mouseInBounds)
                 {
-                    //set the selected state
-                    state = TileState.SELECTED;
-                    UserInterfaceHandler.setSelectedTile(this);
+                    //set the selected state, for purposes of selection we only care about left click
+                    if(paramMouseEvent.getButton() == MouseEvent.BUTTON1)
+                    {
+                        state = TileState.SELECTED;
+                    }
                     return this;
                 }
                 //the click was cancelled
@@ -406,8 +401,8 @@ public class WorldUIWrapper extends World implements UIElement
         @Override
         public UIElement mouseMoved(MouseEvent paramMouseEvent)
         {
-            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height).equals(new Point(getXIndex(),
-                                                                                                                                                           getYIndex()));
+            boolean mouseInBounds = getGridTileIndex(paramMouseEvent.getX(), paramMouseEvent.getY(), tileBounds.width, tileBounds.height)
+                    .equals(new Point(getXIndex(), getYIndex()));
             if(mouseInBounds)
             {
                 if(state == TileState.DEFAULT)
@@ -430,7 +425,7 @@ public class WorldUIWrapper extends World implements UIElement
         }
 
         @Override
-        public void paint(RenderUtil render)
+        public void paint(RenderUtil render, boolean hasTurnEnded)
         {
             if(Globals.debug.getDetailedInfoLevel() > 3)
             {

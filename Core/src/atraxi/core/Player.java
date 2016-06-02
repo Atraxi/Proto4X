@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Player
 {
-    public int metal = 0, money = 0;
+    public int metal = 0, money = 0;//TODO: replace with whatever actual resources will be used
     private List<ActionSetState> actionSetStatesThisTurn = new ArrayList<>();
     private List<ActionBuild> actionBuildsThisTurn = new ArrayList<>();
     private List<ActionAttack> actionAttacksThisTurn = new ArrayList<>();
@@ -19,6 +19,10 @@ public class Player
     private String name;
     private boolean isTurnFinished;
 
+    public Player(String name)
+    {
+        this.name = name;
+    }
 
     public void queueAction(Action action) throws IllegalArgumentException
     {

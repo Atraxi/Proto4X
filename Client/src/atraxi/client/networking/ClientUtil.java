@@ -25,13 +25,12 @@ public class ClientUtil implements Runnable
     public ClientUtil(Player player) throws IOException, UnknownHostException, ConnectException
     {
         Socket clientSocket = new Socket("localhost", 6789);
-        //Socket clientSocket = new Socket("118.93.182.74", 6789);
         socket = clientSocket;
 
         JSONObject object = new JSONObject();
-        object.put(Globals.JSONPlayerName, "testPlayer")
-              .put(Globals.JSONPlayerIndex, Game.getPlayerList().indexOf(player))
-              .put(Globals.JSONActionClassName, ActionMove.class.getName());
+        object.put(Globals.JSON_KEY_PlayerName, player.getName())
+              .put(Globals.JSON_KEY_PlayerIndex, Game.getPlayerList().indexOf(player))
+              .put(Globals.JSON_KEY_ActionClassName, ActionMove.class.getName());
 
         sendToServer(object);
     }
@@ -42,13 +41,13 @@ public class ClientUtil implements Runnable
         try
         {
             BufferedReader inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Logger.log(Logger.LogLevel.debug, new String[]{"Connected to atraxi.server. Listening for data."});
+            Logger.log(Logger.LogLevel.debug, new String[]{"Connected to server. Listening for data."});
             while(!socket.isClosed())
             {
                 String messageReceived = inFromServer.readLine();
                 if(messageReceived != null)
                 {
-                    Logger.log(Logger.LogLevel.debug, new String[]{"Message recieved from atraxi.server\n" + messageReceived});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Message recieved from server\n" + messageReceived});
                 }
             }
         }
