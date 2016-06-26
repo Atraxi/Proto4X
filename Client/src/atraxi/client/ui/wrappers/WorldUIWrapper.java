@@ -2,7 +2,6 @@ package atraxi.client.ui.wrappers;
 
 import atraxi.client.util.RenderUtil;
 import atraxi.client.util.ResourceManager;
-import atraxi.core.entities.Entity;
 import atraxi.core.util.Globals;
 import atraxi.core.world.World;
 
@@ -146,7 +145,7 @@ public class WorldUIWrapper extends World
         //index of the tile
         Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
         //avoid index out of bounds errors
-        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < entities.length && gridIndex.y < entities[0].length)
+        if(isWithinPlayableArea(gridIndex.x, gridIndex.y))
         {
             tilePressed = gridIndex;
             if(tileHover.equals(tilePressed))
@@ -166,7 +165,7 @@ public class WorldUIWrapper extends World
         Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
 
         //avoid index out of bounds errors
-        if (gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < entities.length && gridIndex.y < entities[0].length)
+        if (isWithinPlayableArea(gridIndex.x, gridIndex.y))
         {
             //if the mousePressed() event was within the playable area. if not the linked mouseReleased() is irrelevant
             if(tilePressed.x >= 0 && tilePressed.y >= 0)
@@ -190,7 +189,7 @@ public class WorldUIWrapper extends World
 //        //index of the tile
 //        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
 //        //avoid index out of bounds errors
-//        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < entities.length && gridIndex.y < entities[0].length)
+//        if(isWithinPlayableArea(gridIndex.x, gridIndex.y))
 //        {
 //            tileHover = gridIndex;
 //
@@ -208,7 +207,7 @@ public class WorldUIWrapper extends World
         //index of the tile
         Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
         //avoid index out of bounds errors
-        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < entities.length && gridIndex.y < entities[0].length)
+        if(isWithinPlayableArea(gridIndex.x, gridIndex.y))
         {
             tileHover = gridIndex;
 
@@ -222,10 +221,10 @@ public class WorldUIWrapper extends World
 
     public Point mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        //index of the tile
-        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), this);
-        //avoid index out of bounds errors
-//        if(gridIndex.x >= 0 && gridIndex.y >= 0 && gridIndex.x < entities.length && gridIndex.y < entities[0].length)
+//        //index of the tile
+//        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), this);
+//        //avoid index out of bounds errors
+//        if(isWithinPlayableArea(gridIndex.x, gridIndex.y))
 //        {
 //            //do something
 //        }
@@ -236,22 +235,32 @@ public class WorldUIWrapper extends World
         return null;
     }
 
-    public void paint(RenderUtil render, boolean hasTurnEnded)
+    private boolean isWithinPlayableArea(int x, int y)
     {
-        //TODO: Culling, maybe select entities at top/left + bottom/right corners for relevant tile ranges?
-        for(Entity[] entityRow : entities)
-        {
-            for(Entity entity : entityRow)
-            {
-                if(entity != null)
-                {
-                    render.paintEntity(entity);
-                }
-            }
-        }
+        Point offset = convertAxialToOffset(x, y);
+        return offset.x >= 0 && offset.y >= 0 && offset.x < getSizeX() && offset.y < getSizeY();
     }
 
-    public void paintTile(RenderUtil render, boolean hasTurnEnded, int x, int y)
+    /**
+     * Draw all entities within the region formed by the points from and to
+     * @param render
+     * @param from
+     * @param to
+     */
+    public void paint(RenderUtil render, Point from, Point to)
+    {
+        long longFrom = convertCoordinateToKey(from.x, from.y);
+        long longTo = convertCoordinateToKey(to.x, to.y);
+        if(longFrom > longTo)
+        {
+            long temp = longFrom;
+            longFrom = longTo;
+            longTo = temp;
+        }
+        entities.subMap(longFrom, longTo).values().forEach(render::paintEntity);
+    }
+
+    public void paintTile(RenderUtil render, int x, int y)
     {
         if(Globals.debug.getDetailedInfoLevel() > 3)
         {
@@ -291,5 +300,10 @@ public class WorldUIWrapper extends World
     public static int getYCoord(int yIndex, WorldUIWrapper world)
     {
         return yIndex * (3 * world.getTileHeight() / 4);
+    }
+
+    public void paintTile(RenderUtil renderUtil, Point point)
+    {
+        paintTile(renderUtil, point.x, point.y);
     }
 }

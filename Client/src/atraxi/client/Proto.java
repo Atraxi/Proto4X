@@ -41,7 +41,7 @@ public class Proto extends JFrame
         ArrayList<WorldUIWrapper> worlds = new ArrayList<WorldUIWrapper>();
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new WorldUIWrapper(new World(Globals.random.nextInt(), 100, 100),
+        worlds.add(new WorldUIWrapper(new World(Globals.random.nextInt(), 1_000_000, 1_000_000),
                                       new Polygon(new int[]
                                                  {
                                                          ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2,

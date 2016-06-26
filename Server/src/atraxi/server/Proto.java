@@ -56,7 +56,7 @@ public class Proto
         ArrayList<World> worlds = new ArrayList<World>();
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new World(Globals.random.nextInt(), 100, 100));
+        worlds.add(new World(Globals.random.nextInt(), 1_000_000, 1_000_000));
 
         Game game = new Game(players, worlds);
         Logger.log(Logger.LogLevel.debug, new String[]{"Server started"});

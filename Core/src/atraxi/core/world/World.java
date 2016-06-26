@@ -3,11 +3,12 @@ package atraxi.core.world;
 import atraxi.core.entities.Entity;
 
 import java.awt.Point;
+import java.util.TreeMap;
 
 public class World
 {
     public final long seed;
-    protected Entity[][] entities;
+    protected TreeMap<Long, Entity> entities;
     private int sizeX, sizeY;
 
     /**
@@ -22,7 +23,7 @@ public class World
         this.sizeX = sizeX;
         this.sizeY = sizeY;
 
-        entities = new Entity[sizeX][sizeY];
+        entities = new TreeMap<>();
     }
 
     public World(World world)
@@ -51,11 +52,36 @@ public class World
 
     public Entity getEntityAtIndex(int x, int y)
     {
-        return entities[x][y];
+        return entities.get(convertCoordinateToKey(x, y));
     }
 
     public Entity getEntityAtIndex(Point gridTileIndex)
     {
-        return entities[gridTileIndex.x][gridTileIndex.y];
+        return getEntityAtIndex(gridTileIndex.x, gridTileIndex.y);
+    }
+
+    protected long convertCoordinateToKey(int x, int y)
+    {
+        return ((long)x << 32L) + (long)y;
+    }
+
+    public static Point convertAxialToOffset(int x, int y)
+    {
+        return new Point(x + (y - (y&1)) / 2,
+                         y);
+    }
+
+    public static Point convertAxialToOffset(Point point)
+    {
+        point.setLocation(point.x + (point.y - (point.y&1)) / 2,
+                          point.y);
+        return point;
+    }
+
+    public static Point convertOffsetToAxial(Point point)
+    {
+        point.setLocation(point.x - (point.y - (point.y&1)) / 2,
+                          point.y);
+        return point;
     }
 }

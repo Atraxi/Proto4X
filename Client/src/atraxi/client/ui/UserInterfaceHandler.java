@@ -10,6 +10,7 @@ import atraxi.core.entities.action.ActionMoveTestImpl;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
+import atraxi.core.world.World;
 
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -83,57 +84,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      */
     public void paintBackgroundAtScrollSpeed(float speed, Graphics2D graphics2D, RenderUtil render)
     {
-        double[] viewArea = {0, 0,
-                            Proto.getScreenWidth(), 0,
-                            Proto.getScreenWidth(), Proto.getScreenHeight(),
-                            0, Proto.getScreenHeight()};
 
-        try
-        {
-            worldTransform.inverseTransform(viewArea,0,viewArea,0,4);
-            Point[] indexes = {
-                    WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex)),
-                    WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex)),
-                    WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex)),
-                    WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex))
-            };
-            int xMin = Math.min(indexes[0].x, Math.min(indexes[1].x, Math.min(indexes[2].x, indexes[3].x)));
-            int xMax = Math.max(indexes[0].x, Math.max(indexes[1].x, Math.max(indexes[2].x, indexes[3].x)));
-
-            int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
-            int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
-
-            for(int x = Math.max(0, xMin); x <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), xMax); x++)
-            {
-                for(int y = Math.max(0, yMin); y <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), yMax); y++)
-                {
-                    Game.getWorld(currentWorldIndex).paintTile(render, false, x, y);
-                }
-            }
-
-            {//debugging
-//                int[] xPoints = {(int) viewArea[0], (int) viewArea[2], (int) viewArea[4], (int) viewArea[6]};
-//                int[] yPoints = {(int) viewArea[1], (int) viewArea[3], (int) viewArea[5], (int) viewArea[7]};
-//                graphics2D.draw(new Polygon(xPoints, yPoints, 4));
-
-//                System.out.println(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex)) + " " +
-//                                   WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex)) + " " +
-//                                   WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex)) + " " +
-//                                   WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex)));
-
-//                Game.getWorld(currentWorldIndex).paintTile(render, false, indexes[0].x, indexes[0].y);
-//                Game.getWorld(currentWorldIndex).paintTile(render, false, indexes[1].x, indexes[1].y);
-//                Game.getWorld(currentWorldIndex).paintTile(render, false, indexes[2].x, indexes[2].y);
-//                Game.getWorld(currentWorldIndex).paintTile(render, false, indexes[3].x, indexes[3].y);
-            }
-        }
-        catch(NoninvertibleTransformException e)
-        {
-            Logger.log(Logger.LogLevel.error, new String[]{"Camera has entered an invalid state, resetting."});
-            e.printStackTrace();
-            //TODO: save current worldTransform for error reporting
-            worldTransform.setToIdentity();
-        }
     }
 
     /**
@@ -274,9 +225,46 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      * Paint anything that moves relative to objects within the game world (ships, planets, etc)
      * @param renderUtil
      */
-    public static void paintWorld(RenderUtil renderUtil, boolean hasTurnEnded)
+    public static void paintWorld(RenderUtil renderUtil)
     {
-        Game.getWorld(currentWorldIndex).paint(renderUtil, hasTurnEnded);
+        double[] viewArea = {0, 0,
+                Proto.getScreenWidth(), 0,
+                Proto.getScreenWidth(), Proto.getScreenHeight(),
+                0, Proto.getScreenHeight()};
+
+        try
+        {
+            worldTransform.inverseTransform(viewArea,0,viewArea,0,4);
+            Point[] indexes = {
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex)))
+            };
+            int xMin = Math.min(indexes[0].x, Math.min(indexes[1].x, Math.min(indexes[2].x, indexes[3].x)));
+            int xMax = Math.max(indexes[0].x, Math.max(indexes[1].x, Math.max(indexes[2].x, indexes[3].x)));
+
+            int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
+            int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
+
+            for(int x = Math.max(0, xMin); x <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), xMax); x++)
+            {
+                for(int y = Math.max(0, yMin); y <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), yMax); y++)
+                {
+                    Game.getWorld(currentWorldIndex).paintTile(renderUtil, World.convertOffsetToAxial(new Point(x, y)));
+                }
+            }
+            Game.getWorld(currentWorldIndex).paint(renderUtil,
+                                                   new Point(Math.max(0, xMin), Math.min(Game.getWorld(currentWorldIndex).getSizeX(), xMax)),
+                                                   new Point(Math.max(0, yMin), Math.min(Game.getWorld(currentWorldIndex).getSizeX(), yMax)));
+        }
+        catch(NoninvertibleTransformException e)
+        {
+            Logger.log(Logger.LogLevel.error, new String[]{"Camera has entered an invalid state, resetting."});
+            e.printStackTrace();
+            //TODO: save current worldTransform for error reporting
+            worldTransform.setToIdentity();
+        }
     }
 
     /**
