@@ -75,7 +75,8 @@ public class RenderUtil
                         y < containingArea.y ||
                         containingArea.getWidth() + containingArea.x < stringDim.getWidth() + x ||
                         containingArea.getHeight() + containingArea.y < stringDim.getHeight()+ y))
-        {//This is excessively detailed logging, but a string overflowing it's container is also a simple oversight that looks sloppy. This safeguards against that happening as long as the logs are watch occasionally
+        {//This is excessively detailed logging, but a string overflowing it's container is also a simple oversight that looks sloppy. This safeguards against that happening as
+            // long as the logs are watched occasionally
             //throw new IllegalArgumentException("String overflowed container:\n" + stringToDraw);//Ideally this would be a hard crash (in debug only) but Swing handles the exception internally so it's just obscure console spam
             ArrayList<String> stackTrace = new ArrayList<String>();
             stackTrace.add("String overflowed container");

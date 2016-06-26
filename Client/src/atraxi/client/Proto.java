@@ -27,7 +27,7 @@ public class Proto extends JFrame
     private static Dimension physicalScreenSize;
     private static Proto PROTO;
 
-    public Proto()
+    private Proto()
     {
         super();
         physicalScreenSize = Toolkit.getDefaultToolkit().getScreenSize();

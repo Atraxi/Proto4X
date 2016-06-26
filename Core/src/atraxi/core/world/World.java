@@ -1,9 +1,13 @@
 package atraxi.core.world;
 
+import atraxi.core.entities.Entity;
+
+import java.awt.Point;
+
 public class World
 {
     public final long seed;
-    protected GridTile[][] tiles;
+    protected Entity[][] entities;
     private int sizeX, sizeY;
 
     /**
@@ -18,14 +22,7 @@ public class World
         this.sizeX = sizeX;
         this.sizeY = sizeY;
 
-        tiles = new GridTile[sizeX][sizeY];
-        for(int x = 0; x < tiles.length; x++)
-        {
-            for(int y = 0; y < tiles[x].length; y++)
-            {
-                tiles[x][y] = new GridTile(x, y);
-            }
-        }
+        entities = new Entity[sizeX][sizeY];
     }
 
     public World(World world)
@@ -33,7 +30,7 @@ public class World
         this.seed = world.seed;
         this.sizeX = world.sizeX;
         this.sizeY = world.sizeY;
-        this.tiles = world.tiles;
+        this.entities = world.entities;
     }
 
     /**
@@ -52,8 +49,13 @@ public class World
         return sizeX;
     }
 
-    public GridTile getGridTileAtIndex(int x, int y)
+    public Entity getEntityAtIndex(int x, int y)
     {
-        return tiles[x][y];
+        return entities[x][y];
+    }
+
+    public Entity getEntityAtIndex(Point gridTileIndex)
+    {
+        return entities[gridTileIndex.x][gridTileIndex.y];
     }
 }

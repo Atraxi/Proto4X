@@ -110,7 +110,7 @@ public class ServerUtil implements Runnable
                     }
                     catch(SocketException e)
                     {
-                        Logger.log(Logger.LogLevel.warning, new String[]{"Connection to player " + player.getName() + "has dropped"});
+                        Logger.log(Logger.LogLevel.warning, new String[]{"Connection to player " + player.getName() + " has dropped"});
                         clientConnections.remove(player);
                         return;
                     }

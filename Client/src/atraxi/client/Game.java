@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import javax.swing.JPanel;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.io.IOException;
@@ -77,21 +78,28 @@ public class Game extends JPanel implements Runnable
     {
         super.paint(g);
         Graphics2D g2d = (Graphics2D) g;
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
         renderUtil.setG2d(g2d);
+
         if(Globals.debug.isExpandedZoomEnabled())
         {//zoom out, show a box where the edge of the screen would normally be
             g2d.scale(0.75, 0.75);
             g2d.translate(250, 100);
             g2d.drawRect(0, 0, getWidth(), getHeight());
         }
+
         //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
         // so the camera offset is managed inside it's paint method
-        uiHandler.paintBackground(g2d);
+        //uiHandler.paintBackground(g2d);
+
 
         //Transform camera position/scale/rotation to draw any world objects
         AffineTransform g2dTransformBackup = g2d.getTransform();
         g2d.transform(UserInterfaceHandler.getWorldTransform());
-
+        uiHandler.paintBackgroundAtScrollSpeed(1, g2d, renderUtil);
         UserInterfaceHandler.paintWorld(renderUtil, hasTurnEnded);
 
         //Remove/reset camera transform to draw UI

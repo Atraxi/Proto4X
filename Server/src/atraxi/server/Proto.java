@@ -59,5 +59,6 @@ public class Proto
         worlds.add(new World(Globals.random.nextInt(), 100, 100));
 
         Game game = new Game(players, worlds);
+        Logger.log(Logger.LogLevel.debug, new String[]{"Server started"});
     }
 }

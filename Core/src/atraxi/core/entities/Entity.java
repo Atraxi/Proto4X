@@ -3,29 +3,29 @@ package atraxi.core.entities;
 import atraxi.core.Player;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
-import atraxi.core.world.GridTile;
 
+import java.awt.Point;
 import java.math.BigDecimal;
 
 public abstract class Entity
 {
     private Globals.Identifiers type;
-    private GridTile worldTile;
+    private Point location;
     private int orientation;
     private Player owner;
     
-    public Entity(Globals.Identifiers type, Player owner, GridTile worldTile)
+    public Entity(Globals.Identifiers type, Player owner, Point location)
     {
         this.owner = owner;
         this.type = type;
-        this.worldTile = worldTile;
+        this.location = location;
     }
 
     public Entity(Entity entity)
     {
         this.owner = entity.owner;
         this.type = entity.type;
-        this.worldTile = entity.worldTile;
+        this.location = entity.location;
         this.orientation = entity.orientation;
     }
 
@@ -34,10 +34,10 @@ public abstract class Entity
 
     /**
      * Attempt to find a path to the given location
-     * @param gridTile The location to path towards
+     * @param location The location to path towards
      * @return The distance to the target location, or -1 if the target cannot be reached
      */
-    public int pathToTile(GridTile gridTile)
+    public int pathToLocation(Point location)
     {
         return -1;
     }
@@ -54,7 +54,7 @@ public abstract class Entity
     @Override
     public String toString()
     {
-        return "[" + type + " Pos:" + worldTile.getXIndex() + "," + worldTile.getYIndex() + " Orientation:" + orientation + "]";
+        return "[" + type + " Pos:" + location.x + "," + location.y + " Orientation:" + orientation + "]";
     }
 
 //    public void queueAction(Action action)
@@ -77,9 +77,9 @@ public abstract class Entity
         return type;
     }
 
-    public GridTile getWorldTile()
+    public Point getLocation()
     {
-        return worldTile;
+        return location;
     }
 
     public double getOrientationInRadians()

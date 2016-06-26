@@ -3,15 +3,15 @@ package atraxi.core.entities;
 import atraxi.core.Player;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
-import atraxi.core.world.GridTile;
 
+import java.awt.Point;
 import java.math.BigDecimal;
 
 public class Ship extends Entity
 {
-    public Ship(Globals.Identifiers type, Player owner, GridTile worldTile)
+    public Ship(Globals.Identifiers type, Player owner, Point location)
     {
-        super(type, owner, worldTile);
+        super(type, owner, location);
     }
 
     @Override

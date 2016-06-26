@@ -3,15 +3,16 @@ package atraxi.core.entities.action;
 import atraxi.core.entities.Entity;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.entities.action.definitions.ActionMove;
-import atraxi.core.world.GridTile;
 import org.json.JSONObject;
+
+import java.awt.Point;
 
 /**
  * Created by Atraxi on 17/05/2016.
  */
 public class ActionMoveTestImpl extends ActionMove
 {
-    public ActionMoveTestImpl(Entity source, GridTile target)
+    public ActionMoveTestImpl(Entity source, Point target)
     {
         super(source, target);
     }
@@ -25,7 +26,7 @@ public class ActionMoveTestImpl extends ActionMove
     @Override
     public boolean isValid()
     {
-        return source.pathToTile(target) >= 0;
+        return source.pathToLocation(target) >= 0;
     }
 
     @Override
