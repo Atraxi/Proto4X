@@ -123,7 +123,7 @@ public class WorldUIWrapper extends World
     public Point mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
+        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -142,7 +142,7 @@ public class WorldUIWrapper extends World
     public Point mouseReleased(MouseEvent paramMouseEvent)
     {//TODO: separate state tracking for left and right click
         //index of the tile that this event fired over
-        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
+        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
 
         //avoid index out of bounds errors
         if (isWithinPlayableArea(gridIndex))
@@ -167,7 +167,7 @@ public class WorldUIWrapper extends World
     public Point mouseDragged(MouseEvent paramMouseEvent)
     {
 //        //index of the tile
-//        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
+//        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
 //        //avoid index out of bounds errors
 //        if(isWithinPlayableArea(gridIndex))
 //        {
@@ -185,7 +185,7 @@ public class WorldUIWrapper extends World
     public Point mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this);
+        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -202,7 +202,7 @@ public class WorldUIWrapper extends World
     public Point mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
 //        //index of the tile
-//        Point gridIndex = getGridTileIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), this);
+//        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), this));
 //        //avoid index out of bounds errors
 //        if(isWithinPlayableArea(gridIndex))
 //        {
@@ -229,6 +229,8 @@ public class WorldUIWrapper extends World
      */
     public void paint(RenderUtil render, Point from, Point to)
     {
+        from = convertAxialToOffset(from);
+        to = convertAxialToOffset(to);
         long longFrom = convertCoordinateToKey(from.x, from.y);
         long longTo = convertCoordinateToKey(to.x, to.y);
         if(longFrom > longTo)
