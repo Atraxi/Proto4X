@@ -7,6 +7,7 @@ Hobby dev of a 4X strategy game.
 Complex and rich simulation of 4X style game, where all 'empires' are typically fully AI controlled
 - AI is a layered hierarchy where each layer is approximated by npc characters (e.g. ship captain, fleet admiral, planetary governer, president/emperor)
 - AI 'difficulty' defined by skills/abilities of character. Characters can change role, causing a new AI module created based off character abilities
+- Characters ideally will have an associated personality (stretch goal/dlc?), such that some characters should be viewed as a valued ally or hated enemy through dynamic player interaction (i.e. Rivalry should grow/be cultivated over time through character interactions, likewise for some allies)
 
 Player is a character like all other npcs, and can switch role
 - Switch role is probably time limited, i.e. can only switch role every X years, or on special conditions, to force some investment/attachment to the position and to limit desire to micromanage and control everything when in broad scope
