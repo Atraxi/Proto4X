@@ -1,5 +1,6 @@
 package atraxi.core.entities.action;
 
+import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.entities.action.definitions.ActionSetState;
@@ -10,9 +11,9 @@ import org.json.JSONObject;
  */
 public class ActionSetStateTestImpl extends ActionSetState
 {
-    public ActionSetStateTestImpl(Entity source)
+    public ActionSetStateTestImpl(Entity source, Player player)
     {
-        super(source);
+        super(source, player);
     }
 
     @Override

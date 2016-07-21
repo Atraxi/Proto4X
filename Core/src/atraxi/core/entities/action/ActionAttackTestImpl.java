@@ -1,5 +1,6 @@
 package atraxi.core.entities.action;
 
+import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.entities.action.definitions.ActionAttack;
@@ -10,9 +11,9 @@ import org.json.JSONObject;
  */
 public class ActionAttackTestImpl extends ActionAttack
 {
-    public ActionAttackTestImpl(Entity source, Entity target)
+    public ActionAttackTestImpl(Entity source, Player player, Entity target)
     {
-        super(source, target);
+        super(source, player, target);
     }
 
     @Override

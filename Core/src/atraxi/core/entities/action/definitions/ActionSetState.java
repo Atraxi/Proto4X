@@ -1,5 +1,6 @@
 package atraxi.core.entities.action.definitions;
 
+import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 
 /**
@@ -7,8 +8,8 @@ import atraxi.core.entities.Entity;
  */
 public abstract class ActionSetState extends Action
 {
-    public ActionSetState(Entity source)
+    public ActionSetState(Entity source, Player player)
     {
-        super(source);
+        super(source, player);
     }
 }

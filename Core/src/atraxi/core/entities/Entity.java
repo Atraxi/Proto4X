@@ -1,8 +1,11 @@
 package atraxi.core.entities;
 
 import atraxi.core.Player;
+import atraxi.core.entities.action.ActionQueue;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
+import atraxi.core.world.World;
+import org.json.JSONObject;
 
 import java.awt.Point;
 import java.math.BigDecimal;
@@ -13,42 +16,45 @@ public abstract class Entity
     private Point location;
     private int orientation;
     private Player owner;
-    
-    public Entity(Globals.Identifiers type, Player owner, Point location)
+    private int moveSpeed;
+    protected final ActionQueue actionQueue;
+    private int visionRange;
+
+    public Entity(Globals.Identifiers type, Player owner, Point location, int moveSpeed, int visionRange)
     {
         this.owner = owner;
         this.type = type;
         this.location = location;
-    }
-
-    public Entity(Entity entity)
-    {
-        this.owner = entity.owner;
-        this.type = entity.type;
-        this.location = entity.location;
-        this.orientation = entity.orientation;
+        this.moveSpeed = moveSpeed;
+        actionQueue = new ActionQueue();
     }
 
     public abstract boolean canAcceptAction(Action action);
     protected abstract void startActionFromQueue(Action action);
 
     /**
-     * Attempt to find a path to the given location
-     * @param location The location to path towards
+     * Calculate how long it will take to reach a given location
+     * @param destination The location to path towards
      * @return The distance to the target location, or -1 if the target cannot be reached
      */
-    public int pathToLocation(Point location)
-    {
+    public double turnCountToReachLocation(Point destination)
+    {//TODO: extend this to also try to pathfind through teleporters/ftl
+
+        int distance = World.distanceBetween(this.location, destination);
+        if(distance <= Globals.MAX_MOVEMENT_DISTANCE)
+        {
+            return distance/moveSpeed;
+        }
         return -1;
     }
 
     public void doWork(BigDecimal timeAdjustment, boolean paused)
     {
-//        if(actionInProgress == null && !actionQueue.isEmpty())
-//        {
-//            Action action = actionQueue.popAction();
-//            startActionFromQueue(action);
-//        }
+        if(!actionQueue.isEmpty())
+        {
+            Action action = actionQueue.pullAction();
+            startActionFromQueue(action);
+        }
     }
     
     @Override
@@ -57,20 +63,15 @@ public abstract class Entity
         return "[" + type + " Pos:" + location.x + "," + location.y + " Orientation:" + orientation + "]";
     }
 
-//    public void queueAction(Action action)
-//    {
-//        actionQueue.queueAction(action);
-//    }
-//
-//    public void replaceQueue(Action action)
-//    {
-//        actionQueue.replaceQueue(action);
-//        synchronized(actionInProgressLock)
-//        {
-//            actionInProgress = null;
-//        }
-//    }
+    public void queueAction(Action action)
+    {
+        actionQueue.queueAction(action);
+    }
 
+    public void replaceQueue(Action action)
+    {
+        actionQueue.replaceQueue(action);
+    }
 
     public Globals.Identifiers getType()
     {
@@ -86,4 +87,25 @@ public abstract class Entity
     {
         return orientation * Math.toRadians(60);
     }
+
+    public Player getOwner()
+    {
+        return owner;
+    }
+
+    public int getVisionRange()
+    {
+        return visionRange;
+    }
+
+    /**
+     * Serialize this entity to be sent to the specified player. For cheat prevention this should only include information that the player is currently supposed to be able to view.
+     *
+     * It is safe to assume this entity is already visible by the given player by some means, therefore visibility checks are not required.
+     * @param player
+     * @return
+     */
+    public abstract JSONObject serializeForPlayer(Player player);
+
+    public abstract Entity deserialize(JSONObject entityJSON);
 }

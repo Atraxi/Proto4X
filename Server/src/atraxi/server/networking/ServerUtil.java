@@ -5,6 +5,7 @@ import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 import atraxi.server.Game;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -18,6 +19,8 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Atraxi on 1/05/2016.
@@ -49,18 +52,42 @@ public class ServerUtil implements Runnable
                 {
                     String playerDataRaw = inFromClient.readLine();
                     JSONObject playerData = new JSONObject(playerDataRaw);
-                    Player player = players.get(playerData.getInt(Globals.JSON_KEY_PlayerIndex));
+                    final Player player = players.get(playerData.getInt(Globals.JSON_KEY_INITIALIZATION_PlayerIndex));
                     if(!clientConnections.containsKey(player))
                     {
-                        player.setName(playerData.getString(Globals.JSON_KEY_PlayerName));
+                        player.setName(playerData.getString(Globals.JSON_KEY_INITIALIZATION_PlayerName));
                         ClientConnection clientConnection = new ClientConnection(connectionSocket, player);
                         clientConnections.put(player, clientConnection);
                         new Thread(clientConnection, "Client " + player.getName()).start();
+
+                        new Timer().schedule(
+                                new TimerTask()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        JSONObject jsonObject = new JSONObject();
+                                        jsonObject.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_GameData);
+
+                                        JSONArray worldsJSON = new JSONArray();
+                                        for(int i = 0; i < Game.getWorldCount(); i++)
+                                        {
+                                            worldsJSON.put(Game.getWorld(i).serializeForPlayer(player));
+                                        }
+                                        jsonObject.put(Globals.JSON_KEY_MessagePayload_WorldData, worldsJSON);
+
+                                        //TODO: serialize players
+                                        jsonObject.put(Globals.JSON_KEY_MessagePayload_PlayerData, new JSONArray());
+                                        sendToPlayer(player, jsonObject);
+                                    }
+                                },
+                                500);
+
                     }
                     else
                     {
-                        Logger.log(Logger.LogLevel.warning, new String[]{"A connection to player in slot " + playerData.getInt(Globals.JSON_KEY_PlayerIndex) + " already exists, " +
-                                                                       "new connection refused"});
+                        Logger.log(Logger.LogLevel.warning, new String[]{"A connection to player in slot " + playerData.getInt(Globals.JSON_KEY_INITIALIZATION_PlayerIndex) + " already exists, " +
+                                                                         "new connection refused"});
                     }
                 }
                 catch(IOException e)
@@ -129,22 +156,22 @@ public class ServerUtil implements Runnable
                                     try
                                     {
                                         //Deserialize the action, must be done via reflection therefore
-                                        Class<?> actionClass = Class.forName(receivedObject.getString(Globals.JSON_KEY_ActionClassName));
+                                        Class<?> actionClass = Class.forName(receivedObject.getString(Globals.JSON_KEY_MessagePayload_Action_ClassName));
                                         Action action = (Action) actionClass.getConstructor().newInstance();
-                                        action.fromJSON(receivedObject.getJSONObject(Globals.JSON_KEY_ActionData));
+                                        action.fromJSON(receivedObject.getJSONObject(Globals.JSON_KEY_MessagePayload_ActionData));
                                         player.queueAction(action);
                                     }
                                     catch(ClassNotFoundException e)
                                     {
                                         Logger.log(Logger.LogLevel.debug,
-                                                   new String[]{"Action of type " + receivedObject.getString(Globals.JSON_KEY_ActionClassName) + " could not be " +
+                                                   new String[]{"Action of type " + receivedObject.getString(Globals.JSON_KEY_MessagePayload_Action_ClassName) + " could not be " +
                                                                 "found"});
                                         e.printStackTrace();
                                     }
                                     catch(NoSuchMethodException e)
                                     {
                                         Logger.log(Logger.LogLevel.debug, new String[]{"No default constructor accessible for action of type " +
-                                                                                       receivedObject.getString(Globals.JSON_KEY_ActionClassName)});
+                                                                                       receivedObject.getString(Globals.JSON_KEY_MessagePayload_Action_ClassName)});
                                         e.printStackTrace();
                                     }
                                     catch(IllegalAccessException e)
@@ -177,6 +204,10 @@ public class ServerUtil implements Runnable
                                         endTurnCount = 0;
                                     }
                                 }
+                                break;
+                            case Globals.JSON_VALUE_MessageType_Error:
+                                //TODO: react to errors reported by the client
+                                Logger.log(Logger.LogLevel.debug, new String[]{receivedObject.toString(1)});
                                 break;
                         }
                     }

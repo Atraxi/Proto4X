@@ -36,7 +36,12 @@ public class Game implements Runnable
     {
         return worlds.get(index);
     }
-    
+
+    public static int getWorldCount()
+    {
+        return worlds.size();
+    }
+
     private void gameLoop(BigDecimal timeAdjustment)
     {
 //        for(World world : worlds)

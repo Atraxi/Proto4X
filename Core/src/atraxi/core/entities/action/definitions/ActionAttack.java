@@ -1,5 +1,6 @@
 package atraxi.core.entities.action.definitions;
 
+import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 
 /**
@@ -9,9 +10,9 @@ public abstract class ActionAttack extends Action
 {
     protected Entity target;
 
-    public ActionAttack(Entity source, Entity target)
+    public ActionAttack(Entity source, Player player, Entity target)
     {
-        super(source);
+        super(source, player);
         this.target = target;
     }
 }

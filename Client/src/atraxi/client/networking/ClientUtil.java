@@ -1,10 +1,11 @@
 package atraxi.client.networking;
 
-import atraxi.client.Game;
+import atraxi.client.Proto;
 import atraxi.core.Player;
-import atraxi.core.entities.action.definitions.ActionMove;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
+import atraxi.core.world.World;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -14,6 +15,7 @@ import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 /**
  * Created by Atraxi on 1/05/2016.
@@ -28,9 +30,9 @@ public class ClientUtil implements Runnable
         socket = clientSocket;
 
         JSONObject object = new JSONObject();
-        object.put(Globals.JSON_KEY_PlayerName, player.getName())
-              .put(Globals.JSON_KEY_PlayerIndex, Game.getPlayerList().indexOf(player))
-              .put(Globals.JSON_KEY_ActionClassName, ActionMove.class.getName());
+        object.put(Globals.JSON_KEY_INITIALIZATION_PlayerName, player.getName())
+              .put(Globals.JSON_KEY_INITIALIZATION_PlayerIndex, 0);//TODO: request all available player slots, user picks one
+              //.put(Globals.JSON_KEY_MessagePayload_Action_ClassName, ActionMove.class.getName());
 
         sendToServer(object);
     }
@@ -44,10 +46,30 @@ public class ClientUtil implements Runnable
             Logger.log(Logger.LogLevel.debug, new String[]{"Connected to server. Listening for data."});
             while(!socket.isClosed())
             {
-                String messageReceived = inFromServer.readLine();
-                if(messageReceived != null)
+                String receivedMessage = inFromServer.readLine();
+                if(receivedMessage != null)
                 {
-                    Logger.log(Logger.LogLevel.debug, new String[]{"Message recieved from server\n" + messageReceived});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Message recieved from server\n" + receivedMessage});
+
+                    JSONObject receivedObject = new JSONObject(receivedMessage);
+                    //What type of message did we just receive?
+                    switch(receivedObject.getString(Globals.JSON_KEY_MessageType))
+                    {
+                        case Globals.JSON_VALUE_MessageType_GameData:
+                            JSONArray worldsArrayJSON = receivedObject.getJSONArray(Globals.JSON_KEY_MessagePayload_WorldData);
+                            ArrayList<World> worlds = new ArrayList<World>(worldsArrayJSON.length());
+                            for(int i = 0; i < worldsArrayJSON.length(); i++)
+                            {
+                                worlds.add(World.deserialize(worldsArrayJSON.getJSONObject(i)));
+                            }
+
+                            JSONArray playersArrayJSON = receivedObject.getJSONArray(Globals.JSON_KEY_MessagePayload_PlayerData);
+                            ArrayList<Player> players = new ArrayList<>(playersArrayJSON.length());
+                            //TODO: deserialize players
+
+                            Proto.getPROTO().initGame(worlds, players);
+                            break;
+                    }
                 }
             }
         }
@@ -58,7 +80,7 @@ public class ClientUtil implements Runnable
     }
 
     public void sendToServer(JSONObject message) throws IOException
-    {//TODO: figure out why the IOException was thrown, try handle it, only throw if unrecoverable.
+    {//TODO: figure out why the IOException can be thrown, try handle it, only throw if unrecoverable.
         DataOutputStream outToServer = new DataOutputStream(socket.getOutputStream());
         outToServer.writeBytes(message + "\n");
     }

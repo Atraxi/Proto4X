@@ -1,5 +1,6 @@
 package atraxi.client;
 
+import atraxi.client.networking.ClientUtil;
 import atraxi.client.ui.UserInterfaceHandler;
 import atraxi.client.ui.wrappers.WorldUIWrapper;
 import atraxi.client.util.ResourceManager;
@@ -18,14 +19,19 @@ import java.awt.Insets;
 import java.awt.Polygon;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class Proto extends JFrame
 {
     private static final long serialVersionUID = 1L;
     private static Dimension physicalScreenSize;
     private static Proto PROTO;
+
+    private static Player user;
+    private static ClientUtil clientUtil;
 
     private Proto()
     {
@@ -35,38 +41,72 @@ public class Proto extends JFrame
         Globals.random = new Random(Globals.SEED);
 
         Player user = new Player("testPlayer");
-        ArrayList<Player> players = new ArrayList<Player>();
-        players.add(user);
 
+        try
+        {
+            clientUtil = new ClientUtil(user);
+            new Thread(clientUtil, "Client").start();
+        }
+        catch(IOException e)
+        {
+            Logger.log(Logger.LogLevel.debug, new String[]{"Failed to initialize connection to server"});
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+    public static Proto getPROTO()
+    {
+        return PROTO;
+    }
+
+    public void setDimensions(int width, int height)
+    {
+        Insets insets = getInsets();
+        getContentPane().setSize(width, height);
+        setSize(width + insets.left + insets.right, height + insets.top + insets.bottom);
+    }
+
+    public void initGame(ArrayList<World> worldsFromServer, ArrayList<Player> players)
+    {
         ArrayList<WorldUIWrapper> worlds = new ArrayList<WorldUIWrapper>();
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new WorldUIWrapper(new World(Globals.random.nextInt(), 1_000_000, 1_000_000),
-                                      new Polygon(new int[]
-                                                 {
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2,
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2,
-                                                         0,
-                                                         0
-                                                 },
-                                         new int[]
-                                                 {
-                                                         0,
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
-                                                         3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight(),
-                                                         3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4,
-                                                         ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4
-                                                 },
-                                         6),
-                                      Globals.Identifiers.hexagonDefault, Globals.Identifiers.hexagonHover, Globals.Identifiers.hexagonClick, Globals.Identifiers.hexagonSelected));
+        worlds.addAll(worldsFromServer.stream().map(world -> new WorldUIWrapper(world,
+                                                                                new Polygon(new int[]
+                                                                                                    {
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                           .getWidth() / 2,
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth(),
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                           .getWidth() / 2,
+                                                                                                            0,
+                                                                                                            0
+                                                                                                    },
+                                                                                            new int[]
+                                                                                                    {
+                                                                                                            0,
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                           .getHeight() / 4,
+                                                                                                            3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                               .getHeight() / 4,
+                                                                                                            ResourceManager.getImage(
+                                                                                                                    Globals.Identifiers.hexagonDefault).getHeight(),
+                                                                                                            3 * ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                               .getHeight() / 4,
+                                                                                                            ResourceManager.getImage(Globals.Identifiers.hexagonDefault)
+                                                                                                                           .getHeight() / 4
+                                                                                                    },
+                                                                                            6),
+                                                                                Globals.Identifiers.hexagonDefault, Globals.Identifiers.hexagonHover,
+                                                                                Globals.Identifiers.hexagonClick,
+                                                                                Globals.Identifiers.hexagonSelected)).collect(Collectors.toList()));
 
         UserInterfaceHandler ui = new UserInterfaceHandler(user, 0);
 
-        Game game = new Game(players, ui, worlds);
-        addKeyListener(ui);
+        Game game = new Game(ui, clientUtil, worlds, players);
+        addKeyListener(ui); //Must be on frame, not sure why
         //bind mouse to JPanel not JFrame to account for taskbar in mouse coords
         game.addMouseMotionListener(ui);
         game.addMouseListener(ui);
@@ -82,13 +122,6 @@ public class Proto extends JFrame
 
         setTitle("4X_proto");
         setResizable(false);
-    }
-
-    public void setDimensions(int width, int height)
-    {
-        Insets insets = getInsets();
-        getContentPane().setSize(width, height);
-        setSize(width + insets.left + insets.right, height + insets.top + insets.bottom);
     }
 
     public static void main(String[] args)

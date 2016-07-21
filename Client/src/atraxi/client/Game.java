@@ -35,27 +35,15 @@ public class Game extends JPanel implements Runnable
     private static ClientUtil clientUtil;
     private static boolean hasTurnEnded;
 
-    public Game(ArrayList<Player> players, UserInterfaceHandler uiHandler, ArrayList<WorldUIWrapper> worlds)
+    public Game(UserInterfaceHandler uiHandler, ClientUtil clientUtil, ArrayList<WorldUIWrapper> worlds, ArrayList<Player> players)
     {
-        Game.players = players;
         Game.uiHandler = uiHandler;
+        Game.clientUtil = clientUtil;
         Game.worlds = worlds;
-        //setPreferredSize(new Dimension(Proto.getScreenWidth(), Proto.getScreenHeight()));
+        Game.players = players;
         setDoubleBuffered(true);
         paused = true;
         renderUtil = new RenderUtil();
-
-        try
-        {
-            clientUtil = new ClientUtil(players.get(0));
-            new Thread(clientUtil, "Client");
-        }
-        catch(IOException e)
-        {
-            Logger.log(Logger.LogLevel.debug, new String[]{"Failed to initialize connection to server"});
-            e.printStackTrace();
-            System.exit(0);
-        }
     }
     
     public static ArrayList<Player> getPlayerList()
@@ -66,6 +54,11 @@ public class Game extends JPanel implements Runnable
     public static WorldUIWrapper getWorld(int index)
     {
         return worlds.get(index);
+    }
+
+    public static int getWorldCount()
+    {
+        return worlds.size();
     }
 
     public static ClientUtil getClientUtil()

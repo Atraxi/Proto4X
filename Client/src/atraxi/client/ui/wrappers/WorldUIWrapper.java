@@ -14,7 +14,7 @@ import java.awt.event.MouseWheelEvent;
 /**
  * Created by Atraxi on 19/05/2016.
  */
-public class WorldUIWrapper extends World
+public class WorldUIWrapper
 {
     // constants for standard y=mx+c line equation, used in getGridTileIndexFromPixelLocation()
     /**
@@ -39,6 +39,8 @@ public class WorldUIWrapper extends World
      */
     private Polygon tileBounds;
 
+    private World world;
+
     /**
      * Instantiates a new game world
      *
@@ -51,7 +53,7 @@ public class WorldUIWrapper extends World
     public WorldUIWrapper(World world, Polygon tileBounds, Globals.Identifiers imageDefault, Globals.Identifiers imageHover, Globals.Identifiers imageClick,
                           Globals.Identifiers imageSelected)
     {
-        super(world);
+        this.world = world;
         this.tileBounds = tileBounds;
         assert Math.abs(this.tileBounds.getBounds().getHeight() - ResourceManager.getImage(imageDefault).getHeight()) < 0.001;
         assert Math.abs(this.tileBounds.getBounds().getWidth() - ResourceManager.getImage(imageDefault).getWidth()) < 0.001;
@@ -123,7 +125,7 @@ public class WorldUIWrapper extends World
     public Point mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -142,7 +144,7 @@ public class WorldUIWrapper extends World
     public Point mouseReleased(MouseEvent paramMouseEvent)
     {//TODO: separate state tracking for left and right click
         //index of the tile that this event fired over
-        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
 
         //avoid index out of bounds errors
         if (isWithinPlayableArea(gridIndex))
@@ -185,7 +187,7 @@ public class WorldUIWrapper extends World
     public Point mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -217,8 +219,8 @@ public class WorldUIWrapper extends World
 
     private boolean isWithinPlayableArea(Point point)
     {
-        Point offset = convertAxialToOffset(point);
-        return offset.x >= 0 && offset.y >= 0 && offset.x < getSizeX() && offset.y < getSizeY();
+        Point offset = World.convertAxialToOffset(point);
+        return offset.x >= 0 && offset.y >= 0 && offset.x < world.getSizeX() && offset.y < world.getSizeY();
     }
 
     /**
@@ -229,17 +231,9 @@ public class WorldUIWrapper extends World
      */
     public void paint(RenderUtil render, Point from, Point to)
     {
-        from = convertAxialToOffset(from);
-        to = convertAxialToOffset(to);
-        long longFrom = convertCoordinateToKey(from.x, from.y);
-        long longTo = convertCoordinateToKey(to.x, to.y);
-        if(longFrom > longTo)
-        {
-            long temp = longFrom;
-            longFrom = longTo;
-            longTo = temp;
-        }
-        entities.subMap(longFrom, longTo).values().forEach(render::paintEntity);
+        from = World.convertAxialToOffset(from);
+        to = World.convertAxialToOffset(to);
+        world.getEntitiesInRegion(from, to).values().forEach(render::paintEntity);
     }
 
     public void paintTile(RenderUtil render, int x, int y)
@@ -288,5 +282,10 @@ public class WorldUIWrapper extends World
     public void paintTile(RenderUtil renderUtil, Point point)
     {
         paintTile(renderUtil, point.x, point.y);
+    }
+
+    public World getWorld()
+    {
+        return world;
     }
 }

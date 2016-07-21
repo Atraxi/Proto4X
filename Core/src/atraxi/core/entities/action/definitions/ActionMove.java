@@ -1,5 +1,6 @@
 package atraxi.core.entities.action.definitions;
 
+import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 
 import java.awt.Point;
@@ -10,9 +11,9 @@ import java.awt.Point;
 public abstract class ActionMove extends Action
 {
     protected Point target;
-    public ActionMove(Entity source, Point target)
+    public ActionMove(Entity source, Player player, Point target)
     {
-        super(source);
+        super(source, player);
         this.target = target;
     }
 }

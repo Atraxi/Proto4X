@@ -6,6 +6,7 @@ import atraxi.client.ui.wrappers.WorldUIWrapper;
 import atraxi.client.util.RenderUtil;
 import atraxi.client.util.ResourceManager;
 import atraxi.core.Player;
+import atraxi.core.entities.Entity;
 import atraxi.core.entities.action.ActionMoveTestImpl;
 import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.util.Globals;
@@ -82,9 +83,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      * Draw a layer of background tiles with a set scroll speed. Allows for a parallel illusion with multiple layers at varying speeds.
      * @param speed
      */
-    public void paintBackgroundAtScrollSpeed(float speed, Graphics2D graphics2D, RenderUtil render)
+    private void paintBackgroundAtScrollSpeed(float speed, Graphics2D graphics2D)
     {
-
+        //for()
     }
 
     /**
@@ -93,131 +94,37 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      */
     public void paintBackground(Graphics2D g2d)
     {
-        //Good luck anyone reading this. It creates the illusion of parallax for the scrolling backdrop
-        //I (mostly) understood it while writing, but I have no idea how to explain the logic behind this math
-        //At it's core it determines the top/left most position for a background tile where it will still be visible (most complex part, loop variable initialization)
-        //then iterates across the screen until reaching the point where the image will no longer be visible
+        double[] viewArea = {0, 0,
+                Proto.getScreenWidth(), 0,
+                Proto.getScreenWidth(), Proto.getScreenHeight(),
+                0, Proto.getScreenHeight()};
 
-        //Also picks a random background image to draw from a selection, seeded buy the x,y index of the image in the background
-        //the image index must be calculated as needed, due to the images not being in an indexed list that corresponds to the location they are drawn
-
-        int mapImageWidth = ResourceManager.getImage(mapImages[0]).getWidth(null);
-        int mapImageHeight = ResourceManager.getImage(mapImages[0]).getHeight(null);
-        int indexX;
-        int indexY;
-        for(double backgroundOffsetX = (getScreenLocationX() % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.getScreenWidth();
-            backgroundOffsetX += mapImageWidth)
+        try
         {
-            for(double backgroundOffsetY = (getScreenLocationY() % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.getScreenHeight();
-                backgroundOffsetY += mapImageHeight)
+            worldTransform.inverseTransform(viewArea, 0, viewArea, 0, 4);
+            Point[] indexes = {
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex))),
+                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex)))
+            };
+            int xMin = Math.min(indexes[0].x, Math.min(indexes[1].x, Math.min(indexes[2].x, indexes[3].x)));
+            int xMax = Math.max(indexes[0].x, Math.max(indexes[1].x, Math.max(indexes[2].x, indexes[3].x)));
+
+            int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
+            int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
+
+            for(int i = 0; i < 10; i = i * 2)
             {
-                indexX = (int)((backgroundOffsetX-getScreenLocationX()+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-getScreenLocationY()+10)/mapImageHeight);
-                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Globals.debug.getDetailedInfoLevel() >= 4)
-                {
-                    g2d.scale(4, 4);
-                    g2d.drawString("x:" + indexX + " y:" + indexY,
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 60);*/
-                    g2d.scale(0.25, 0.25);
-                }
+                paintBackgroundAtScrollSpeed(i, g2d);
             }
         }
-        for(double backgroundOffsetX = (getScreenLocationX()/2 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.getScreenWidth();
-            backgroundOffsetX += mapImageWidth)
+        catch(NoninvertibleTransformException e)
         {
-            for(double backgroundOffsetY = (getScreenLocationY()/2 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.getScreenHeight();
-                backgroundOffsetY += mapImageHeight)
-            {
-                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/2)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/2)+10)/mapImageHeight);
-                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*2);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+4]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Globals.debug.getDetailedInfoLevel() >= 4)
-                {
-                    g2d.scale(4, 4);
-                    g2d.drawString("x:" + indexX + " y:" + indexY,
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 60);*/
-                    g2d.scale(0.25, 0.25);
-                }
-            }
-        }
-
-        for(double backgroundOffsetX = (getScreenLocationX()/3 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.getScreenWidth();
-            backgroundOffsetX += mapImageWidth)
-        {
-            for(double backgroundOffsetY = (getScreenLocationY()/3 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.getScreenHeight();
-                backgroundOffsetY += mapImageHeight)
-            {
-                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/3)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/3)+10)/mapImageHeight);
-                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*3);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+8]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Globals.debug.getDetailedInfoLevel() >= 4)
-                {
-                    g2d.scale(4, 4);
-                    g2d.drawString("x:" + indexX + " y:" + indexY,
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 60);*/
-                    g2d.scale(0.25, 0.25);
-                }
-            }
-        }
-
-        for(double backgroundOffsetX = (getScreenLocationX()/5 % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
-            backgroundOffsetX <= Proto.getScreenWidth();
-            backgroundOffsetX += mapImageWidth)
-        {
-            for(double backgroundOffsetY = (getScreenLocationY()/5 % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
-                backgroundOffsetY <= Proto.getScreenHeight();
-                backgroundOffsetY += mapImageHeight)
-            {
-                indexX = (int)((backgroundOffsetX-(getScreenLocationX()/5)+10)/mapImageWidth);
-                indexY = (int)((backgroundOffsetY-(getScreenLocationY()/5)+10)/mapImageHeight);
-                rand.setSeed((1234*indexX) ^ (5678*indexY) ^ Globals.SEED*5);
-                g2d.drawImage(ResourceManager.getImage(mapImages[rand.nextInt(4)+12]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
-                if(Globals.debug.getDetailedInfoLevel() >= 4)
-                {
-                    g2d.scale(4, 4);
-                    g2d.drawString("x:" + indexX + " y:" + indexY,
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 20);
-                    /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 40);
-                    g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
-                                   (int) backgroundOffsetX/4 + 20,
-                                   (int) backgroundOffsetY/4 + 60);*/
-                    g2d.scale(0.25, 0.25);
-                }
-            }
+            Logger.log(Logger.LogLevel.error, new String[]{"Camera has entered an invalid state, resetting."});
+            e.printStackTrace();
+            //TODO: save current worldTransform for error reporting
+            worldTransform.setToIdentity();
         }
     }
 
@@ -247,16 +154,16 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
             int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
 
-            for(int x = Math.max(0, xMin); x <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), xMax); x++)
+            for(int x = Math.max(0, xMin); x <= Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), xMax); x++)
             {
-                for(int y = Math.max(0, yMin); y <= Math.min(Game.getWorld(currentWorldIndex).getSizeX(), yMax); y++)
+                for(int y = Math.max(0, yMin); y <= Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), yMax); y++)
                 {
                     Game.getWorld(currentWorldIndex).paintTile(renderUtil, World.convertOffsetToAxial(new Point(x, y)));
                 }
             }
             Game.getWorld(currentWorldIndex).paint(renderUtil,
-                                                   new Point(Math.max(0, xMin), Math.min(Game.getWorld(currentWorldIndex).getSizeX(), xMax)),
-                                                   new Point(Math.max(0, yMin), Math.min(Game.getWorld(currentWorldIndex).getSizeX(), yMax)));
+                                                   new Point(Math.max(0, xMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), xMax)),
+                                                   new Point(Math.max(0, yMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), yMax)));
         }
         catch(NoninvertibleTransformException e)
         {
@@ -285,7 +192,6 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static void doWork(BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
-        //TODO: scroll down is slower than up, why? fix it
         if(isScrollEnabled && !paused)
         {
             int xTranslation = 0, yTranslation = 0;
@@ -298,7 +204,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             }
             else if (mouseLocation.x >= Proto.getScreenWidth() - edgeScrollArea &&
                      getScreenLocationX() / worldTransform.getScaleX() >
-                     Proto.getScreenWidth() - (Game.getWorld(currentWorldIndex).getTileWidth() * (Game.getWorld(currentWorldIndex).getSizeX() + 1)))
+                     Proto.getScreenWidth() - (Game.getWorld(currentWorldIndex).getTileWidth() * (Game.getWorld(currentWorldIndex).getWorld().getSizeX() + 1)))
             {
                 //Logger.log(LogLevel.info, new String[] {"moving right"});
                 xTranslation = -timeAdjustment.multiply(new BigDecimal(10)).intValue();
@@ -313,12 +219,17 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             else if (mouseLocation.y >= Proto.getScreenHeight() - edgeScrollArea &&
                      getScreenLocationY() / worldTransform.getScaleY() >
                      Proto.getScreenHeight() - ((3 * Game.getWorld(currentWorldIndex).getTileHeight() / 4) * (Game.getWorld
-                    (currentWorldIndex).getSizeY() + 1)))
+                    (currentWorldIndex).getWorld().getSizeY() + 1)))
             {
                 //Logger.log(LogLevel.info, new String[] {"moving down"});
                 yTranslation = -timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
-            worldTransform.translate(xTranslation, yTranslation);
+            //TODO: maybe broken, debug this
+            double rotation = Math.atan2(worldTransform.getShearY(), worldTransform.getScaleY());
+            double cos = Math.cos(rotation);
+            double sin = Math.sin(rotation);
+            worldTransform.translate(xTranslation * cos - yTranslation * sin,
+                                     xTranslation * sin + yTranslation * cos);
         }
     }
 
@@ -529,11 +440,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             else if (paramMouseEvent.getButton() == MouseEvent.BUTTON3)
             {
                 //TODO: refactor? to allow drag for target orientation
-                Action action = new ActionMoveTestImpl(Game.getWorld(currentWorldIndex).getEntityAtIndex(selectedLocation.x, selectedLocation.y), releasedLocation);
-                //TODO: change to
-                // (selectedLocation
-                // .getEntity(),
-                // ***TARGET***Tile)
+                Entity selectedEntity = Game.getWorld(currentWorldIndex).getWorld().getEntityAtIndex(selectedLocation.x, selectedLocation.y);
+                Action action = new ActionMoveTestImpl(selectedEntity, user, releasedLocation);
                 if(action.isValid())
                 {
                     user.queueAction(action);
