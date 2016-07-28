@@ -44,9 +44,10 @@ public class Ship extends Entity
     public JSONObject serializeForPlayer(Player player)
     {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put(Globals.JSON_KEY_Entity_Player, player.getName())
+        jsonObject.put(Globals.JSON_KEY_Entity_Player, this.getOwner().getName())
                   .put(Globals.JSON_KEY_Entity_PositionX, getLocation().x)
-                  .put(Globals.JSON_KEY_Entity_PositionY, getLocation().y);
+                  .put(Globals.JSON_KEY_Entity_PositionY, getLocation().y)
+                  .put(Globals.JSON_KEY_Entity_ID, id);
         return jsonObject;
     }
 
@@ -54,6 +55,10 @@ public class Ship extends Entity
     public Entity deserialize(JSONObject entityJSON)
     {
         //TODO: implement deserialization
+        setOwner(Globals.playersByName.get(entityJSON.getString(Globals.JSON_KEY_Entity_Player)));
+        location.setLocation(entityJSON.getInt(Globals.JSON_KEY_Entity_PositionX),
+                             entityJSON.getInt(Globals.JSON_KEY_Entity_PositionY));
+        id = entityJSON.getLong(Globals.JSON_KEY_Entity_ID);
         return this;
     }
 

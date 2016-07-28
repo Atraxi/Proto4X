@@ -1,5 +1,11 @@
 package atraxi.core.util;
 
+import atraxi.core.Player;
+import atraxi.core.world.World;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class Globals
@@ -8,6 +14,12 @@ public class Globals
     public static DebugState debug;
     public static final long SEED = System.nanoTime();
     public static Random random;
+
+    public static final ArrayList<Player> players = new ArrayList<>();
+    public static final Map<String, Player> playersByName = new HashMap<>();
+    public static final ArrayList<World> worlds = new ArrayList<>();
+
+    private static long previousID = 0;
 
     //Networking layer JSON tag names
     public static final String JSON_KEY_INITIALIZATION_PlayerIndex = "playerIndex";
@@ -24,6 +36,10 @@ public class Globals
     public static final String JSON_KEY_MessagePayload_ActionData = "actionData";
     public static final String JSON_KEY_MessagePayload_WorldData = "worldData";
     public static final String JSON_KEY_MessagePayload_PlayerData = "playerData";
+    public static final String JSON_KEY_MessagePayload_ErrorMessage = "error";
+
+    public static final String JSON_VALUE_Error_UnknownType = "unknownType";
+    public static final String JSON_VALUE_Error_NonInstantiatableType = "nonInstantiatableType";
 
     public static final String JSON_KEY_World_SizeX = "sizeX";
     public static final String JSON_KEY_World_SizeY = "sizeY";
@@ -33,6 +49,23 @@ public class Globals
     public static final String JSON_KEY_Entity_PositionX = "positionX";
     public static final String JSON_KEY_Entity_PositionY = "positionY";
     public static final String JSON_KEY_Entity_Type = "type";
+    public static final String JSON_KEY_Entity_ID = "id";
+
+    public synchronized static long getNewID()
+    {
+        long newID = System.nanoTime();
+        //in case more than one id is requested in a single nanosecond (or milli, depending on system time resolution)
+        //increment manually when under load, catch up later
+        if(newID <= previousID)
+        {
+            previousID++;
+        }
+        else
+        {
+            previousID = newID;
+        }
+        return previousID;
+    }
 
     //TODO: split by category
     public enum Identifiers

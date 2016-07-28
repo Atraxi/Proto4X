@@ -27,7 +27,6 @@ public class Game extends JPanel implements Runnable
      */
     public static final long OPTIMALFRAMETIME = 16666666;
     private static final long MINIMUMFRAMETIME = 8333333;
-    private static ArrayList<Player> players;
     private static ArrayList<WorldUIWrapper> worlds;
     public static boolean paused;
     private static UserInterfaceHandler uiHandler;
@@ -40,15 +39,10 @@ public class Game extends JPanel implements Runnable
         Game.uiHandler = uiHandler;
         Game.clientUtil = clientUtil;
         Game.worlds = worlds;
-        Game.players = players;
+        Globals.players.addAll(players);
         setDoubleBuffered(true);
         paused = true;
         renderUtil = new RenderUtil();
-    }
-    
-    public static ArrayList<Player> getPlayerList()
-    {
-        return players;
     }
 
     public static WorldUIWrapper getWorld(int index)

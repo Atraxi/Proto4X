@@ -60,7 +60,24 @@ public class ClientUtil implements Runnable
                             ArrayList<World> worlds = new ArrayList<World>(worldsArrayJSON.length());
                             for(int i = 0; i < worldsArrayJSON.length(); i++)
                             {
-                                worlds.add(World.deserialize(worldsArrayJSON.getJSONObject(i)));
+                                try
+                                {
+                                    worlds.add(World.deserialize(worldsArrayJSON.getJSONObject(i)));
+                                }
+                                catch(ClassNotFoundException e)
+                                {
+                                    JSONObject errorMessage = new JSONObject();
+                                    errorMessage.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_Error)
+                                                .put(Globals.JSON_KEY_MessagePayload_ErrorMessage, Globals.JSON_VALUE_Error_UnknownType);
+                                    sendToServer(errorMessage);
+                                }
+                                catch(InstantiationException e)
+                                {
+                                    JSONObject errorMessage = new JSONObject();
+                                    errorMessage.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_Error)
+                                                .put(Globals.JSON_KEY_MessagePayload_ErrorMessage, Globals.JSON_VALUE_Error_NonInstantiatableType);
+                                    sendToServer(errorMessage);
+                                }
                             }
 
                             JSONArray playersArrayJSON = receivedObject.getJSONArray(Globals.JSON_KEY_MessagePayload_PlayerData);

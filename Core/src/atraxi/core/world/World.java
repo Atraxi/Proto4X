@@ -3,6 +3,7 @@ package atraxi.core.world;
 import atraxi.core.Player;
 import atraxi.core.entities.Entity;
 import atraxi.core.util.Globals;
+import atraxi.core.util.Logger;
 import javafx.geometry.Point3D;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -197,7 +198,7 @@ public class World
         return jsonObject;
     }
 
-    public static World deserialize(JSONObject jsonObject) throws ClassNotFoundException, IllegalAccessException, InstantiationException
+    public static World deserialize(JSONObject jsonObject) throws ClassNotFoundException, InstantiationException
     {
         World world = new World(0, jsonObject.getInt(Globals.JSON_KEY_World_SizeX), jsonObject.getInt(Globals.JSON_KEY_World_SizeY));
 
@@ -206,7 +207,18 @@ public class World
         {
             JSONObject entityJSON = entitiesJSON.getJSONObject(i);
             String entityType = entityJSON.getString(Globals.JSON_KEY_Entity_Type);
-            Entity entity = ((Entity)Class.forName(entityType).newInstance()).deserialize(entityJSON);
+            Entity entity = null;
+            try
+            {
+                entity = ((Entity)Class.forName(entityType).newInstance()).deserialize(entityJSON);
+            }
+            catch(IllegalAccessException e)
+            {
+                Logger.log(Logger.LogLevel.error, new String[]{"Game is running under an unknown security manager, unable to continue."});
+                e.printStackTrace();
+                //TODO: cleanup before exiting - reroute to standardized exit method?
+                System.exit(0);
+            }
 
             //TODO:insert into 'updates' list, merge in updates? allows re-use of any sanity checks and minimises code repetition
             world.entities.put(convertCoordinateToKey(entity.getLocation()), entity);

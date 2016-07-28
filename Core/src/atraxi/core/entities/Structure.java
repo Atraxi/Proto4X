@@ -46,6 +46,12 @@ public class Structure extends Entity
     }
 
     @Override
+    public Entity deserialize(JSONObject entityJSON)
+    {
+        return null;
+    }
+
+    @Override
     protected void startActionFromQueue(Action action)
     {
 

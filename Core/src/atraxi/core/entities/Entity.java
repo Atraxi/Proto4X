@@ -13,12 +13,13 @@ import java.math.BigDecimal;
 public abstract class Entity
 {
     private Globals.Identifiers type;
-    private Point location;
+    protected Point location;
     private int orientation;
     private Player owner;
     private int moveSpeed;
     protected final ActionQueue actionQueue;
     private int visionRange;
+    protected long id;
 
     public Entity(Globals.Identifiers type, Player owner, Point location, int moveSpeed, int visionRange)
     {
@@ -26,7 +27,8 @@ public abstract class Entity
         this.type = type;
         this.location = location;
         this.moveSpeed = moveSpeed;
-        actionQueue = new ActionQueue();
+        this.actionQueue = new ActionQueue();
+        this.id = Globals.getNewID();
     }
 
     public abstract boolean canAcceptAction(Action action);
@@ -80,7 +82,7 @@ public abstract class Entity
 
     public Point getLocation()
     {
-        return location;
+        return new Point(location);
     }
 
     public double getOrientationInRadians()
@@ -91,6 +93,11 @@ public abstract class Entity
     public Player getOwner()
     {
         return owner;
+    }
+
+    void setOwner(Player owner)
+    {
+        this.owner = owner;
     }
 
     public int getVisionRange()
