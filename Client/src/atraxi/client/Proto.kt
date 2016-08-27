@@ -54,7 +54,7 @@ class Proto private constructor() : JFrame() {
         val worlds = ArrayList<WorldUIWrapper>()
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.addAll(worldsFromServer.stream().map({ world ->
+        worlds.addAll(worldsFromServer.stream().map({ world: World ->
             WorldUIWrapper(world,
                     Polygon(intArrayOf(ResourceManager.getImage(Globals.Identifiers.hexagonDefault).width / 2, ResourceManager.getImage(
                             Globals.Identifiers.hexagonDefault).width, ResourceManager.getImage(

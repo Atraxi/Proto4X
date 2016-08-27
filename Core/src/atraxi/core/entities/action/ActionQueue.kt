@@ -23,7 +23,7 @@ class ActionQueue {
             head = action
             tail = action
         } else {
-            tail!!.nextAction = action
+            tail.nextAction = action
             tail = action
         }
     }
@@ -32,12 +32,12 @@ class ActionQueue {
      * Remove the Action at the head of the list, and return it
      * @return
      */
-    fun pullAction(): Action? {
-        if (isEmpty) {
+     fun pullAction(): Action? {
+        if (head == null) {
             return null
         } else {
             val temp = head
-            head = head!!.nextAction
+            head = temp.nextAction
             return temp
         }
     }

@@ -12,7 +12,7 @@ import java.math.BigDecimal
 
 abstract class Entity(val type: Globals.Identifiers, owner: Player, protected var location: Point, private val moveSpeed: Int, visionRange: Int) {
     private val orientation: Int = 0
-    var owner: Player? = null
+    var owner: Player
         internal set
     protected val actionQueue: ActionQueue
     val visionRange: Int = 0
@@ -45,7 +45,9 @@ abstract class Entity(val type: Globals.Identifiers, owner: Player, protected va
     open fun doWork(timeAdjustment: BigDecimal, paused: Boolean) {
         if (!actionQueue.isEmpty) {
             val action = actionQueue.pullAction()
-            startActionFromQueue(action)
+            if (action != null) {
+                startActionFromQueue(action)
+            }
         }
     }
 
@@ -59,10 +61,6 @@ abstract class Entity(val type: Globals.Identifiers, owner: Player, protected va
 
     fun replaceQueue(action: Action) {
         actionQueue.replaceQueue(action)
-    }
-
-    fun getLocation(): Point {
-        return Point(location)
     }
 
     val orientationInRadians: Double

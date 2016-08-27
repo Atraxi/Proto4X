@@ -10,7 +10,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="org.json:json:20160212" level="project" />
+    <orderEntry type="library" name="org.json:json:20160212" level="application" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
   </component>
 </module>

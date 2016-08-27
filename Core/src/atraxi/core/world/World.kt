@@ -42,7 +42,7 @@ class World
         playerMappedEntities = HashMap<Player, ArrayList<Entity>>()
     }
 
-    fun getEntityAtIndex(x: Int, y: Int): Entity {
+    fun getEntityAtIndex(x: Int, y: Int): Entity? {
         return entities[convertCoordinateToKey(x, y)]
     }
 
@@ -100,7 +100,7 @@ class World
         }
 
         private fun convertCoordinateToKey(x: Int, y: Int): Long {
-            return (x.toLong() shl 32L) + y.toLong()
+            return (x.toLong() shl 32) + y.toLong()
         }
 
         fun convertAxialToOffset(x: Int, y: Int): Point {
@@ -178,24 +178,24 @@ class World
             for (i in 0..entitiesJSON.length() - 1) {
                 val entityJSON = entitiesJSON.getJSONObject(i)
                 val entityType = entityJSON.getString(Globals.JSON_KEY_Entity_Type)
-                var entity: Entity? = null
                 try {
-                    entity = (Class.forName(entityType).newInstance() as Entity).deserialize(entityJSON)
+                    val entity = (Class.forName(entityType).newInstance() as Entity).deserialize(entityJSON)
+
+                    //TODO:insert into 'updates' list, merge in updates? allows re-use of any sanity checks and minimises code repetition
+                    world.entities.put(convertCoordinateToKey(entity.location), entity)
+                    var playerEntities: ArrayList<Entity>? = world.playerMappedEntities[entity.owner]
+                    if (playerEntities == null) {
+                        playerEntities = ArrayList<Entity>()
+                    }
+                    playerEntities.add(entity)
+                    world.playerMappedEntities.put(entity.owner, playerEntities)
+
                 } catch (e: IllegalAccessException) {
                     Logger.log(Logger.LogLevel.error, arrayOf("Game is running under an unknown security manager, unable to continue."))
                     e.printStackTrace()
                     //TODO: cleanup before exiting - reroute to standardized exit method?
                     System.exit(0)
                 }
-
-                //TODO:insert into 'updates' list, merge in updates? allows re-use of any sanity checks and minimises code repetition
-                world.entities.put(convertCoordinateToKey(entity!!.location), entity)
-                var playerEntities: ArrayList<Entity>? = world.playerMappedEntities[entity.owner]
-                if (playerEntities == null) {
-                    playerEntities = ArrayList<Entity>()
-                }
-                playerEntities.add(entity)
-                world.playerMappedEntities.put(entity.owner, playerEntities)
             }
 
             return world
