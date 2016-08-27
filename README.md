@@ -1,5 +1,5 @@
 # Proto4X
-Hobby dev of a 4X strategy game.
+Hobby dev of an RPG set in a 4X strategy game.
 
 ## Vision
 *(in a perfect world, this is probably not viable without being very simplistic in most areas)*
