@@ -38,17 +38,16 @@ public class Structure extends Entity
     @Override
     public JSONObject serializeForPlayer(Player player)
     {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put(Globals.JSON_KEY_Entity_Player, player.getName())
-                  .put(Globals.JSON_KEY_Entity_PositionX, getLocation().x)
-                  .put(Globals.JSON_KEY_Entity_PositionY, getLocation().y);
+        JSONObject jsonObject = super.serializeForPlayer(player);
+        //TODO: add additional fields
+        //.append(KEY,VALUE);
         return jsonObject;
     }
 
     @Override
-    public Entity deserialize(JSONObject entityJSON)
+    public void deserialize(JSONObject entityJSON)
     {
-        return null;
+        super.deserialize(entityJSON);
     }
 
     @Override

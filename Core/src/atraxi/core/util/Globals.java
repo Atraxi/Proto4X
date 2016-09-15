@@ -36,7 +36,7 @@ public class Globals
     public static final String JSON_KEY_MessagePayload_ActionData = "actionData";
     public static final String JSON_KEY_MessagePayload_WorldData = "worldData";
     public static final String JSON_KEY_MessagePayload_PlayerData = "playerData";
-    public static final String JSON_KEY_MessagePayload_ErrorMessage = "error";
+    public static final String JSON_KEY_MessagePayload_Error = "error";
 
     public static final String JSON_VALUE_Error_UnknownType = "unknownType";
     public static final String JSON_VALUE_Error_NonInstantiatableType = "nonInstantiatableType";
@@ -48,23 +48,27 @@ public class Globals
     public static final String JSON_KEY_Entity_Player = "player";
     public static final String JSON_KEY_Entity_PositionX = "positionX";
     public static final String JSON_KEY_Entity_PositionY = "positionY";
-    public static final String JSON_KEY_Entity_Type = "type";
+    public static final String JSON_KEY_Entity_ClassType = "classType";
+    public static final String JSON_KEY_Entity_IdentifierType = "idType";
     public static final String JSON_KEY_Entity_ID = "id";
 
     public synchronized static long getNewID()
     {
+        //TODO: salt the ids? Knowing the age of an enemy ship could potentially impact strategy, there could be other minor exploits too. Would need to be guaranteed unique
+        // still and have minimal additional performance impact. Debatable if this is actually worth looking into except for a bit of fun
         long newID = System.nanoTime();
         //in case more than one id is requested in a single nanosecond (or milli, depending on system time resolution)
         //increment manually when under load, catch up later
         if(newID <= previousID)
         {
             previousID++;
+            newID = previousID;
         }
         else
         {
             previousID = newID;
         }
-        return previousID;
+        return newID;
     }
 
     //TODO: split by category

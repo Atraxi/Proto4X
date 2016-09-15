@@ -102,8 +102,8 @@ public class WorldUIWrapper
 
         //use the estimate to offset our coordinates to [0,0]
         //  in order to simplify math with gradients to separate overlapping hex bounds
-        int translatedX = mouseX - getXCoord(x, y, world);
-        int translatedY = mouseY - getYCoord(y, world);
+        int translatedX = mouseX - world.getXCoord(x, y);
+        int translatedY = mouseY - world.getYCoord(y);
 
         //using pre-calculated constants for y=mx+c equation
         //  determine which corner we are in, if any, and offset index
@@ -229,11 +229,11 @@ public class WorldUIWrapper
      * @param from
      * @param to
      */
-    public void paint(RenderUtil render, Point from, Point to)
+    public void paintEntities(RenderUtil render, Point from, Point to)
     {
         from = World.convertAxialToOffset(from);
         to = World.convertAxialToOffset(to);
-        world.getEntitiesInRegion(from, to).values().forEach(render::paintEntity);
+        world.getEntitiesInRegion(from, to).values().forEach((entity) -> render.paintEntity(entity, this));
     }
 
     public void paintTile(RenderUtil render, int x, int y)
@@ -241,42 +241,43 @@ public class WorldUIWrapper
         if(Globals.debug.getDetailedInfoLevel() > 3)
         {
             Rectangle bounds = tileBounds.getBounds();
-            bounds.translate(getXCoord(x, y, this), getYCoord(y, this));
-            render.drawString("x:" + x, getXCoord(x, y, this) + 50, getYCoord(y, this) + 50, bounds);
-            render.drawString("y:" + y, getXCoord(x, y, this) + 50, getYCoord(y, this) + 60, bounds);
+            bounds.translate(getXCoord(x, y), getYCoord(y));
+            render.drawString("x:" + x, getXCoord(x, y) + 50, getYCoord(y) + 50, bounds);
+            render.drawString("y:" + y, getXCoord(x, y) + 50, getYCoord(y) + 60, bounds);
         }
+
         if(tilePressed.x == x && tilePressed.y == y)
         {
-            render.drawImage(imageClick, getXCoord(x, y, this), getYCoord(y, this), null);
+            render.drawImage(imageClick, getXCoord(x, y), getYCoord(y), null);
         }
         else if(tileSelected.x == x && tileSelected.y == y)
         {
-            render.drawImage(imageSelected, getXCoord(x, y, this), getYCoord(y, this), null);
+            render.drawImage(imageSelected, getXCoord(x, y), getYCoord(y), null);
         }
         else if(tileHover.x == x && tileHover.y == y)
         {
-            render.drawImage(imageHover, getXCoord(x, y, this), getYCoord(y, this), null);
+            render.drawImage(imageHover, getXCoord(x, y), getYCoord(y), null);
         }
         else
         {
-            render.drawImage(imageDefault, getXCoord(x, y, this), getYCoord(y, this), null);
+            render.drawImage(imageDefault, getXCoord(x, y), getYCoord(y), null);
         }
     }
 
-    public static int getXCoord(int xIndex, int yIndex, WorldUIWrapper world)
+    public int getXCoord(int xIndex, int yIndex)
     {
         //Axial co-ordinate system
         //horizontally is the same as rectangles
-        return xIndex * world.getTileWidth()
+        return xIndex * getTileWidth()
                         //except y-axis is at a 30degree angle, offsetting the X co-ordinate
                         //xIndex is offset by yIndex * half the width of a tile
-                        + (yIndex * world.getTileWidth() / 2);
+                        + (yIndex * getTileWidth() / 2);
     }
 
-    public static int getYCoord(int yIndex, WorldUIWrapper world)
+    public int getYCoord(int yIndex)
     {
         //Hexagonal grids tile with a spacing of 3/4 the height of a hexagon, otherwise the same as rectangles
-        return yIndex * (3 * world.getTileHeight() / 4);
+        return yIndex * (3 * getTileHeight() / 4);
     }
 
     public void paintTile(RenderUtil renderUtil, Point point)

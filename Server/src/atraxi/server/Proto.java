@@ -1,11 +1,13 @@
 package atraxi.server;
 
 import atraxi.core.Player;
+import atraxi.core.entities.Ship;
 import atraxi.core.util.DebugState;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 import atraxi.core.world.World;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -56,7 +58,9 @@ public class Proto
         ArrayList<World> worlds = new ArrayList<World>();
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
-        worlds.add(new World(Globals.random.nextInt(), 1_000_000, 1_000_000));
+        World world = new World(Globals.random.nextInt(), 1_000_000, 1_000_000);
+        world.addEntity(new Ship(Globals.Identifiers.entityShipDefault, user, new Point(5, 5), 5, 6));
+        worlds.add(world);
 
         Game game = new Game(players, worlds);
         Logger.log(Logger.LogLevel.debug, new String[]{"Server started"});

@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="Server">
+    <output-path>$PROJECT_DIR$/out/artifacts/Server</output-path>
+    <root id="archive" name="Server.jar">
+      <element id="module-output" name="Core" />
+      <element id="library" level="project" name="org.json:json:20160212" />
+      <element id="module-output" name="Server" />
+    </root>
+  </artifact>
+</component>

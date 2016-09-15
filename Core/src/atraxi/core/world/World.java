@@ -22,6 +22,8 @@ public class World
     private final HashMap<Player, ArrayList<Entity>> playerMappedEntities;
     private int sizeX, sizeY;
 
+    private ArrayList<Long> changeList;
+
     /**
      * Instantiates a new game world. Server side implementation only
      * @param seed
@@ -36,6 +38,7 @@ public class World
 
         entities = new TreeMap<>();
         playerMappedEntities = new HashMap<>();
+        changeList = new ArrayList<>();
     }
 
     /**
@@ -116,20 +119,37 @@ public class World
         return new Point(x, z);
     }
 
-    //TODO: add entity should insert into a 'updates' list, to allow changes to be collected and sent to each client, while simultaneously reducing possible race conditions
+    //TODO: add entity should insert into a 'updates' list, to allow changes to be collected and sent to each client
     //TODO: merge 'updates' list into main world
-//    public void addEntity(Entity entity)
-//    {
-//        entities.put(convertCoordinateToKey(entity.getLocation()), entity);
-//
-//        ArrayList<Entity> playerEntities = playerMappedEntities.get(entity.getOwner());
-//        if(playerEntities == null)
-//        {
-//            playerEntities = new ArrayList<>();
-//        }
-//        playerEntities.add(entity);
-//        playerMappedEntities.put(entity.getOwner(), playerEntities);
-//    }
+    public void addEntity(Entity entity)
+    {
+        long key = convertCoordinateToKey(entity.getLocation());
+        if(entities.containsKey(key))
+        {
+            throw new IllegalStateException("An Entity already exists at the new Entities location");
+        }
+
+        entities.put(key, entity);
+
+        ArrayList<Entity> playerEntities = playerMappedEntities.get(entity.getOwner());
+        if(playerEntities == null)
+        {
+            playerEntities = new ArrayList<>();
+            playerMappedEntities.put(entity.getOwner(), playerEntities);
+        }
+        playerEntities.add(entity);
+
+        changeList.add(convertCoordinateToKey(entity.getLocation()));
+    }
+
+    public void removeEntity(Entity entity)
+    {
+        entities.remove(convertCoordinateToKey(entity.getLocation()));
+
+        playerMappedEntities.get(entity.getOwner()).remove(entity);
+
+        changeList.add(convertCoordinateToKey(entity.getLocation()));
+    }
 
     public static int distanceBetween(Point a, Point b)
     {
@@ -185,10 +205,18 @@ public class World
         {
             playerEntities.forEach(sourceEntity ->
                                    {
-                                       playerVisibleEntitiesJSON.put(sourceEntity.serializeForPlayer(player));
+                                       playerVisibleEntitiesJSON.put(sourceEntity.serializeForPlayer(player)
+                                                                                 .put(Globals.JSON_KEY_Entity_ClassType, sourceEntity.getClass().getName()));
 
                                        getEntitiesWithinRangeOfPoint(convertAxialToCubic(sourceEntity.getLocation()), sourceEntity.getVisionRange()).forEach(
-                                               visibleEntity -> playerVisibleEntitiesJSON.put(visibleEntity.serializeForPlayer(player)));
+                                               visibleEntity -> {
+                                                   if(visibleEntity != sourceEntity)
+                                                   {
+                                                       playerVisibleEntitiesJSON.put(visibleEntity.serializeForPlayer(player)
+                                                                                                  .put(Globals.JSON_KEY_Entity_ClassType, visibleEntity.getClass().getName()));
+                                                   }
+                                               }
+                                               );
                                    });
         }
         JSONObject jsonObject = new JSONObject();
@@ -206,11 +234,12 @@ public class World
         for(int i = 0; i < entitiesJSON.length(); i++)
         {
             JSONObject entityJSON = entitiesJSON.getJSONObject(i);
-            String entityType = entityJSON.getString(Globals.JSON_KEY_Entity_Type);
+            String entityType = entityJSON.getString(Globals.JSON_KEY_Entity_ClassType);
             Entity entity = null;
             try
             {
-                entity = ((Entity)Class.forName(entityType).newInstance()).deserialize(entityJSON);
+                entity = ((Entity)Class.forName(entityType).newInstance());
+                entity.deserialize(entityJSON);
             }
             catch(IllegalAccessException e)
             {

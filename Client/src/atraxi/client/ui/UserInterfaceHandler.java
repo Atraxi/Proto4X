@@ -161,7 +161,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     Game.getWorld(currentWorldIndex).paintTile(renderUtil, World.convertOffsetToAxial(new Point(x, y)));
                 }
             }
-            Game.getWorld(currentWorldIndex).paint(renderUtil,
+            Game.getWorld(currentWorldIndex).paintEntities(renderUtil,
                                                    new Point(Math.max(0, xMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), xMax)),
                                                    new Point(Math.max(0, yMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), yMax)));
         }

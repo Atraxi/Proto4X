@@ -1,4 +1,4 @@
-package atraxi.client.ui;
+package atraxi.core.util;
 
 /**
  * @param <T1> Input arg

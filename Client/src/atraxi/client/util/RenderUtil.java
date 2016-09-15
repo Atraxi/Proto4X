@@ -1,6 +1,7 @@
 package atraxi.client.util;
 
 import atraxi.client.ui.UIElement;
+import atraxi.client.ui.wrappers.WorldUIWrapper;
 import atraxi.core.entities.Entity;
 import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
@@ -184,12 +185,19 @@ public class RenderUtil
         g2d.drawImage(ResourceManager.getImage(imageID), transform, observer);
     }
 
-    public void paintEntity(Entity entity)
+    public void paintEntity(Entity entity, WorldUIWrapper worldUIWrapper)
     {
+        AffineTransform transform = AffineTransform.getRotateInstance(entity.getOrientationInRadians(),
+                                                                      ResourceManager.getImage(entity.getType()).getWidth() / 2.0,
+                                                                      ResourceManager.getImage(entity.getType()).getHeight() / 2.0);
+        transform.translate((worldUIWrapper.getXCoord(entity.getLocation().x, entity.getLocation().y))
+                                + worldUIWrapper.getTileWidth() / 2.0
+                                - ResourceManager.getImage(entity.getType()).getWidth() / 2.0,
+                            (worldUIWrapper.getYCoord(entity.getLocation().y))
+                                + worldUIWrapper.getTileHeight() / 2.0
+                                - ResourceManager.getImage(entity.getType()).getHeight() / 2.0);
         drawImage(entity.getType(),
-                         AffineTransform.getRotateInstance(entity.getOrientationInRadians(),
-                                                           ResourceManager.getImage(entity.getType()).getWidth() / 2,
-                                                           ResourceManager.getImage(entity.getType()).getHeight() / 2),
+                         transform,
                          null);
     }
 }

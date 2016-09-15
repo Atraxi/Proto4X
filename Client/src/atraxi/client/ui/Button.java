@@ -2,6 +2,7 @@ package atraxi.client.ui;
 
 import atraxi.client.util.RenderUtil;
 import atraxi.client.util.ResourceManager;
+import atraxi.core.util.CustomCallable;
 import atraxi.core.util.Globals;
 
 import java.awt.Rectangle;

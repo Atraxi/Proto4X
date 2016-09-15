@@ -68,15 +68,19 @@ public class ClientUtil implements Runnable
                                 {
                                     JSONObject errorMessage = new JSONObject();
                                     errorMessage.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_Error)
-                                                .put(Globals.JSON_KEY_MessagePayload_ErrorMessage, Globals.JSON_VALUE_Error_UnknownType);
+                                                .put(Globals.JSON_KEY_MessagePayload_Error, Globals.JSON_VALUE_Error_UnknownType);
                                     sendToServer(errorMessage);
+                                    e.printStackTrace();
+                                    System.exit(0);
                                 }
                                 catch(InstantiationException e)
                                 {
                                     JSONObject errorMessage = new JSONObject();
                                     errorMessage.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_Error)
-                                                .put(Globals.JSON_KEY_MessagePayload_ErrorMessage, Globals.JSON_VALUE_Error_NonInstantiatableType);
+                                                .put(Globals.JSON_KEY_MessagePayload_Error, Globals.JSON_VALUE_Error_NonInstantiatableType);
                                     sendToServer(errorMessage);
+                                    e.printStackTrace();
+                                    System.exit(0);
                                 }
                             }
 

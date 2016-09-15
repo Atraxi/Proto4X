@@ -30,6 +30,11 @@ public abstract class Entity
         this.actionQueue = new ActionQueue();
         this.id = Globals.getNewID();
     }
+    protected Entity()
+    {
+        this.actionQueue = new ActionQueue();
+        location = new Point();
+    }
 
     public abstract boolean canAcceptAction(Action action);
     protected abstract void startActionFromQueue(Action action);
@@ -42,7 +47,7 @@ public abstract class Entity
     public double turnCountToReachLocation(Point destination)
     {//TODO: extend this to also try to pathfind through teleporters/ftl
 
-        int distance = World.distanceBetween(this.location, destination);
+        float distance = World.distanceBetween(this.location, destination);
         if(distance <= Globals.MAX_MOVEMENT_DISTANCE)
         {
             return distance/moveSpeed;
@@ -112,7 +117,24 @@ public abstract class Entity
      * @param player
      * @return
      */
-    public abstract JSONObject serializeForPlayer(Player player);
+    public JSONObject serializeForPlayer(Player player)
+    {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put(Globals.JSON_KEY_Entity_Player, owner.getName())
+                  .put(Globals.JSON_KEY_Entity_PositionX, location.x)
+                  .put(Globals.JSON_KEY_Entity_PositionY, location.y)
+                  .put(Globals.JSON_KEY_Entity_ID, id)
+                  .put(Globals.JSON_KEY_Entity_IdentifierType, type);
+        return jsonObject;
+    }
 
-    public abstract Entity deserialize(JSONObject entityJSON);
+    public void deserialize(JSONObject entityJSON)
+    {
+        //TODO: implement deserialization
+        setOwner(Globals.playersByName.get(entityJSON.getString(Globals.JSON_KEY_Entity_Player)));
+        location.setLocation(entityJSON.getInt(Globals.JSON_KEY_Entity_PositionX),
+                             entityJSON.getInt(Globals.JSON_KEY_Entity_PositionY));
+        id = entityJSON.getLong(Globals.JSON_KEY_Entity_ID);
+        type = entityJSON.getEnum(Globals.Identifiers.class, Globals.JSON_KEY_Entity_IdentifierType);
+    }
 }

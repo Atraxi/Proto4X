@@ -14,6 +14,7 @@ public class Ship extends Entity
     {
         super(type, owner, location, moveSpeed, viewRange);
     }
+    public Ship(){super();}
 
     @Override
     public void doWork(BigDecimal timeAdjustment, boolean paused)
@@ -43,23 +44,16 @@ public class Ship extends Entity
     @Override
     public JSONObject serializeForPlayer(Player player)
     {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put(Globals.JSON_KEY_Entity_Player, this.getOwner().getName())
-                  .put(Globals.JSON_KEY_Entity_PositionX, getLocation().x)
-                  .put(Globals.JSON_KEY_Entity_PositionY, getLocation().y)
-                  .put(Globals.JSON_KEY_Entity_ID, id);
+        JSONObject jsonObject = super.serializeForPlayer(player);
+        //TODO: add additional fields
+        //.append(KEY,VALUE);
         return jsonObject;
     }
 
     @Override
-    public Entity deserialize(JSONObject entityJSON)
+    public void deserialize(JSONObject entityJSON)
     {
-        //TODO: implement deserialization
-        setOwner(Globals.playersByName.get(entityJSON.getString(Globals.JSON_KEY_Entity_Player)));
-        location.setLocation(entityJSON.getInt(Globals.JSON_KEY_Entity_PositionX),
-                             entityJSON.getInt(Globals.JSON_KEY_Entity_PositionY));
-        id = entityJSON.getLong(Globals.JSON_KEY_Entity_ID);
-        return this;
+        super.deserialize(entityJSON);
     }
 
     @Override
