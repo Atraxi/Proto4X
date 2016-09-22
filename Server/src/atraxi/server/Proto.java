@@ -59,7 +59,7 @@ public class Proto
 
         //Hexagonal - assumes regular hexagon with points at top/bottom with all points tightly bound to image dimensions, traverse points clockwise from top center
         World world = new World(Globals.random.nextInt(), 1_000_000, 1_000_000);
-        world.addEntity(new Ship(Globals.Identifiers.entityShipDefault, user, new Point(5, 5), 5, 6));
+        world.addEntity(new Ship(Globals.Identifiers.entityShipDefault, user, new Point(1, 2), 5, 6));
         worlds.add(world);
 
         Game game = new Game(players, worlds);

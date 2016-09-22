@@ -90,9 +90,7 @@ public class World
      */
     public static Point convertAxialToOffset(Point point)
     {
-        point.setLocation(point.x + (point.y - (point.y&1)) / 2,
-                          point.y);
-        return point;
+        return convertAxialToOffset(point.x, point.y);
     }
 
     /**
@@ -102,9 +100,12 @@ public class World
      */
     public static Point convertOffsetToAxial(Point point)
     {
-        point.setLocation(point.x - (point.y - (point.y&1)) / 2,
-                          point.y);
-        return point;
+        return convertOffsetToAxial(point.x, point.y);
+    }
+
+    public static Point convertOffsetToAxial(int x, int y)
+    {
+        return new Point(x - (y - (y&1)) / 2, y);
     }
 
     public static Point3D convertAxialToCubic(Point point)
@@ -167,7 +168,7 @@ public class World
 
     public SortedMap<Long, Entity> getEntitiesInRegion(Point from, Point to)
     {
-        long longFrom = World.convertCoordinateToKey(from.x, from.y);
+        long longFrom = convertCoordinateToKey(from.x, from.y);
         long longTo = convertCoordinateToKey(to.x, to.y);
         if(longFrom > longTo)
         {

@@ -78,14 +78,11 @@ public class Game extends JPanel implements Runnable
             g2d.drawRect(0, 0, getWidth(), getHeight());
         }
 
-        //The background doesn't move at the same speed as the rest of the game objects, due to the desired parallax illusion,
-        // so the camera offset is managed inside it's paint method
-//        uiHandler.paintBackground(g2d);
-//        uiHandler.paintBackgroundAtScrollSpeed(1, g2d, renderUtil);
-
         //Transform camera position/scale/rotation to draw any world objects
         AffineTransform g2dTransformBackup = g2d.getTransform();
         g2d.transform(UserInterfaceHandler.getWorldTransform());
+
+        uiHandler.paintBackground(g2d);
 
         UserInterfaceHandler.paintWorld(renderUtil);
 
@@ -110,7 +107,7 @@ public class Game extends JPanel implements Runnable
 //                entity.doWork(timeAdjustment, paused);
 //            }
 //        }
-        UserInterfaceHandler.doWork(timeAdjustment, paused);
+        uiHandler.doWork(timeAdjustment, paused);
     }
     
     @Override

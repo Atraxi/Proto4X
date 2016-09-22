@@ -33,11 +33,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 {
     private static Point selectedLocation;
     private static Player user;
-    private static final Globals.Identifiers[] mapImages = {
-            Globals.Identifiers.background1A,Globals.Identifiers.background1B,Globals.Identifiers.background1C,Globals.Identifiers.background1D,
-            Globals.Identifiers.background2A,Globals.Identifiers.background2B,Globals.Identifiers.background2C,Globals.Identifiers.background2D,
-            Globals.Identifiers.background3A,Globals.Identifiers.background3B,Globals.Identifiers.background3C,Globals.Identifiers.background3D,
-            Globals.Identifiers.background4A,Globals.Identifiers.background4B,Globals.Identifiers.background4C,Globals.Identifiers.background4D};
+    private static final Globals.Identifiers[][] mapImages = {
+            {Globals.Identifiers.background1A,Globals.Identifiers.background1B,Globals.Identifiers.background1C,Globals.Identifiers.background1D},
+            {Globals.Identifiers.background2A,Globals.Identifiers.background2B,Globals.Identifiers.background2C,Globals.Identifiers.background2D},
+            {Globals.Identifiers.background3A,Globals.Identifiers.background3B,Globals.Identifiers.background3C,Globals.Identifiers.background3D},
+            {Globals.Identifiers.background4A,Globals.Identifiers.background4B,Globals.Identifiers.background4C,Globals.Identifiers.background4D}};
     private static final int edgeScrollArea = 50;
     private static int currentWorldIndex;
 
@@ -80,19 +80,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     }
 
     /**
-     * Draw a layer of background tiles with a set scroll speed. Allows for a parallel illusion with multiple layers at varying speeds.
-     * @param speed
-     */
-    private void paintBackgroundAtScrollSpeed(float speed, Graphics2D graphics2D)
-    {
-        //for()
-    }
-
-    /**
      * Paint the background layer, everything else will draw above this
-     * @param g2d
+     * @param graphics2D
      */
-    public void paintBackground(Graphics2D g2d)
+    public void paintBackground(Graphics2D graphics2D)
     {
         double[] viewArea = {0, 0,
                 Proto.getScreenWidth(), 0,
@@ -101,22 +92,49 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
 
         try
         {
-            worldTransform.inverseTransform(viewArea, 0, viewArea, 0, 4);
-            Point[] indexes = {
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex)))
-            };
-            int xMin = Math.min(indexes[0].x, Math.min(indexes[1].x, Math.min(indexes[2].x, indexes[3].x)));
-            int xMax = Math.max(indexes[0].x, Math.max(indexes[1].x, Math.max(indexes[2].x, indexes[3].x)));
+            double[] modifiedViewArea = new double[8];
+            worldTransform.inverseTransform(viewArea, 0, modifiedViewArea, 0, 4);
 
-            int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
-            int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
+//            int width = ResourceManager.getImage(Globals.Identifiers.background1A).getTileWidth();
+//            int height = ResourceManager.getImage(Globals.Identifiers.background1A).getTileHeight();
 
-            for(int i = 0; i < 10; i = i * 2)
+            double xMin = Math.min(modifiedViewArea[0], Math.min(modifiedViewArea[2], Math.min(modifiedViewArea[4], modifiedViewArea[6])));
+            double xMax = Math.max(modifiedViewArea[0], Math.max(modifiedViewArea[2], Math.max(modifiedViewArea[4], modifiedViewArea[6])));
+
+            double yMin = Math.min(modifiedViewArea[1], Math.min(modifiedViewArea[3], Math.min(modifiedViewArea[5], modifiedViewArea[7])));
+            double yMax = Math.max(modifiedViewArea[1], Math.max(modifiedViewArea[3], Math.max(modifiedViewArea[5], modifiedViewArea[7])));
+            for(int i = 1, j = 0; i <= 8; i = i * 2, j++)
             {
-                paintBackgroundAtScrollSpeed(i, g2d);
+                int mapImageWidth = ResourceManager.getImage(mapImages[j][0]).getWidth(null);
+                int mapImageHeight = ResourceManager.getImage(mapImages[j][0]).getHeight(null);
+                for(double backgroundOffsetX = xMin + ((double)getScreenLocationX()/i % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+                    backgroundOffsetX <= xMax;
+                    backgroundOffsetX += mapImageWidth)
+                {
+                    for(double backgroundOffsetY = yMin + ((double)getScreenLocationY()/i % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                        backgroundOffsetY <= yMax;
+                        backgroundOffsetY += mapImageHeight)
+                    {
+                        int indexX = (int)((backgroundOffsetX-getScreenLocationX()/i+10)/mapImageWidth);
+                        int indexY = (int)((backgroundOffsetY-getScreenLocationY()/i+10)/mapImageHeight);
+                        rand.setSeed((1234L*indexX) ^ (5678L*indexY) ^ Globals.SEED);
+                        graphics2D.drawImage(ResourceManager.getImage(mapImages[j][rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        if(Globals.debug.getDetailedInfoLevel() >= 4)
+                        {
+                            graphics2D.scale(4, 4);
+                            graphics2D.drawString("x:" + indexX + " y:" + indexY,
+                                           (int) backgroundOffsetX/4 + 20,
+                                           (int) backgroundOffsetY/4 + 20);
+                            /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
+                                           (int) backgroundOffsetX/4 + 20,
+                                           (int) backgroundOffsetY/4 + 40);
+                            g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
+                                           (int) backgroundOffsetX/4 + 20,
+                                           (int) backgroundOffsetY/4 + 60);*/
+                            graphics2D.scale(0.25, 0.25);
+                        }
+                    }
+                }
             }
         }
         catch(NoninvertibleTransformException e)
@@ -134,19 +152,21 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
      */
     public static void paintWorld(RenderUtil renderUtil)
     {
-        double[] viewArea = {0, 0,
-                Proto.getScreenWidth(), 0,
-                Proto.getScreenWidth(), Proto.getScreenHeight(),
-                0, Proto.getScreenHeight()};
+        WorldUIWrapper worldUIWrapper = Game.getWorld(currentWorldIndex);
+        //{0,0} to {screenWidth,screenHeight}, buffered by the width/height of a tile in each direction
+        double[] viewArea = {-worldUIWrapper.getTileWidth(), -worldUIWrapper.getTileHeight(),
+                Proto.getScreenWidth() + worldUIWrapper.getTileWidth(), -worldUIWrapper.getTileHeight(),
+                Proto.getScreenWidth() + worldUIWrapper.getTileWidth(), Proto.getScreenHeight() + worldUIWrapper.getTileHeight(),
+                -worldUIWrapper.getTileWidth(), Proto.getScreenHeight() + worldUIWrapper.getTileHeight()};
 
         try
         {
             worldTransform.inverseTransform(viewArea,0,viewArea,0,4);
             Point[] indexes = {
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5], Game.getWorld(currentWorldIndex))),
-                    World.convertAxialToOffset(WorldUIWrapper.getGridTileIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7], Game.getWorld(currentWorldIndex)))
+                    World.convertAxialToOffset(worldUIWrapper.getTileAxialIndexFromPixelLocation((int) viewArea[0], (int) viewArea[1])),
+                    World.convertAxialToOffset(worldUIWrapper.getTileAxialIndexFromPixelLocation((int) viewArea[2], (int) viewArea[3])),
+                    World.convertAxialToOffset(worldUIWrapper.getTileAxialIndexFromPixelLocation((int) viewArea[4], (int) viewArea[5])),
+                    World.convertAxialToOffset(worldUIWrapper.getTileAxialIndexFromPixelLocation((int) viewArea[6], (int) viewArea[7]))
             };
             int xMin = Math.min(indexes[0].x, Math.min(indexes[1].x, Math.min(indexes[2].x, indexes[3].x)));
             int xMax = Math.max(indexes[0].x, Math.max(indexes[1].x, Math.max(indexes[2].x, indexes[3].x)));
@@ -154,20 +174,20 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             int yMin = Math.min(indexes[0].y, Math.min(indexes[1].y, Math.min(indexes[2].y, indexes[3].y)));
             int yMax = Math.max(indexes[0].y, Math.max(indexes[1].y, Math.max(indexes[2].y, indexes[3].y)));
 
-            for(int x = Math.max(0, xMin); x <= Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), xMax); x++)
+            for(int x = Math.max(0, xMin); x <= Math.min(worldUIWrapper.getWorld().getSizeX(), xMax); x++)
             {
-                for(int y = Math.max(0, yMin); y <= Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), yMax); y++)
+                for(int y = Math.max(0, yMin); y <= Math.min(worldUIWrapper.getWorld().getSizeX(), yMax); y++)
                 {
-                    Game.getWorld(currentWorldIndex).paintTile(renderUtil, World.convertOffsetToAxial(new Point(x, y)));
+                    worldUIWrapper.paintTile(renderUtil, World.convertOffsetToAxial(new Point(x, y)));
                 }
             }
-            Game.getWorld(currentWorldIndex).paintEntities(renderUtil,
-                                                   new Point(Math.max(0, xMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), xMax)),
-                                                   new Point(Math.max(0, yMin), Math.min(Game.getWorld(currentWorldIndex).getWorld().getSizeX(), yMax)));
+            worldUIWrapper.paintEntities(renderUtil,
+                                                   World.convertOffsetToAxial(new Point(Math.max(0, xMin), Math.max(0, yMin))),
+                                                   World.convertOffsetToAxial(new Point(Math.min(worldUIWrapper.getWorld().getSizeX(), xMax), Math.min(worldUIWrapper.getWorld().getSizeY(), yMax))));
         }
         catch(NoninvertibleTransformException e)
         {
-            Logger.log(Logger.LogLevel.error, new String[]{"Camera has entered an invalid state, resetting."});
+            Logger.log(Logger.LogLevel.error, new String[]{"Camera has entered an invalid state, resetting.", "Camera state: " + worldTransform.toString()});
             e.printStackTrace();
             //TODO: save current worldTransform for error reporting
             worldTransform.setToIdentity();
@@ -185,11 +205,11 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
         if(Globals.debug.getDetailedInfoLevel() > 2)
         {
             render.drawString("mouseX:" + mouseLocation.x, 50, 50, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
-            render.drawString("mouseY:" + mouseLocation.y, 50, 60, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
+            render.drawString("mouseY:" + mouseLocation.y, 50, 65, new Rectangle(Proto.getScreenWidth(), Proto.getScreenHeight()));
         }
     }
 
-    public static void doWork(BigDecimal timeAdjustment, boolean paused)
+    public void doWork(BigDecimal timeAdjustment, boolean paused)
     {
         //TODO: this doesn't feel quite right, experiment with different math. maybe 2 stages of constant speed?
         if(isScrollEnabled && !paused)
@@ -225,11 +245,13 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 yTranslation = -timeAdjustment.multiply(new BigDecimal(10)).intValue();
             }
             //TODO: maybe broken, debug this
-            double rotation = Math.atan2(worldTransform.getShearY(), worldTransform.getScaleY());
-            double cos = Math.cos(rotation);
-            double sin = Math.sin(rotation);
-            worldTransform.translate(xTranslation * cos - yTranslation * sin,
-                                     xTranslation * sin + yTranslation * cos);
+//            double rotation = Math.atan2(worldTransform.getShearY(), worldTransform.getScaleY());
+//            double cos = Math.cos(rotation);
+//            double sin = Math.sin(rotation);
+//            worldTransform.translate(xTranslation * cos - yTranslation * sin,
+//                                     xTranslation * sin + yTranslation * cos);
+            worldTransform.translate(xTranslation, yTranslation);
+            mouseMoved(new MouseEvent(Proto.getPROTO(), MouseEvent.MOUSE_MOVED, System.nanoTime(), 0, mouseLocation.x, mouseLocation.y, 0, false));
         }
     }
 
@@ -287,54 +309,25 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 Game.endTurn();
                 break;
             case KeyEvent.VK_P:
+                worldTransform.translate(Proto.getScreenWidth() / 2, Proto.getScreenHeight() / 2);
                 worldTransform.rotate(Math.PI/16);
+                worldTransform.translate(-Proto.getScreenWidth() / 2, -Proto.getScreenHeight() / 2);
                 break;
-//            case KeyEvent.VK_0:
-//                Logger.log(LogLevel.debug, new String[]{"Starting multiplayer atraxi.server thread"});
-//                serverUtil = new ServerUtil(2);
-//                Thread serverThread = new Thread(serverUtil);
-//                serverThread.setName("Server");
-//                serverThread.start();
-//                break;
-//            case KeyEvent.VK_9:
-//                Logger.log(LogLevel.debug, new String[]{"Starting multiplayer atraxi.client thread"});
-//                try
-//                {
-//                    clientUtil = new ClientUtil(user);
-//                    Thread clientThread = new Thread(clientUtil);
-//                    clientThread.setName("Client");
-//                    clientThread.start();
-//                }
-//                catch(ConnectException e)
-//                {
-//                    Logger.log(LogLevel.debug, new String[]{"Failed to connect to the atraxi.server"});
-//                    e.printStackTrace();
-//                }
-//                catch(IOException e)
-//                {
-//                    Logger.log(LogLevel.debug, new String[]{"error"});
-//                    e.printStackTrace();
-//                }
-//                break;
-//            case KeyEvent.VK_8:
-//                Logger.log(LogLevel.debug, new String[]{"Attempt sending atraxi.client->atraxi.server"});
-//                try
-//                {
-//                    JSONObject jsonObject = new JSONObject();
-//                    jsonObject.append("message", "atraxi.client->atraxi.server test");
-//                    clientUtil.sendToServer(jsonObject);
-//                }
-//                catch(IOException e)
-//                {
-//                    e.printStackTrace();
-//                }
-//                break;
-//            case KeyEvent.VK_7:
-//                Logger.log(LogLevel.debug, new String[]{"Attempt sending atraxi.server->atraxi.client"});
-//                JSONObject jsonObject = new JSONObject();
-//                jsonObject.append("message", "atraxi.server->atraxi.client test");
-//                serverUtil.sendToPlayer(user, jsonObject);
-//                break;
+            case KeyEvent.VK_UP:
+                worldTransform.translate(0, -1);
+                break;
+            case KeyEvent.VK_DOWN:
+                worldTransform.translate(0, 1);
+                break;
+            case KeyEvent.VK_LEFT:
+                worldTransform.translate(-1, 0);
+                break;
+            case KeyEvent.VK_RIGHT:
+                worldTransform.translate(1, 0);
+                break;
+            case KeyEvent.VK_SLASH:
+                Logger.log(Logger.LogLevel.debug, new String[]{"x:" + worldTransform.getTranslateX(),"y:" + worldTransform.getTranslateY()});
+                break;
         }
     }
 
@@ -395,8 +388,8 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
-        boolean isUIEventHandled = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
         //if this event was intercepted by overlaid UI elements
+        boolean isUIEventHandled = uiStack.mouseWheelMoved(paramMouseWheelEvent) != null;
         if(!isUIEventHandled)
         {
             double scaleFactor = paramMouseWheelEvent.getWheelRotation() > 0.0 ? 0.9 * paramMouseWheelEvent.getWheelRotation() : (10.0 / 9.0) * -paramMouseWheelEvent
@@ -421,9 +414,9 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     @Override
     public void mouseReleased(MouseEvent paramMouseEvent)
     {
+        //if this event was intercepted by overlaid UI elements
         boolean isUIEventHandled = uiStack.mouseReleased(paramMouseEvent) != null;
 
-        //if this event was intercepted by overlaid UI elements
         if(!isUIEventHandled)
         {
             //Convert the mouse coordinates from screen to world coordinates
@@ -440,7 +433,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             else if (paramMouseEvent.getButton() == MouseEvent.BUTTON3)
             {
                 //TODO: refactor? to allow drag for target orientation
-                Entity selectedEntity = Game.getWorld(currentWorldIndex).getWorld().getEntityAtIndex(selectedLocation.x, selectedLocation.y);
+                Entity selectedEntity = Game.getWorld(currentWorldIndex).getWorld().getEntityAtIndex(selectedLocation);
                 Action action = new ActionMoveTestImpl(selectedEntity, user, releasedLocation);
                 if(action.isValid())
                 {

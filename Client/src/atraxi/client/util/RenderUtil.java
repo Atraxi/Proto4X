@@ -180,7 +180,7 @@ public class RenderUtil
         g2d.setClip(originalClip);
     }
 
-    public void drawImage(Globals.Identifiers imageID, AffineTransform transform, ImageObserver observer)
+    private void drawImage(Globals.Identifiers imageID, AffineTransform transform, ImageObserver observer)
     {
         g2d.drawImage(ResourceManager.getImage(imageID), transform, observer);
     }

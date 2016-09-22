@@ -16,7 +16,7 @@ import java.awt.event.MouseWheelEvent;
  */
 public class WorldUIWrapper
 {
-    // constants for standard y=mx+c line equation, used in getGridTileIndexFromPixelLocation()
+    // constants for standard y=mx+c line equation, used in getTileAxialIndexFromPixelLocation()
     /**
      * <code>ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4</code>
      */
@@ -89,21 +89,21 @@ public class WorldUIWrapper
         return tileBounds.getBounds().height;
     }
 
-    public static Point getGridTileIndexFromPixelLocation(int mouseX, int mouseY, WorldUIWrapper world)
+    public Point getTileAxialIndexFromPixelLocation(int mouseX, int mouseY)
     {
         //start with a re-arranged version of the equation from Get{X,Y}Coord()
         //used here to convert pixel location back to a tile/Entity index
         //  not a perfect solution initially due to working with rectangle bounding box containing a hexagon
 
         //a useful estimate however with inaccuracies between top left/right corners of
-        //  hex/rect bounds (top of hex/rect is the previous row by this approximation)
-        int y = (int) Math.floor(mouseY / ((3 * (double) world.getTileHeight()) / 4));
-        int x = (int) Math.floor((mouseX - (y * (double) world.getTileWidth()) / 2) / world.getTileWidth());
+        //  hex/rect bounds (top of hex/rect evaluates to the previous row by this approximation)
+        int y = (int) Math.floor(mouseY / ((3 * (double) getTileHeight()) / 4));
+        int x = (int) Math.floor((mouseX - (y * (double) getTileWidth()) / 2) / getTileWidth());
 
         //use the estimate to offset our coordinates to [0,0]
         //  in order to simplify math with gradients to separate overlapping hex bounds
-        int translatedX = mouseX - world.getXCoord(x, y);
-        int translatedY = mouseY - world.getYCoord(y);
+        int translatedX = mouseX - getXCoord(x, y);
+        int translatedY = mouseY - getYCoord(y);
 
         //using pre-calculated constants for y=mx+c equation
         //  determine which corner we are in, if any, and offset index
@@ -125,7 +125,7 @@ public class WorldUIWrapper
     public Point mousePressed(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = getTileAxialIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY());
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -144,7 +144,7 @@ public class WorldUIWrapper
     public Point mouseReleased(MouseEvent paramMouseEvent)
     {//TODO: separate state tracking for left and right click
         //index of the tile that this event fired over
-        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = getTileAxialIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY());
 
         //avoid index out of bounds errors
         if (isWithinPlayableArea(gridIndex))
@@ -169,7 +169,7 @@ public class WorldUIWrapper
     public Point mouseDragged(MouseEvent paramMouseEvent)
     {
 //        //index of the tile
-//        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+//        Point gridIndex = getTileAxialIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY());
 //        //avoid index out of bounds errors
 //        if(isWithinPlayableArea(gridIndex))
 //        {
@@ -187,7 +187,7 @@ public class WorldUIWrapper
     public Point mouseMoved(MouseEvent paramMouseEvent)
     {
         //index of the tile
-        Point gridIndex = World.convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY(), this));
+        Point gridIndex = getTileAxialIndexFromPixelLocation(paramMouseEvent.getX(), paramMouseEvent.getY());
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
@@ -204,7 +204,7 @@ public class WorldUIWrapper
     public Point mouseWheelMoved(MouseWheelEvent paramMouseWheelEvent)
     {
 //        //index of the tile
-//        Point gridIndex = convertOffsetToAxial(getGridTileIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY(), this));
+//        Point gridIndex = getTileAxialIndexFromPixelLocation(paramMouseWheelEvent.getX(), paramMouseWheelEvent.getY());
 //        //avoid index out of bounds errors
 //        if(isWithinPlayableArea(gridIndex))
 //        {
@@ -242,8 +242,11 @@ public class WorldUIWrapper
         {
             Rectangle bounds = tileBounds.getBounds();
             bounds.translate(getXCoord(x, y), getYCoord(y));
-            render.drawString("x:" + x, getXCoord(x, y) + 50, getYCoord(y) + 50, bounds);
-            render.drawString("y:" + y, getXCoord(x, y) + 50, getYCoord(y) + 60, bounds);
+            render.drawString("Ax:" + x, getXCoord(x, y) + 50, getYCoord(y) + 50, bounds);
+            render.drawString("Ay:" + y, getXCoord(x, y) + 50, getYCoord(y) + 65, bounds);
+            Point offset = World.convertAxialToOffset(x, y);
+            render.drawString("Ox:" + offset.x, getXCoord(x, y) + 50, getYCoord(y) + 80, bounds);
+            render.drawString("Oy:" + offset.y, getXCoord(x, y) + 50, getYCoord(y) + 95, bounds);
         }
 
         if(tilePressed.x == x && tilePressed.y == y)
