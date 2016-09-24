@@ -46,10 +46,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     //initial value is mostly irrelevant, and will be set properly the instant the mouse is moved
     private static Point mouseLocation = new Point(200, 200);
 
-    public static UIStack uiStack = new UIStack();
+    public final static UIStack uiStack = new UIStack();
     private static boolean isScrollEnabled = false;
 
-    //Used in paintBackground(), avoids recreating an instance ~100 times a frame
+    //Used in paintBackground(), avoids recreating an instance ~100 times (or more) a frame
     private static final Random rand = new Random();
 
     public UserInterfaceHandler(Player user, int defaultWorldIndex)
@@ -89,14 +89,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 Proto.getScreenWidth(), 0,
                 Proto.getScreenWidth(), Proto.getScreenHeight(),
                 0, Proto.getScreenHeight()};
-
         try
         {
             double[] modifiedViewArea = new double[8];
             worldTransform.inverseTransform(viewArea, 0, modifiedViewArea, 0, 4);
-
-//            int width = ResourceManager.getImage(Globals.Identifiers.background1A).getTileWidth();
-//            int height = ResourceManager.getImage(Globals.Identifiers.background1A).getTileHeight();
 
             double xMin = Math.min(modifiedViewArea[0], Math.min(modifiedViewArea[2], Math.min(modifiedViewArea[4], modifiedViewArea[6])));
             double xMax = Math.max(modifiedViewArea[0], Math.max(modifiedViewArea[2], Math.max(modifiedViewArea[4], modifiedViewArea[6])));
@@ -107,30 +103,24 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
             {
                 int mapImageWidth = ResourceManager.getImage(mapImages[j][0]).getWidth(null);
                 int mapImageHeight = ResourceManager.getImage(mapImages[j][0]).getHeight(null);
-                for(double backgroundOffsetX = xMin + ((double)getScreenLocationX()/i % mapImageWidth) - (getScreenLocationX()>0?mapImageWidth:0);
+                for(int backgroundOffsetX = (int) Math.round((xMin / i % mapImageWidth) - (xMin > 0 ? mapImageWidth : 0));
                     backgroundOffsetX <= xMax;
                     backgroundOffsetX += mapImageWidth)
                 {
-                    for(double backgroundOffsetY = yMin + ((double)getScreenLocationY()/i % mapImageHeight) - (getScreenLocationY()>0?mapImageHeight:0);
+                    for(int backgroundOffsetY = (int) Math.round((yMin / i % mapImageHeight) - (yMin > 0 ? mapImageHeight : 0));
                         backgroundOffsetY <= yMax;
                         backgroundOffsetY += mapImageHeight)
                     {
-                        int indexX = (int)((backgroundOffsetX-getScreenLocationX()/i+10)/mapImageWidth);
-                        int indexY = (int)((backgroundOffsetY-getScreenLocationY()/i+10)/mapImageHeight);
-                        rand.setSeed((1234L*indexX) ^ (5678L*indexY) ^ Globals.SEED);
-                        graphics2D.drawImage(ResourceManager.getImage(mapImages[j][rand.nextInt(4)]), (int) backgroundOffsetX, (int) backgroundOffsetY, null);
+                        int indexX = (int) ((backgroundOffsetX - Math.round(xMin / i)) / mapImageWidth);
+                        int indexY = (int) ((backgroundOffsetY - Math.round(yMin / i)) / mapImageHeight);
+                        rand.setSeed(((long)indexX << 32 + indexY) ^ (Globals.SEED * i));
+                        graphics2D.drawImage(ResourceManager.getImage(mapImages[j][rand.nextInt(4)]), backgroundOffsetX, backgroundOffsetY, null);
                         if(Globals.debug.getDetailedInfoLevel() >= 4)
                         {
                             graphics2D.scale(4, 4);
                             graphics2D.drawString("x:" + indexX + " y:" + indexY,
-                                           (int) backgroundOffsetX/4 + 20,
-                                           (int) backgroundOffsetY/4 + 20);
-                            /*g2d.drawString("B:" + (int)backgroundOffsetX + " s:" + (int)getScreenLocationX(),
-                                           (int) backgroundOffsetX/4 + 20,
-                                           (int) backgroundOffsetY/4 + 40);
-                            g2d.drawString("dif:" + (int)(backgroundOffsetX-getScreenLocationX()),
-                                           (int) backgroundOffsetX/4 + 20,
-                                           (int) backgroundOffsetY/4 + 60);*/
+                                                    backgroundOffsetX/4 + 20,
+                                                    backgroundOffsetY/4 + 20);
                             graphics2D.scale(0.25, 0.25);
                         }
                     }
@@ -153,12 +143,12 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
     public static void paintWorld(RenderUtil renderUtil)
     {
         WorldUIWrapper worldUIWrapper = Game.getWorld(currentWorldIndex);
-        //{0,0} to {screenWidth,screenHeight}, buffered by the width/height of a tile in each direction
+        //{0,0} to {screenWidth,screenHeight}, buffered by the width/height of a tile in each direction. The size of the buffer is overkill but not by enough to care about
+        // refining it
         double[] viewArea = {-worldUIWrapper.getTileWidth(), -worldUIWrapper.getTileHeight(),
                 Proto.getScreenWidth() + worldUIWrapper.getTileWidth(), -worldUIWrapper.getTileHeight(),
                 Proto.getScreenWidth() + worldUIWrapper.getTileWidth(), Proto.getScreenHeight() + worldUIWrapper.getTileHeight(),
                 -worldUIWrapper.getTileWidth(), Proto.getScreenHeight() + worldUIWrapper.getTileHeight()};
-
         try
         {
             worldTransform.inverseTransform(viewArea,0,viewArea,0,4);
@@ -447,7 +437,10 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                         e.printStackTrace();
                     }
                 }
-                else { Logger.log(Logger.LogLevel.debug, new String[]{"Invalid action"}); }
+                else
+                {
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Invalid action:", action.toJSON().toString()});
+                }
             }
         }
     }
