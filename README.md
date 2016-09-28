@@ -16,10 +16,12 @@ Player is a character like all other npcs, and can switch role
 - Sectors/planets also control their own diplomacy/research with options for different interpretation of orders or outright rebellion
 
 ## Build/Run Instructions
+Only tested using Intellij. The repository contains a complete valid project, if there are any problems post an issue.
 ### Build
-- With Intellij: Most settings should already be in the existing project, assuming Intellij can find a valid jdk1.8, git, etc.
+- With Intellij: All settings should already be in the existing project, assuming Intellij can find a valid jdk1.8, git, etc.
 - Without Intellij: Untested. There is a dependency on https://mvnrepository.com/artifact/org.json/json/20160212. Both client and server modules depend on core.
 
 ### Run
-main() is in Proto.java for both the server and client modules. The server *must* be running before starting the client. At startup the client attempts to connect to the server via localhost:6789 (hardcoded currently)
-*Run configurations are not currently in the repository. Other problems are known on a fresh machine. More detail coming soon*
+The server *must* be running before starting the client. At startup the client attempts to connect to the server via localhost:6789 (hardcoded currently).
+- With Intellij: Run configurations are provided, configurations with debug (#) show additional info where # indicates the verbosity.
+- Without Intellij: Untested. main() is in {client|server}/Proto.java for both the server and client modules. 
