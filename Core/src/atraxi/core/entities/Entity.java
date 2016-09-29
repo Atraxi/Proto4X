@@ -1,5 +1,6 @@
 package atraxi.core.entities;
 
+import atraxi.core.BaseNetworkObject;
 import atraxi.core.Player;
 import atraxi.core.entities.action.ActionQueue;
 import atraxi.core.entities.action.definitions.Action;
@@ -10,7 +11,7 @@ import org.json.JSONObject;
 import java.awt.Point;
 import java.math.BigDecimal;
 
-public abstract class Entity
+public abstract class Entity extends BaseNetworkObject
 {
     private Globals.Identifiers type;
     protected Point location;
@@ -19,17 +20,17 @@ public abstract class Entity
     private int moveSpeed;
     protected final ActionQueue actionQueue;
     private int visionRange;
-    protected long id;
 
     public Entity(Globals.Identifiers type, Player owner, Point location, int moveSpeed, int visionRange)
     {
+        super(Globals.getNewID());
         this.owner = owner;
         this.type = type;
         this.location = location;
         this.moveSpeed = moveSpeed;
         this.actionQueue = new ActionQueue();
-        this.id = Globals.getNewID();
     }
+
     protected Entity()
     {
         this.actionQueue = new ActionQueue();
@@ -117,24 +118,26 @@ public abstract class Entity
      * @param player
      * @return
      */
+    @Override
     public JSONObject serializeForPlayer(Player player)
     {
-        JSONObject jsonObject = new JSONObject();
+        JSONObject jsonObject = super.serializeForPlayer(player);
         jsonObject.put(Globals.JSON_KEY_Entity_Player, owner.getName())
                   .put(Globals.JSON_KEY_Entity_PositionX, location.x)
                   .put(Globals.JSON_KEY_Entity_PositionY, location.y)
-                  .put(Globals.JSON_KEY_Entity_ID, id)
                   .put(Globals.JSON_KEY_Entity_IdentifierType, type);
         return jsonObject;
     }
 
-    public void deserialize(JSONObject entityJSON)
+    @Override
+    public Entity deserialize(JSONObject entityJSON)
     {
         //TODO: implement deserialization
         setOwner(Globals.playersByName.get(entityJSON.getString(Globals.JSON_KEY_Entity_Player)));
         location.setLocation(entityJSON.getInt(Globals.JSON_KEY_Entity_PositionX),
                              entityJSON.getInt(Globals.JSON_KEY_Entity_PositionY));
-        id = entityJSON.getLong(Globals.JSON_KEY_Entity_ID);
         type = entityJSON.getEnum(Globals.Identifiers.class, Globals.JSON_KEY_Entity_IdentifierType);
+        super.deserialize(entityJSON);
+        return this;
     }
 }

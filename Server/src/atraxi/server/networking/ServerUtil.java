@@ -19,8 +19,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by Atraxi on 1/05/2016.
@@ -59,30 +57,6 @@ public class ServerUtil implements Runnable
                         ClientConnection clientConnection = new ClientConnection(connectionSocket, player);
                         clientConnections.put(player, clientConnection);
                         new Thread(clientConnection, "Client " + player.getName()).start();
-
-                        new Timer().schedule(
-                                new TimerTask()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        JSONObject jsonObject = new JSONObject();
-                                        jsonObject.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_GameData);
-
-                                        JSONArray worldsJSON = new JSONArray();
-                                        for(int i = 0; i < Game.getWorldCount(); i++)
-                                        {
-                                            worldsJSON.put(Game.getWorld(i).serializeForPlayer(player));
-                                        }
-                                        jsonObject.put(Globals.JSON_KEY_MessagePayload_WorldData, worldsJSON);
-
-                                        //TODO: serialize players
-                                        jsonObject.put(Globals.JSON_KEY_MessagePayload_PlayerData, new JSONArray());
-                                        sendToPlayer(player, jsonObject);
-                                    }
-                                },
-                                500);
-
                     }
                     else
                     {
@@ -124,6 +98,20 @@ public class ServerUtil implements Runnable
         @Override
         public void run()
         {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(Globals.JSON_KEY_MessageType, Globals.JSON_VALUE_MessageType_GameData);
+
+            JSONArray worldsJSON = new JSONArray();
+            for(int i = 0; i < Globals.getWorldCount(); i++)
+            {
+                worldsJSON.put(Globals.getWorld(i).serializeForPlayer(player));
+            }
+            jsonObject.put(Globals.JSON_KEY_MessagePayload_WorldData, worldsJSON);
+
+            //TODO: serialize players
+            jsonObject.put(Globals.JSON_KEY_MessagePayload_PlayerData, new JSONArray());
+            sendToPlayer(player, jsonObject);
+
             try
             {
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -158,7 +146,7 @@ public class ServerUtil implements Runnable
                                         //Deserialize the action, must be done via reflection therefore
                                         Class<?> actionClass = Class.forName(receivedObject.getString(Globals.JSON_KEY_MessagePayload_Action_ClassName));
                                         Action action = (Action) actionClass.getConstructor().newInstance();
-                                        action.fromJSON(receivedObject.getJSONObject(Globals.JSON_KEY_MessagePayload_ActionData));
+                                        action.deserialize(receivedObject.getJSONObject(Globals.JSON_KEY_MessagePayload_ActionData));
                                         player.queueAction(action);
                                     }
                                     catch(ClassNotFoundException e)

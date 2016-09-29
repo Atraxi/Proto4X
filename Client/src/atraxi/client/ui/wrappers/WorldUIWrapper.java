@@ -20,17 +20,17 @@ public class WorldUIWrapper
     /**
      * <code>ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4</code>
      */
-    private static final double rise = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4;
+    private static final double rise = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getHeight() / 4.0;
     /**
      * <code>ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2</code>
      */
-    private static final double run = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2;
+    private static final double run = ResourceManager.getImage(Globals.Identifiers.hexagonDefault).getWidth() / 2.0;
     /**
      * {@link #rise} / {@link #run}
      */
     private static final double gradient = rise / run;
 
-    private Point tileSelected, tileHover, tilePressed;
+    private Point tileSelected, tileHover, tilePressedLeftClick, tilePressedRightClick;
 
     private Globals.Identifiers imageDefault, imageHover, imageClick, imageSelected;
 
@@ -64,7 +64,8 @@ public class WorldUIWrapper
         this.imageSelected = imageSelected;
 
         tileHover = new Point(-1, -1);
-        tilePressed = new Point(-1, -1);
+        tilePressedLeftClick = new Point(-1, -1);
+        tilePressedRightClick = new Point(-1, -1);
         tileSelected = new Point(-1, -1);
     }
 
@@ -129,18 +130,23 @@ public class WorldUIWrapper
         //avoid index out of bounds errors
         if(isWithinPlayableArea(gridIndex))
         {
-            tilePressed = gridIndex;
-            if(tileHover.equals(tilePressed))
+            switch(paramMouseEvent.getButton())
             {
-                tileHover.setLocation(-1, -1);
+                case MouseEvent.BUTTON1:
+                    tilePressedLeftClick = gridIndex;
+                    if(tileHover.equals(tilePressedLeftClick))
+                    {
+                        tileHover.setLocation(-1, -1);
+                    }
+                    return tilePressedLeftClick;
+                case MouseEvent.BUTTON3:
+                    tilePressedRightClick = gridIndex;
+                    return tilePressedRightClick;
             }
-            return tilePressed;
         }
-        else
-        {
-            return null;
-        }
+        return null;
     }
+
     public Point mouseReleased(MouseEvent paramMouseEvent)
     {//TODO: separate state tracking for left and right click
         //index of the tile that this event fired over
@@ -149,20 +155,34 @@ public class WorldUIWrapper
         //avoid index out of bounds errors
         if (isWithinPlayableArea(gridIndex))
         {
-            //if the mousePressed() event was within the playable area. if not the linked mouseReleased() is irrelevant
-            if(tilePressed.x >= 0 && tilePressed.y >= 0)
+            switch(paramMouseEvent.getButton())
             {
-                if(tilePressed.equals(gridIndex))
-                {
-                    tileSelected = gridIndex;
-                }
-                tilePressed.setLocation(-1, -1);
+                case MouseEvent.BUTTON1:
+                    if(tilePressedLeftClick.equals(gridIndex))
+                    {
+                        tileSelected = gridIndex;
+                    }
+                    tilePressedLeftClick.setLocation(-1, -1);
 
-                //we did something with this event
-                return tileSelected;
+                    //we did something with this event
+                    return tileSelected;
+                case MouseEvent.BUTTON3:
+                    if(tilePressedRightClick.equals(gridIndex))
+                    {
+                        tilePressedRightClick.setLocation(-1, -1);
+                        return gridIndex;
+                    }
+                    tilePressedRightClick.setLocation(-1, -1);
             }
         }
-        tilePressed.setLocation(-1, -1);
+        switch(paramMouseEvent.getButton())
+        {
+            case MouseEvent.BUTTON1:
+                tilePressedLeftClick.setLocation(-1, -1);
+                break;
+            case MouseEvent.BUTTON3:
+                tilePressedRightClick.setLocation(-1, -1);
+        }
         return null;
     }
 
@@ -249,7 +269,7 @@ public class WorldUIWrapper
             render.drawString("Oy:" + offset.y, getXCoord(x, y) + 50, getYCoord(y) + 95, bounds);
         }
 
-        if(tilePressed.x == x && tilePressed.y == y)
+        if(tilePressedLeftClick.x == x && tilePressedLeftClick.y == y)
         {
             render.drawImage(imageClick, getXCoord(x, y), getYCoord(y), null);
         }

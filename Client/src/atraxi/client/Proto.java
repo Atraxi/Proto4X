@@ -36,6 +36,7 @@ public class Proto extends JFrame
     private Proto()
     {
         super();
+        PROTO = this;
         physicalScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
         Globals.random = new Random(Globals.SEED);
@@ -175,10 +176,10 @@ public class Proto extends JFrame
             }
             catch(AWTException e)
             {
-                //TODO: environment either doesn't support, or doesn't allow, controlling mouse input. Log this, and disable features or quit if needed
+                //TODO: environment either doesn't support or doesn't allow controlling mouse input. Log this, and disable features or quit if needed
+                Logger.log(Logger.LogLevel.warning, new String[]{"Unable to set mouse position"});
                 e.printStackTrace();
             }
-            PROTO = frame;
         });
     }
 

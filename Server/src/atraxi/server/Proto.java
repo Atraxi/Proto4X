@@ -50,6 +50,7 @@ public class Proto
         }
 
         Globals.random = new Random(Globals.SEED);
+        Globals.setRuntimeID((int) Globals.getNewID());
 
         Player user = new Player("");
         ArrayList<Player> players = new ArrayList<Player>();

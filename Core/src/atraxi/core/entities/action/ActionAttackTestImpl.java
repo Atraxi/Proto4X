@@ -29,13 +29,13 @@ public class ActionAttackTestImpl extends ActionAttack
     }
 
     @Override
-    public Action fromJSON(JSONObject jsonObject)
+    public Action deserialize(JSONObject jsonObject)
     {
         return null;
     }
 
     @Override
-    public JSONObject toJSON()
+    public JSONObject serializeForPlayer(Player player)
     {
         return null;
     }

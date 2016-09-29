@@ -45,9 +45,10 @@ public class Structure extends Entity
     }
 
     @Override
-    public void deserialize(JSONObject entityJSON)
+    public Structure deserialize(JSONObject entityJSON)
     {
         super.deserialize(entityJSON);
+        return this;
     }
 
     @Override

@@ -2,7 +2,6 @@ package atraxi.core.entities.action;
 
 import atraxi.core.Player;
 import atraxi.core.entities.Entity;
-import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.entities.action.definitions.ActionSetState;
 import org.json.JSONObject;
 
@@ -29,13 +28,13 @@ public class ActionSetStateTestImpl extends ActionSetState
     }
 
     @Override
-    public Action fromJSON(JSONObject jsonObject)
+    public ActionSetStateTestImpl deserialize(JSONObject jsonObject)
     {
         return null;
     }
 
     @Override
-    public JSONObject toJSON()
+    public JSONObject serializeForPlayer(Player player)
     {
         return null;
     }

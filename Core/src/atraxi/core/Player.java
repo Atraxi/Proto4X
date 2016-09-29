@@ -9,7 +9,7 @@ import atraxi.core.entities.action.definitions.ActionSetState;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Player
+public class Player extends BaseNetworkObject
 {
     public int metal = 0, money = 0;//TODO: replace with whatever actual resources will be used
     private List<ActionSetState> actionSetStatesThisTurn = new ArrayList<>();

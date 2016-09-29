@@ -1,6 +1,7 @@
 package atraxi.server;
 
 import atraxi.core.Player;
+import atraxi.core.util.Globals;
 import atraxi.core.util.Logger;
 import atraxi.core.world.World;
 import atraxi.server.networking.ServerUtil;
@@ -22,7 +23,7 @@ public class Game implements Runnable
     public Game(ArrayList<Player> players, ArrayList<World> worlds)
     {
         Game.players = players;
-        Game.worlds = worlds;
+        Globals.worlds.addAll(worlds);
         serverUtil = new ServerUtil(players.size());
         new Thread(serverUtil, "ServerSocket").start();
     }
@@ -30,16 +31,6 @@ public class Game implements Runnable
     public static ArrayList<Player> getPlayerList()
     {
         return players;
-    }
-
-    public static World getWorld(int index)
-    {
-        return worlds.get(index);
-    }
-
-    public static int getWorldCount()
-    {
-        return worlds.size();
     }
 
     private void gameLoop(BigDecimal timeAdjustment)

@@ -51,9 +51,10 @@ public class Ship extends Entity
     }
 
     @Override
-    public void deserialize(JSONObject entityJSON)
+    public Ship deserialize(JSONObject entityJSON)
     {
         super.deserialize(entityJSON);
+        return this;
     }
 
     @Override

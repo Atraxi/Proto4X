@@ -430,7 +430,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                     user.queueAction(action);
                     try
                     {
-                        Game.getClientUtil().sendToServer(action.toJSON());
+                        Game.getClientUtil().sendToServer(action.serializeForPlayer(user));
                     }
                     catch(IOException e)
                     {
@@ -439,7 +439,7 @@ public class UserInterfaceHandler implements KeyListener, MouseListener, MouseWh
                 }
                 else
                 {
-                    Logger.log(Logger.LogLevel.debug, new String[]{"Invalid action:", action.toJSON().toString()});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Invalid action:", action.serializeForPlayer(user).toString()});
                 }
             }
         }

@@ -26,8 +26,7 @@ public class ClientUtil implements Runnable
 
     public ClientUtil(Player player) throws IOException, UnknownHostException, ConnectException
     {
-        Socket clientSocket = new Socket("localhost", 6789);
-        socket = clientSocket;
+        socket = new Socket("localhost", 6789);
 
         JSONObject object = new JSONObject();
         object.put(Globals.JSON_KEY_INITIALIZATION_PlayerName, player.getName())
@@ -49,7 +48,7 @@ public class ClientUtil implements Runnable
                 String receivedMessage = inFromServer.readLine();
                 if(receivedMessage != null)
                 {
-                    Logger.log(Logger.LogLevel.debug, new String[]{"Message recieved from server\n" + receivedMessage});
+                    Logger.log(Logger.LogLevel.debug, new String[]{"Message received from server", receivedMessage});
 
                     JSONObject receivedObject = new JSONObject(receivedMessage);
                     //What type of message did we just receive?

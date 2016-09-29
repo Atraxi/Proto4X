@@ -16,9 +16,10 @@ import java.io.InputStream;
  */
 public class ResourceManager
 {
-    //TODO: pre-load this - is this even needed? keep watching it as size increases
+    //TODO: pre-load this - is this even needed? keep watching it as size increases. First load already has a noticeable delay, this is definitely required
     //TODO: throw some sort of managed error if the file isn't found
     //TODO: implement imageObserver or similar, and verify all resources are properly loaded - done already via null check loading?
+    //TODO: SoftReference. Level of detail
     private static BufferedImage[] images = new BufferedImage[Globals.Identifiers.values().length];
 
     public static void resetLoadedImages()

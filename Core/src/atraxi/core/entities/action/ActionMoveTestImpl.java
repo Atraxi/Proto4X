@@ -2,7 +2,6 @@ package atraxi.core.entities.action;
 
 import atraxi.core.Player;
 import atraxi.core.entities.Entity;
-import atraxi.core.entities.action.definitions.Action;
 import atraxi.core.entities.action.definitions.ActionMove;
 import org.json.JSONObject;
 
@@ -27,18 +26,19 @@ public class ActionMoveTestImpl extends ActionMove
     @Override
     public boolean isValid()
     {
-        return super.isValid() && source.turnCountToReachLocation(target) >= 0;
+        return super.isValid();
     }
 
     @Override
-    public Action fromJSON(JSONObject jsonObject)
+    public ActionMoveTestImpl deserialize(JSONObject jsonObject)
     {
-        return null;
+        super.deserialize(jsonObject);
+        return this;
     }
 
     @Override
-    public JSONObject toJSON()
+    public JSONObject serializeForPlayer(Player player)
     {
-        return null;
+        return super.serializeForPlayer(player);
     }
 }
