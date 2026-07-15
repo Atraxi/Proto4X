@@ -6,7 +6,6 @@ using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Systems;
-using Proto4X.Components;
 using Proto4X.Systems;
 
 namespace Proto4X
@@ -15,11 +14,7 @@ namespace Proto4X
     {
         protected override void Initialize()
         {
-
-            SystemScheduler.Add(World, new Renderer());
-            SystemScheduler.Add(World, new TimerSystem());
             SystemScheduler.Add(World, new MovementSystem());
-            SystemScheduler.Add(World, new CollisionDetectionSystem());
 
             base.Initialize();
         }

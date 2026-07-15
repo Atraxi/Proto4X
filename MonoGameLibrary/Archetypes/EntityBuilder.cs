@@ -1,8 +1,6 @@
-﻿using MonoGameLibrary.Components;
-using MonoGameLibrary.Components.Infrastructure;
+﻿using MonoGameLibrary.Components.Infrastructure;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MonoGameLibrary.Archetypes
 {
@@ -30,27 +28,6 @@ namespace MonoGameLibrary.Archetypes
             componentTypeMask = componentTypeMask.With(ComponentTypeMask.FromTypeId(componentTypeId));
 
             components.Add(new ComponentContainerDetached<T>(payload));
-
-            return this;
-        }
-
-        //TODO: These With(...) overloads should not be manually implemented here, instead components should have a GeneratedFrom flag and some generic discovery code to load that
-        public EntityBuilder With(Motion payload)
-        {
-            With<Motion>(payload);
-
-            var positionContainer = (ComponentContainerDetached<Position>) Components.Single(component => component as ComponentContainerDetached<Position> != null);
-            With(new VirtualPredictedPosition(positionContainer.Component));
-
-            return this;
-        }
-
-        //TODO I probably shouldn't always run. There will eventually be non-colliding drawables almost certainly. Not sure how I want to specify that yet. Colliders might just need to become explicitly added
-        public EntityBuilder With(Drawable payload)
-        {
-            With<Drawable>(payload);
-
-            With(new Collider(payload));
 
             return this;
         }

@@ -5,7 +5,7 @@ using MonoGameLibrary.Utils;
 using MonoGameLibrary.World;
 using System.Collections.Generic;
 
-namespace MonoGameLibrary.Systems
+namespace MonoGameLibrary.Systems.Infrastructure
 {
     public class SystemScheduler
     {

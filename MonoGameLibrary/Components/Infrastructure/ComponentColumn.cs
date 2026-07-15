@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MonoGameLibrary.Archetypes;
+using System;
 
 namespace MonoGameLibrary.Components.Infrastructure
 {
@@ -7,14 +8,14 @@ namespace MonoGameLibrary.Components.Infrastructure
         internal void Grow(int newSize);
         internal void RemoveAtIndexAndCopyLast(int removalIndex, int lastIndex);
         Type GetComponentType();
-        IComponentContainer GetComponentContainerForEntity(int entityIndex, Archetypes.Archetype archetype);
+        internal IComponentContainer GetComponentContainerForEntity(int entityIndex, Archetype archetype);
     }
 
     public class ComponentColumn<T>(T[] values) : IComponentColumn where T: struct
     {
         public T[] Values => values;
 
-        public IComponentContainer GetComponentContainerForEntity(int entityIndex, Archetypes.Archetype archetype)
+        IComponentContainer IComponentColumn.GetComponentContainerForEntity(int entityIndex, Archetype archetype)
             => new ComponentContainerAttached<T>(values[entityIndex], archetype);
 
         public Type GetComponentType()

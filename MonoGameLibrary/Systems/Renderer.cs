@@ -1,13 +1,12 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGameLibrary;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
-using MonoGameLibrary.Systems;
+using MonoGameLibrary.Systems.Infrastructure;
 using System.Collections.Generic;
 
-namespace Proto4X.Systems
+namespace MonoGameLibrary.Systems
 {
     public class Renderer : SystemBase, IDrawSystem
     {

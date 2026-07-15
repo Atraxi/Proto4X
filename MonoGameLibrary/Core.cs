@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Systems;
+using MonoGameLibrary.Systems.Infrastructure;
 using MonoGameLibrary.UI;
 using MonoGameLibrary.World;
 
@@ -56,6 +57,9 @@ namespace MonoGameLibrary
         protected override void Initialize()
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
+
+            SystemScheduler.Add(World, new Renderer());
+            SystemScheduler.Add(World, new TimerSystem());
 
             base.Initialize();
         }

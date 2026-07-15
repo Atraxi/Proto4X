@@ -2,7 +2,7 @@
 using MonoGameLibrary.Archetypes;
 using System.Collections.Generic;
 
-namespace MonoGameLibrary.Systems
+namespace MonoGameLibrary.Systems.Infrastructure
 {
     public interface IUpdateSystem
     {

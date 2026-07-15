@@ -1,13 +1,12 @@
 ﻿using MonoGameLibrary.Components.Infrastructure;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
 namespace MonoGameLibrary.Archetypes
 {
-    public class Archetype
+    internal class Archetype : IArchetype
     {
         private int[] DenseIndexToEntityId;
         private readonly Dictionary<int, int> EntityIdToDenseIndex = [];
@@ -17,20 +16,16 @@ namespace MonoGameLibrary.Archetypes
         public int Count => count;
         private int count;
 
-        public ReadOnlySpan<int> EntityIds => entityIds;
-        private int[] entityIds;
-
         private readonly List<int> DeferredEntityRemovalsByIndex = [];
         private readonly List<EntityBuilder> DeferredAdditions = [];
 
         private readonly Dictionary<int, int> componentTypeIdToComponentArrayIndex = [];
-        private IComponentColumn[] componentArrays;
+        private readonly IComponentColumn[] componentArrays;
 
         public Archetype(int initialCapacity, EntityBuilder entityBuilder)
         {
             DenseIndexToEntityId = new int[initialCapacity];
             ComponentMask = entityBuilder.ComponentTypeMask;
-            entityIds = new int[initialCapacity];
             
             componentArrays = new IComponentColumn[entityBuilder.Components.Count];
             for (int componentsIndex = 0; componentsIndex < entityBuilder.Components.Count; componentsIndex++)
@@ -38,7 +33,7 @@ namespace MonoGameLibrary.Archetypes
                 entityBuilder.Components[componentsIndex].CreateComponentColumn(this, componentsIndex, initialCapacity);
             }
 
-            AddEntity(entityBuilder);
+            QueueEntityForAddition(entityBuilder);
         }
 
         internal void CreateComponentColumn<T>(int componentsIndex, int initialCapacity) where T : struct
@@ -47,7 +42,7 @@ namespace MonoGameLibrary.Archetypes
             componentArrays[componentsIndex] = new ComponentColumn<T>(new T[initialCapacity]);
         }
 
-        public void AddEntity(EntityBuilder componentPayloads)
+        private void AddEntity(EntityBuilder componentPayloads)
         {
             int entityId = EntityIdRegistry.GetNextFreeId();
             int entityIndex = count++;
@@ -96,12 +91,18 @@ namespace MonoGameLibrary.Archetypes
         {
             return new ArchetypeChunk(componentArrays.Where(componentColumn => queriedTypesMask.ContainsType(componentColumn.GetComponentType()))
                     .ToDictionary(componentColumn => componentColumn.GetComponentType()),
-                count);
+                count,
+                this);
         }
 
-        public void RemoveEntity(int entityId)
+        private void RemoveEntityAtIndex(int index)
         {
-            int index = EntityIdToDenseIndex[entityId];
+            RemoveEntity(DenseIndexToEntityId[index], index); ;
+        }
+
+        private void RemoveEntity(int entityId, int index)
+        {
+
             int last = --count;
     
             if (index != last)
@@ -110,6 +111,8 @@ namespace MonoGameLibrary.Archetypes
                 DenseIndexToEntityId[index] = movedEntity;
                 EntityIdToDenseIndex[movedEntity] = index;
             }
+            EntityIdToDenseIndex.Remove(entityId);
+
             foreach (var componentData in componentArrays)
             {
                 componentData.RemoveAtIndexAndCopyLast(index, last);
@@ -155,31 +158,23 @@ namespace MonoGameLibrary.Archetypes
             DeferredAdditions.Clear();
 
             DeferredEntityRemovalsByIndex.Sort((A, B) => B - A);
-            foreach (var  entityId in DeferredEntityRemovalsByIndex)
+            foreach (var  entityIndex in DeferredEntityRemovalsByIndex)
             {
-                RemoveEntity(entityId);
+                RemoveEntityAtIndex(entityIndex);
             }
             DeferredEntityRemovalsByIndex.Clear();
         }
 
-        protected void GrowEntityCapacity()
+        private void GrowEntityCapacity()
         {
             int newSize = DenseIndexToEntityId.Length * 2;
 
             Array.Resize(ref DenseIndexToEntityId, newSize);
-            Array.Resize(ref entityIds, newSize);
 
             foreach(var componentColumn in componentArrays)
             {
                 componentColumn.Grow(newSize);
             }
-        }
-
-        protected void GrowComponentCapacity()
-        {
-            int newSize = componentArrays.Length * 2;
-
-            Array.Resize(ref componentArrays, newSize);
         }
     }
 }

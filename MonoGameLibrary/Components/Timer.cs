@@ -1,4 +1,4 @@
-﻿namespace Proto4X.Components
+﻿namespace MonoGameLibrary.Components
 {
     public struct Timer(float duration, bool shouldRepeat)
     {

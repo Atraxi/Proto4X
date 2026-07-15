@@ -2,7 +2,7 @@
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
-using MonoGameLibrary.Systems;
+using MonoGameLibrary.Systems.Infrastructure;
 using System;
 using System.Collections.Generic;
 
@@ -20,18 +20,19 @@ namespace Proto4X.Systems
 
         public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
             typeof(Motion),
-            typeof(Position),
-            typeof(Collider)
+            typeof(Position)
             );
 
         public virtual void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
-                for (var entityIndex = 0; entityIndex < archetypeChunk.EntityCount; entityIndex++)
+                var positionSpan = archetypeChunk.GetSpan<Position>();
+                var motionSpan = archetypeChunk.GetSpan<Motion>();
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
-                    ref var position = ref archetypeChunk.Get<Position>(entityIndex);
-                    ref var motion = ref archetypeChunk.Get<Motion>(entityIndex);
+                    ref var position = ref positionSpan[i];
+                    ref var motion = ref motionSpan[i];
 
                     ref var location = ref position.Location;
                     ref var velocity = ref motion.Velocity;
@@ -41,9 +42,6 @@ namespace Proto4X.Systems
                     ref var angularVelocity = ref motion.AngularVelocity;
                     ref var angularAcceleration = ref motion.AngularAcceleration;
 
-                    ref var collider = ref archetypeChunk.Get<Collider>(entityIndex);
-
-                    if (collider.)
                     MoveEntity(gameTime, ref location, ref velocity, ref acceleration, ref rotation, ref angularVelocity, ref angularAcceleration);
                 }
             }

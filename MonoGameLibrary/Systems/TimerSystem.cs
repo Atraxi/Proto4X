@@ -1,11 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using MonoGameLibrary.Archetypes;
+using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
-using MonoGameLibrary.Systems;
-using Proto4X.Components;
+using MonoGameLibrary.Systems.Infrastructure;
 using System.Collections.Generic;
 
-namespace Proto4X.Systems
+namespace MonoGameLibrary.Systems
 {
     public class TimerSystem : SystemBase, IUpdateSystem
     {
@@ -19,10 +19,9 @@ namespace Proto4X.Systems
 
             foreach (var archetypeChunk in archetypeChunks)
             {
-                for (var entityIndex = 0; entityIndex < archetypeChunk.EntityCount; entityIndex++)
-                {
-                    ref Timer timer = ref archetypeChunk.Get<Timer>(entityIndex);
 
+                foreach(ref var timer in archetypeChunk.GetSpan<Timer>())
+                {
                     if (timer.HasJustElapsed)
                     {
                         timer.HasJustElapsed = false;

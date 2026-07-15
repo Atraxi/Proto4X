@@ -9,7 +9,7 @@ namespace MonoGameLibrary.World
 {
     public class GameWorld(int xPos, int yPos, int width, int height)
     {
-        public readonly Dictionary<ComponentTypeMask, Archetype> Archetypes = [];
+        internal readonly Dictionary<ComponentTypeMask, Archetype> Archetypes = [];
         public readonly Rectangle Bounds = new(xPos, yPos, width, height);
 
         internal List<ArchetypeChunk> QueryRelevantComponentArrays(ComponentTypeMask componentProviderTypes)
@@ -39,13 +39,19 @@ namespace MonoGameLibrary.World
             }
             else
             {
-                archetype.AddEntity(entityBuilder);
+                archetype.QueueEntityForAddition(entityBuilder);
             }
         }
 
         public void RemoveEntity(int entityId)
         {
-            throw new NotImplementedException();
+            foreach (var archetype in Archetypes)
+            {
+                if(archetype.Value.HasEntity(entityId))
+                {
+                    archetype.Value.QueueEntityForRemovalById(entityId);
+                }
+            }
         }
 
         public bool HasEntity(int entityId)

@@ -1,6 +1,6 @@
 ﻿using MonoGameLibrary.Components.Infrastructure;
 
-namespace MonoGameLibrary.Systems
+namespace MonoGameLibrary.Systems.Infrastructure
 {
     public abstract class SystemBase
     {
