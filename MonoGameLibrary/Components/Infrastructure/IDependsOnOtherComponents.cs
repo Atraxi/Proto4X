@@ -2,7 +2,7 @@
 
 namespace MonoGameLibrary.Components.Infrastructure
 {
-    interface IDependsOnOtherComponents
+    public interface IDependsOnOtherComponents
     {
         Type[] GetComponentDependencies { get; }
     }
