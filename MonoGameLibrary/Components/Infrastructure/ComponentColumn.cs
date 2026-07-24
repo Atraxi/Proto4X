@@ -3,7 +3,7 @@ using System;
 
 namespace MonoGameLibrary.Components.Infrastructure
 {
-    public interface IComponentColumn
+    internal interface IComponentColumn
     {
         internal void Grow(int newSize);
         internal void RemoveAtIndexAndCopyLast(int removalIndex, int lastIndex);
@@ -11,12 +11,15 @@ namespace MonoGameLibrary.Components.Infrastructure
         internal IComponentContainer GetComponentContainerForEntity(int entityIndex, Archetype archetype);
     }
 
-    public class ComponentColumn<T>(T[] values) : IComponentColumn where T: struct
+    internal class ComponentColumn<T>(T[] values) : IComponentColumn where T: struct
     {
         public T[] Values => values;
 
         IComponentContainer IComponentColumn.GetComponentContainerForEntity(int entityIndex, Archetype archetype)
             => new ComponentContainerAttached<T>(values[entityIndex], archetype);
+
+        public ref T GetComponentRefForEntity(int entityIndex)
+            => ref values[entityIndex];
 
         public Type GetComponentType()
             => typeof(T);

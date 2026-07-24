@@ -7,25 +7,13 @@ using MonoGameLibrary.World;
 
 namespace MonoGameLibrary
 {
-    public class Core : Game
+    public abstract class Core : Game
     {
-        /// <summary>
-        /// Gets the graphics device manager to control the presentation of graphics.
-        /// </summary>
         protected GraphicsDeviceManager Graphics { get; private set; }
-
-        /// <summary>
-        /// Gets the sprite batch used for all 2D rendering.
-        /// </summary>
         protected SpriteBatch? SpriteBatch { get; private set; }
-
-        public GameWorld World { get; private set; }
-
+        protected GameWorld World { get; private set; }
         protected UserInterfaceManager UserInterfaceManager { get; private set; }
-
-        public static Core? Instance { get; private set; }
-
-        public SystemScheduler SystemScheduler { get; private set; }
+        protected SystemScheduler SystemScheduler { get; private set; }
 
         /// <summary>
         /// Creates a new Core instance.
@@ -36,7 +24,6 @@ namespace MonoGameLibrary
         /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
         public Core(string title, int width, int height, bool fullScreen)
         {
-            Instance = this;
             Graphics = new GraphicsDeviceManager(this)
             {
                 PreferredBackBufferWidth = width,
@@ -49,38 +36,42 @@ namespace MonoGameLibrary
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            World = new GameWorld(0, 0, 1000, 1000);
-            UserInterfaceManager = new UserInterfaceManager(World);
+            World = InitializeGameWorld();
+            UserInterfaceManager = new UserInterfaceManager();
             SystemScheduler = new SystemScheduler();
         }
+        protected abstract GameWorld InitializeGameWorld();
 
-        protected override void Initialize()
+        protected sealed override void Initialize()
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
 
             SystemScheduler.Add(World, new Renderer());
             SystemScheduler.Add(World, new TimerSystem());
-
+            OnInitialize();
             base.Initialize();
         }
+        protected abstract void OnInitialize();
 
-        protected override void Update(GameTime gameTime)
+        protected sealed override void Update(GameTime gameTime)
         {
             UserInterfaceManager.Update(GraphicsDevice.Viewport.Bounds, gameTime);
 
             SystemScheduler.Update(World, gameTime);
-
+            OnUpdate(gameTime);
             base.Update(gameTime);
         }
+        protected abstract void OnUpdate(GameTime gameTime);
 
-        protected override void Draw(GameTime gameTime)
+        protected sealed override void Draw(GameTime gameTime)
         {
+            OnDraw(gameTime);
             if (SpriteBatch != null)
             {
                 SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, World);
             }
-
             base.Draw(gameTime);
         }
+        protected abstract void OnDraw(GameTime gameTime);
     }
 }

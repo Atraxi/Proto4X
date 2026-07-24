@@ -5,6 +5,7 @@ using MonoGameLibrary;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Input;
+using MonoGameLibrary.World;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Systems;
 
@@ -12,20 +13,29 @@ namespace Proto4X.Sandbox
 {
     public class Sandbox() : Core("Proto4X Sandbox", 1280, 720, false)
     {
-        // The player ship is spawned first, so it's guaranteed entity id 0 — matching
-        // UserInterfaceManager's own hardcoded selectedEntityId default.
+        // The player ship is spawned first, so it's guaranteed entity id 0.
         private const int PlayerEntityId = 0;
         private const float GatherRadius = 40f;
+        private const float SelectionPickRadius = 24f;
 
         private GatherSystem gatherSystem = null!;
+        private SelectionSystem selectionSystem = null!;
+        private MoveOrderSystem moveOrderSystem = null!;
 
-        protected override void Initialize()
+        protected override GameWorld InitializeGameWorld()
+        {
+            return new GameWorld(0, 0, 1000, 1000);
+        }
+
+        protected override void OnInitialize()
         {
             SystemScheduler.Add(World, new MovementSystem());
-            gatherSystem = new GatherSystem(PlayerEntityId, GatherRadius);
+            SystemScheduler.Add(World, new MoveToTargetSystem());
+            gatherSystem = new GatherSystem(World, PlayerEntityId, GatherRadius);
             SystemScheduler.Add(World, gatherSystem);
 
-            base.Initialize();
+            selectionSystem = new SelectionSystem(World, UserInterfaceManager.Camera, [PlayerEntityId], SelectionPickRadius);
+            moveOrderSystem = new MoveOrderSystem(World, UserInterfaceManager.Camera, selectionSystem);
         }
 
         protected override void LoadContent()
@@ -38,7 +48,8 @@ namespace Proto4X.Sandbox
             World.AddEntity(EntityBuilder.CreateEntity()
                 .With(new Position(new Vector2(640, 360)))
                 .With(new Drawable(scoutId, null))
-                .With(new Motion(Vector2.Zero)));
+                .With(new Motion(Vector2.Zero))
+                .With(new MoveOrder()));
 
             Vector2[] resourceNodeLocations =
             [
@@ -59,23 +70,22 @@ namespace Proto4X.Sandbox
             }
         }
 
-        protected override void Update(GameTime gameTime)
+        protected override void OnUpdate(GameTime gameTime)
         {
             if (InputManager.Instance.KeyboardInfo.IsKeyDown(Keys.Escape))
             {
                 Exit();
             }
 
-            base.Update(gameTime);
+            selectionSystem.Update();
+            moveOrderSystem.Update();
 
             Window.Title = $"Proto4X Sandbox — Stockpile: {gatherSystem.Stockpile}";
         }
 
-        protected override void Draw(GameTime gameTime)
+        protected override void OnDraw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            base.Draw(gameTime);
         }
     }
 }

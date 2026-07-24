@@ -5,11 +5,19 @@ using System.Collections.ObjectModel;
 
 namespace MonoGameLibrary.Archetypes
 {
-    public class ArchetypeChunk(Dictionary<Type, IComponentColumn> components, int entityCount, IArchetype archetype)
+    public class ArchetypeChunk
     {
-        public readonly ReadOnlyDictionary<Type, IComponentColumn> Components = components.AsReadOnly();
+        internal readonly ReadOnlyDictionary<Type, IComponentColumn> Components;
 
-        public readonly int EntityCount = entityCount;
+        public readonly int EntityCount;
+        private readonly IArchetype archetype;
+
+        internal ArchetypeChunk(Dictionary<Type, IComponentColumn> components, int entityCount, IArchetype archetype)
+        {
+            this.archetype = archetype;
+            Components = components.AsReadOnly();
+            EntityCount = entityCount;
+        }
 
         public ref T Get<T>(int index) where T : struct
         {

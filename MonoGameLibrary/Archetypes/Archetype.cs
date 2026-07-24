@@ -62,7 +62,7 @@ namespace MonoGameLibrary.Archetypes
         }
 
         /// <summary>
-        /// This method exists to allow an entity to provide an arbitrary number of components, while also getting around a generic type erasure boundary eforced by the necessity of said array of components of arbitrary value types
+        /// This method exists to allow an entity to provide an arbitrary number of components, while also getting around a generic type erasure boundary enforced by the necessity of said array of components of arbitrary value types
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="componentData"></param>
@@ -72,7 +72,7 @@ namespace MonoGameLibrary.Archetypes
         }
 
         /// <summary>
-        /// This method exists to allow an entity to provide an arbitrary number of components, while also getting around a generic type erasure boundary eforced by the necessity of said array of components of arbitrary value types
+        /// This method exists to allow an entity to provide an arbitrary number of components, while also getting around a generic type erasure boundary enforced by the necessity of said array of components of arbitrary value types
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="componentData"></param>
@@ -102,7 +102,7 @@ namespace MonoGameLibrary.Archetypes
 
         private void RemoveEntity(int entityId, int index)
         {
-
+            Debug.Assert(HasEntity(entityId));
             int last = --count;
     
             if (index != last)
@@ -123,7 +123,7 @@ namespace MonoGameLibrary.Archetypes
 
         public Dictionary<Type, IComponentContainer> GetComponentsForEntity(int entityId)
         {
-            Debug.Assert(EntityIdToDenseIndex.ContainsKey(entityId));
+            Debug.Assert(HasEntity(entityId));
 
             var result = new Dictionary<Type, IComponentContainer>();
             foreach (var componentData in componentArrays)
@@ -134,6 +134,22 @@ namespace MonoGameLibrary.Archetypes
             return result;
         }
 
+        public ref T GetComponentRefTForEntityId<T>(int entityId) where T : struct
+        {
+            Debug.Assert(HasEntity(entityId));
+
+            return ref ((ComponentColumn<T>)componentArrays[componentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
+                .GetComponentRefForEntity(EntityIdToDenseIndex[entityId]);
+        }
+
+        public T GetComponentTForEntityId<T>(int entityId) where T : struct
+        {
+            Debug.Assert(HasEntity(entityId));
+
+            return ((ComponentColumn<T>)componentArrays[componentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
+                .GetComponentRefForEntity(EntityIdToDenseIndex[entityId]);
+        }
+
         public void QueueEntityForAddition(EntityBuilder entityData)
         {
             DeferredAdditions.Add(entityData);
@@ -141,6 +157,7 @@ namespace MonoGameLibrary.Archetypes
 
         public void QueueEntityForRemovalById(int entityId)
         {
+            Debug.Assert(HasEntity(entityId));
             DeferredEntityRemovalsByIndex.Add(EntityIdToDenseIndex[entityId]);
         }
 

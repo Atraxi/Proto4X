@@ -3,6 +3,7 @@ using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace MonoGameLibrary.World
@@ -16,11 +17,10 @@ namespace MonoGameLibrary.World
         {
             List<ArchetypeChunk> result = [];
             
-            foreach (var archetypesKeyPair in Archetypes)
+            foreach (var (componentTypeMask, archetype) in Archetypes)
             {
-                if (archetypesKeyPair.Key.ContainsAll(componentProviderTypes))
+                if (componentTypeMask.ContainsAll(componentProviderTypes))
                 {
-                    var archetype = archetypesKeyPair.Value;
                     var archetypeChunk = archetype.GetMatchingComponents(componentProviderTypes);
 
                     result.Add(archetypeChunk);
@@ -45,11 +45,11 @@ namespace MonoGameLibrary.World
 
         public void RemoveEntity(int entityId)
         {
-            foreach (var archetype in Archetypes)
+            foreach (var (_, archetype) in Archetypes)
             {
-                if(archetype.Value.HasEntity(entityId))
+                if(archetype.HasEntity(entityId))
                 {
-                    archetype.Value.QueueEntityForRemovalById(entityId);
+                    archetype.QueueEntityForRemovalById(entityId);
                 }
             }
         }
@@ -59,16 +59,44 @@ namespace MonoGameLibrary.World
             return Archetypes.Any(archetype => archetype.Value.HasEntity(entityId));
         }
 
-        public Dictionary<Type, IComponentContainer> GetComponentsForEntity(int entityId)
+        internal Dictionary<Type, IComponentContainer> GetComponentsForEntity(int entityId)
         {
-            foreach (var archetype in Archetypes)
+            foreach (var (_, archetype) in Archetypes)
             {
-                if(archetype.Value.HasEntity(entityId))
+                if(archetype.HasEntity(entityId))
                 {
-                    return archetype.Value.GetComponentsForEntity(entityId);
+                    return archetype.GetComponentsForEntity(entityId);
                 }
             }
             throw new InvalidOperationException($"An entity with the id {entityId} doesn't exist");
+        }
+
+        public bool TryGetComponent<T>(int entityId, [NotNullWhen(true)]out T componentData) where T : struct
+        {
+            componentData = default;
+            foreach (var (_, archetype) in Archetypes)
+            {
+                if (archetype.HasEntity(entityId))
+                {
+                    componentData = archetype.GetComponentTForEntityId<T>(entityId);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public delegate void ComponentMutator<T>(ref T component);
+        public bool MutateComponent<T>(int entityId, ComponentMutator<T> mutator) where T : struct
+        {
+            foreach (var (_, archetype) in Archetypes)
+            {
+                if (archetype.HasEntity(entityId))
+                {
+                    mutator.Invoke(ref archetype.GetComponentRefTForEntityId<T>(entityId));
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

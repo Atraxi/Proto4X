@@ -5,18 +5,22 @@ using MonoGameLibrary;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Input;
-using MonoGameLibrary.Systems;
+using MonoGameLibrary.World;
 using Proto4X.Systems;
 
 namespace Proto4X
 {
     public class Proto4X() : Core("Proto4X", 1920, 1080, false)
     {
-        protected override void Initialize()
+        protected override GameWorld InitializeGameWorld()
+        {
+            return new GameWorld(0, 0, 1000, 1000);
+        }
+
+        protected override void OnInitialize()
         {
             SystemScheduler.Add(World, new MovementSystem());
-
-            base.Initialize();
+            SystemScheduler.Add(World, new PlayerInputSystem(World));
         }
 
         protected override void LoadContent()
@@ -32,21 +36,17 @@ namespace Proto4X
                 .With(new Motion(new Vector2(20, 40), default, 1f)));
         }
 
-        protected override void Update(GameTime gameTime)
+        protected override void OnUpdate(GameTime gameTime)
         {
             if (InputManager.Instance.KeyboardInfo.IsKeyDown(Keys.Escape))
             {
                 Exit();
             }
-
-            base.Update(gameTime);
         }
 
-        protected override void Draw(GameTime gameTime)
+        protected override void OnDraw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            base.Draw(gameTime);
         }
     }
 }

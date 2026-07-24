@@ -106,7 +106,26 @@ Keep **Status:**/**Priority:** outside the <details> block so they're visible wi
 - Because ids don't map to a stable dense index across frames (swap-remove), any future data-returning method on a handle-style object would necessarily return copies, not `ref`s — different shape than `ArchetypeChunk.Get<T>(index)`/`GetSpan<T>()`, which is part of why data access is being kept off `EntityView` entirely rather than added later.
 - Should stay aware that `GameWorld` access is currently a global static (`Core.Instance.World`, already the existing pattern via `UserInterfaceManager`'s right-click spawn) as an intentional MVP placeholder, not a permanent design — the expected evolution is toward "the currently selected/user-active `GameWorld`," with other worlds tracked separately through a process not yet designed. `EntityView` holding a `GameWorld` reference directly (rather than resolving one implicitly) is likely the right call precisely because it doesn't bake in a single-world assumption any harder than necessary.
 
+**Second, distinct motivation surfaced later (2026-07-21):** the original design above is about lifecycle *interaction* (remove/requeue/existence). A separate but compatible use case showed up discussing `GameWorld.TryGetComponent<T>`/`SetComponent<T>` (the public single-entity component API that replaced the internal-type leak from `GetComponentsForEntity`/`ComponentContainerAttached<T>`): those calls re-resolve an entity's archetype/dense-index independently on every call, so a caller holding an id across two calls (e.g. read-then-later-write) has no protection if the entity was structurally removed in between — today this can't actually happen mid-frame (`SystemScheduler` is synchronous/single-threaded and structural changes are deferred to `ProcessDeferredUpdates`), but it's an unenforced invariant, not a guaranteed one, and would become a real hazard the moment anything defers between an entity's read and its write (an `await`, a future parallel scheduler, etc). A generation-stamped id (id + version bumped on removal, compared at access time to fail loud instead of silently writing to a resurrected/reused id) would cover this too, and fits naturally on the same handle rather than being a second bolt-on mechanism. Doesn't change the shape or constraints above — still id + `GameWorld` ref, still no component data, still lifecycle-only — just widens why a stale handle needs a defined answer, and makes the stale-id question above less theoretical.
+
 **Related open question, not decided:** whether to remove single-entity/random-access reads from the engine entirely — specifically `ArchetypeChunk.Get<T>(index)` — to push the architecture harder toward "systems + iteration" as the only access pattern, with `EntityView` handling lifecycle-only concerns instead. Acknowledged tension: UI selection/interaction (the WASD-selected-entity flow in `UserInterfaceManager`, `UserInterfaceManager.cs:57-110`) currently depends on exactly this kind of single-entity random access to read/write the selected entity's `Position`/`Motion`. Unclear yet how restrictive a pure iteration-only model would be for cases like this. Left open.
+
+</details>
+
+## No way to get an entity's id from an archetype chunk index
+**Status:** Open — worked around
+**Priority:** Medium
+
+<details>
+<summary>Details</summary>
+
+**What:** `ArchetypeChunk` exposes `Get<T>(index)`/`GetSpan<T>()` for component data and `QueueEntityForRemovalByIndex`/`ById` for removal, but nothing that maps a chunk index back to the entity id that owns it. `Archetype.DenseIndexToEntityId` holds exactly that mapping but is private, and `ArchetypeChunk` only holds an `IArchetype` handle narrow enough for removal, not lookup. So a system iterating a chunk can read/write a matched entity's components in place, or remove it, but can't learn its id.
+
+**Why it came up:** building `SelectionSystem` (`Proto4X.Sandbox/Systems/SelectionSystem.cs`) for the new click-to-select-and-order movement model — picking "whichever ship is nearest the click" from an archetype query would need each candidate's id (to remember as `SelectedEntityId`, and later pass to `GameWorld.MutateComponent<MoveOrder>`). With no id-from-index path, this doesn't generalize.
+
+**Tried instead:** `SelectionSystem` takes a fixed `IReadOnlyList<int> selectableEntityIds` constructor argument instead of querying an archetype at all, and checks each known id directly via `GameWorld.TryGetComponent<Position>`. Works today because the sandbox has exactly one ship (`PlayerEntityId = 0`, same hardcoded-id convention `GatherSystem` already uses) but doesn't scale to "select whichever ships are on screen" once there's more than one — the moment real multi-unit selection is wanted, this will need solving for real.
+
+**Possible approaches:** expose an `ArchetypeChunk.GetEntityId(index)` (or a paired `Span<int>`/`ReadOnlySpan<int>` of ids alongside the component spans) backed by the same `DenseIndexToEntityId` array `Archetype` already maintains — read-only, no new structural-mutation surface, same shape/cost character as the existing `Get<T>`/`GetSpan<T>` accessors.
 
 </details>
 
