@@ -1,50 +1,176 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
+using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.Input;
+using MonoGameLibrary.Systems.Infrastructure;
 using MonoGameLibrary.UI;
-using MonoGameLibrary.Utils;
-using MonoGameLibrary.World;
+using Proto4X.Sandbox.Components;
+using System;
 using System.Collections.Generic;
 
 namespace Proto4X.Sandbox.Systems
 {
-    // Selectable entity ids are known up front (see Sandbox.OnInitialize) and checked directly via
-    // GameWorld.TryGetComponent rather than scanning an archetype chunk - there's currently no way
-    // to recover an entity's id from a chunk index during iteration, so this can't yet generalize to
-    // "whichever ships happen to exist" without that id. Logged in ENGINE_REQUESTS.md.
-    public class SelectionSystem(GameWorld gameWorld, Camera camera, IReadOnlyList<int> selectableEntityIds, float pickRadius)
+    /// <summary>
+    /// Click to select a unit, drag to box-select, hold shift to add to the selection. Only the
+    /// player's own units can be selected.
+    /// </summary>
+    /// <remarks>
+    /// Selection is written straight into each entity's <c>Selectable</c> component, so there is no
+    /// selected-entity list to keep in sync with the world - a unit that dies simply stops existing
+    /// and stops being selected. That sidesteps needing entity ids, which the engine can't hand out.
+    ///
+    /// The box test runs in screen space (the drag rectangle is a screen rectangle) while the click
+    /// test runs in world space (the pick radius is a world radius). Doing each in its own space
+    /// keeps both correct while the camera is zoomed or rotated.
+    /// </remarks>
+    public class SelectionSystem(Camera camera) : ISystem, IUpdateSystem
     {
-        public int? SelectedEntityId { get; private set; }
+        private const float DragThresholdPixels = 6f;
 
-        public void Update()
+        private Vector2? dragStartScreen;
+
+        /// <summary>The in-progress drag rectangle in screen space, for the overlay renderer. Null when not dragging.</summary>
+        public (Vector2 Start, Vector2 Current)? DragScreenRectangle { get; private set; }
+
+        private static readonly ComponentRef[] requiredComponentProviders =
+            [ComponentRef.Of<Position>(), ComponentRef.Of<Selectable>(), ComponentRef.Of<Faction>()];
+
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
+
+        public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
             var mouse = InputManager.Instance.MouseInfo;
-            if (!mouse.WasButtonJustPressed(MouseButton.Left))
+            var mouseScreen = mouse.Position.ToVector2();
+
+            if (mouse.WasButtonJustPressed(MouseButton.Left))
+            {
+                dragStartScreen = mouseScreen;
+            }
+
+            if (dragStartScreen is not Vector2 dragStart)
+            {
+                DragScreenRectangle = null;
+                return;
+            }
+
+            if (mouse.IsButtonDown(MouseButton.Left))
+            {
+                DragScreenRectangle = (dragStart, mouseScreen);
+                return;
+            }
+
+            DragScreenRectangle = null;
+            dragStartScreen = null;
+
+            if (!mouse.WasButtonJustReleased(MouseButton.Left))
             {
                 return;
             }
 
-            var clickLocation = mouse.Position.ToVector2().Transform(Matrix.Invert(camera.GetCameraTransform()));
-            var pickRadiusSquared = pickRadius * pickRadius;
+            var keyboard = InputManager.Instance.KeyboardInfo;
+            var isAdditive = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
 
-            int? nearestEntityId = null;
-            var nearestDistanceSquared = float.MaxValue;
-            foreach (var entityId in selectableEntityIds)
+            var dragDelta = mouseScreen - dragStart;
+            if (MathF.Abs(dragDelta.X) < DragThresholdPixels && MathF.Abs(dragDelta.Y) < DragThresholdPixels)
             {
-                if (!gameWorld.TryGetComponent<Position>(entityId, out var position))
-                {
-                    continue;
-                }
+                SelectSingleAt(archetypeChunks, mouseScreen, isAdditive);
+            }
+            else
+            {
+                SelectWithinBox(archetypeChunks, dragStart, mouseScreen, isAdditive);
+            }
+        }
 
-                var distanceSquared = Vector2.DistanceSquared(position.Location, clickLocation);
-                if (distanceSquared <= pickRadiusSquared && distanceSquared < nearestDistanceSquared)
+        private void SelectSingleAt(List<ArchetypeChunk> archetypeChunks, Vector2 clickScreen, bool isAdditive)
+        {
+            var clickWorld = Vector2.Transform(clickScreen, Matrix.Invert(camera.GetCameraTransform()));
+
+            var closestDistanceSquared = float.MaxValue;
+            var pickedChunk = -1;
+            var pickedIndex = -1;
+
+            for (var chunkIndex = 0; chunkIndex < archetypeChunks.Count; chunkIndex++)
+            {
+                var archetypeChunk = archetypeChunks[chunkIndex];
+                var positionSpan = archetypeChunk.GetSpan<Position>();
+                var selectableSpan = archetypeChunk.GetSpan<Selectable>();
+                var factionSpan = archetypeChunk.GetSpan<Faction>();
+
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
-                    nearestEntityId = entityId;
-                    nearestDistanceSquared = distanceSquared;
+                    if (factionSpan[i].Id != FactionId.Player)
+                    {
+                        continue;
+                    }
+
+                    var pickRadius = selectableSpan[i].PickRadius;
+                    var distanceSquared = Vector2.DistanceSquared(positionSpan[i].Location, clickWorld);
+                    if (distanceSquared <= pickRadius * pickRadius && distanceSquared < closestDistanceSquared)
+                    {
+                        closestDistanceSquared = distanceSquared;
+                        pickedChunk = chunkIndex;
+                        pickedIndex = i;
+                    }
                 }
             }
 
-            SelectedEntityId = nearestEntityId;
+            if (!isAdditive)
+            {
+                ClearSelection(archetypeChunks);
+            }
+
+            if (pickedChunk >= 0)
+            {
+                archetypeChunks[pickedChunk].GetSpan<Selectable>()[pickedIndex].IsSelected = true;
+            }
+        }
+
+        private void SelectWithinBox(List<ArchetypeChunk> archetypeChunks, Vector2 dragStart, Vector2 dragEnd, bool isAdditive)
+        {
+            if (!isAdditive)
+            {
+                ClearSelection(archetypeChunks);
+            }
+
+            var minimum = Vector2.Min(dragStart, dragEnd);
+            var maximum = Vector2.Max(dragStart, dragEnd);
+            var worldToScreen = camera.GetCameraTransform();
+
+            foreach (var archetypeChunk in archetypeChunks)
+            {
+                var positionSpan = archetypeChunk.GetSpan<Position>();
+                var selectableSpan = archetypeChunk.GetSpan<Selectable>();
+                var factionSpan = archetypeChunk.GetSpan<Faction>();
+
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
+                {
+                    if (factionSpan[i].Id != FactionId.Player)
+                    {
+                        continue;
+                    }
+
+                    var screenLocation = Vector2.Transform(positionSpan[i].Location, worldToScreen);
+                    if (screenLocation.X >= minimum.X && screenLocation.X <= maximum.X &&
+                        screenLocation.Y >= minimum.Y && screenLocation.Y <= maximum.Y)
+                    {
+                        selectableSpan[i].IsSelected = true;
+                    }
+                }
+            }
+        }
+
+        private static void ClearSelection(List<ArchetypeChunk> archetypeChunks)
+        {
+            foreach (var archetypeChunk in archetypeChunks)
+            {
+                var selectableSpan = archetypeChunk.GetSpan<Selectable>();
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
+                {
+                    selectableSpan[i].IsSelected = false;
+                }
+            }
         }
     }
 }

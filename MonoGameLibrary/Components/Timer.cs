@@ -1,10 +1,24 @@
-﻿namespace MonoGameLibrary.Components
+﻿using System;
+
+namespace MonoGameLibrary.Components
 {
-    public struct Timer(float duration, bool shouldRepeat)
+    public struct Timer(long durationTicks, bool shouldRepeat)
     {
-        public float Duration = duration;
-        public float Remaining = duration;
+        public long DurationTicks = durationTicks;
+        public long RemainingTicks = durationTicks;
         public bool ShouldRepeat = shouldRepeat;
-        public bool HasJustElapsed = false;
+
+        public readonly bool HasElapsed => RemainingTicks <= 0;
+        
+        public void Restart(TimeSpan duration)
+        {
+            DurationTicks = duration.Ticks;
+            RemainingTicks = DurationTicks;
+        }
+
+        public void Stop()
+        {
+            RemainingTicks = 0;
+        }
     }
 }

@@ -5,8 +5,11 @@ using System.Collections.Generic;
 
 namespace MonoGameLibrary.Systems.Infrastructure
 {
-    public interface IDrawSystem
+    public enum DrawSpace { World, Screen }
+    public interface IDrawSystem : ISystem
     {
+        DrawSpace DrawSpace { get; }
+
         void Draw(SpriteBatch spriteBatch, Rectangle viewport, List<ArchetypeChunk> archetypeChunks);
     }
 }

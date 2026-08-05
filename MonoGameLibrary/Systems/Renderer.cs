@@ -8,12 +8,11 @@ using System.Collections.Generic;
 
 namespace MonoGameLibrary.Systems
 {
-    public class Renderer : SystemBase, IDrawSystem
+    public class Renderer : IDrawSystem
     {
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Position),
-            typeof(Drawable)
-            );
+        public DrawSpace DrawSpace => DrawSpace.World;
+
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [ComponentRef.Of<Position>(), ComponentRef.Of<Drawable>()];
 
         public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
         {

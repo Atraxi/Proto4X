@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 namespace MonoGameLibrary.Systems.Infrastructure
 {
-    public interface IUpdateSystem
+    public interface IUpdateSystem : ISystem
     {
-        void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks);
+        public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks);
     }
 }

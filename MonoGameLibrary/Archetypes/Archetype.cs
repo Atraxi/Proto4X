@@ -168,18 +168,18 @@ namespace MonoGameLibrary.Archetypes
 
         internal void ProcessDeferredUpdates()
         {
-            foreach (EntityBuilder payload in DeferredAdditions)
-            {
-                AddEntity(payload);
-            }
-            DeferredAdditions.Clear();
-
             DeferredEntityRemovalsByIndex.Sort((A, B) => B - A);
             foreach (var  entityIndex in DeferredEntityRemovalsByIndex)
             {
                 RemoveEntityAtIndex(entityIndex);
             }
             DeferredEntityRemovalsByIndex.Clear();
+
+            foreach (EntityBuilder payload in DeferredAdditions)
+            {
+                AddEntity(payload);
+            }
+            DeferredAdditions.Clear();
         }
 
         private void GrowEntityCapacity()

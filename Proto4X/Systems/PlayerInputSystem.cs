@@ -10,15 +10,13 @@ using System.Collections.Generic;
 
 namespace Proto4X.Systems
 {
-    public class PlayerInputSystem(GameWorld gameWorld) : SystemBase, IUpdateSystem
+    public class PlayerInputSystem(GameWorld gameWorld) : IUpdateSystem
     {
         private const int ACCELERATION = 100;
         private const int ANGULAR_ACCELERATION = 100;
         private int selectedEntityId = 0;
 
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Position),
-            typeof(Motion));
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>()];
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {

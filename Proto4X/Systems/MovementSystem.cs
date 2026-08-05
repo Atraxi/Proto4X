@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Proto4X.Systems
 {
-    public class MovementSystem : SystemBase, IUpdateSystem
+    public class MovementSystem : IUpdateSystem
     {
         public const float Friction = 0.01f;
 
@@ -18,10 +18,7 @@ namespace Proto4X.Systems
         public const float MaxAngularVelocity = (float)Math.PI / 2;
         public const float MaxAngularAcceleration = (float)Math.PI / 24;
 
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Motion),
-            typeof(Position)
-            );
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [ComponentRef.Of<Motion>(), ComponentRef.Of<Position>()];
 
         public virtual void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {

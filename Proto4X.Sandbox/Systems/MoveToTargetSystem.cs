@@ -4,21 +4,29 @@ using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
+using System;
 using System.Collections.Generic;
 
 namespace Proto4X.Sandbox.Systems
 {
-    public class MoveToTargetSystem : SystemBase, IUpdateSystem
+    /// <summary>
+    /// Steering: turns a <c>MoveOrder.Destination</c> into acceleration, brakes on approach, and
+    /// clears the order on arrival. Clearing it is the signal every other system watches for -
+    /// "no destination" is how a miner knows it's free to pick its own next job.
+    /// </summary>
+    public class MoveToTargetSystem : ISystem, IUpdateSystem
     {
         private const float Acceleration = 250f;
-        private const float ArriveRadius = 6f;
+        private const float ArriveRadius = 8f;
         private const float SlowRadius = 80f;
 
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Position),
-            typeof(Motion),
-            typeof(MoveOrder)
-            );
+        /// <summary>Ship art points up the screen; sprite rotation is measured from +X.</summary>
+        private const float SpriteFacingOffset = MathHelper.PiOver2;
+
+        private static readonly ComponentRef[] requiredComponentProviders =
+            [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>()];
+
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
@@ -32,6 +40,7 @@ namespace Proto4X.Sandbox.Systems
                 {
                     ref var moveOrder = ref moveOrderSpan[i];
                     ref var motion = ref motionSpan[i];
+                    ref var position = ref positionSpan[i];
 
                     if (moveOrder.Destination is not Vector2 destination)
                     {
@@ -39,7 +48,6 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    ref var position = ref positionSpan[i];
                     var toTarget = destination - position.Location;
                     var distance = toTarget.Length();
 
@@ -51,8 +59,10 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
+                    var heading = toTarget / distance;
                     var speedScale = distance < SlowRadius ? distance / SlowRadius : 1f;
-                    motion.Acceleration = toTarget / distance * Acceleration * speedScale;
+                    motion.Acceleration = heading * Acceleration * speedScale;
+                    position.Rotation = MathF.Atan2(heading.Y, heading.X) + SpriteFacingOffset;
                 }
             }
         }

@@ -7,39 +7,31 @@ using System.Collections.Generic;
 
 namespace MonoGameLibrary.Systems
 {
-    public class TimerSystem : SystemBase, IUpdateSystem
+    public class TimerSystem : IUpdateSystem
     {
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Timer)
-            );
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [ComponentRef.Of<Timer>()];
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
-            var elapsedTime = gameTime.ElapsedGameTime;
+            var elapsedTicks = gameTime.ElapsedGameTime.Ticks;
 
             foreach (var archetypeChunk in archetypeChunks)
             {
-
                 foreach(ref var timer in archetypeChunk.GetSpan<Timer>())
                 {
-                    if (timer.HasJustElapsed)
+                    if (timer.HasElapsed)
                     {
-                        timer.HasJustElapsed = false;
-                    }
-                    if (timer.Remaining > elapsedTime.Ticks)
-                    {
-                        timer.Remaining -= elapsedTime.Ticks;
-
-                        if (timer.Remaining <= 0f)
+                        if (timer.ShouldRepeat)
                         {
-                            timer.HasJustElapsed = true;
-
-                            if (timer.ShouldRepeat)
-                            {
-                                timer.Remaining = timer.Duration;
-                            }
+                            timer.RemainingTicks += timer.DurationTicks;
+                        }
+                        else
+                        {
+                            continue;
                         }
                     }
+
+                    timer.RemainingTicks -= elapsedTicks;
                 }
             }
         }

@@ -7,14 +7,14 @@ using System.Collections.Generic;
 
 namespace Proto4X.Sandbox.Systems
 {
-    public class MovementSystem : SystemBase, IUpdateSystem
+    public class MovementSystem : ISystem, IUpdateSystem
     {
         public const float Friction = 0.01f;
 
-        public override ComponentTypeMask RequiredComponentProviders => ComponentTypeMask.FromTypes(
-            typeof(Position),
-            typeof(Motion)
-            );
+        private static readonly ComponentRef[] requiredComponentProviders =
+            [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>()];
+
+        public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {

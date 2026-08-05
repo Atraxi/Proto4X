@@ -1,9 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.UI;
 using MonoGameLibrary.Utils;
 using MonoGameLibrary.World;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MonoGameLibrary.Systems.Infrastructure
 {
@@ -12,27 +14,24 @@ namespace MonoGameLibrary.Systems.Infrastructure
         private readonly Dictionary<GameWorld, List<IUpdateSystem>> _updateSystems = [];
         private readonly Dictionary<GameWorld, List<IDrawSystem>> _drawSystems = [];
 
-        public void Add<T>(GameWorld gameLayer, T system) where T : SystemBase
+        public void Add(GameWorld gameLayer, IUpdateSystem system)
         {
-            if (system is IUpdateSystem update)
-            {
-                _updateSystems.AddToInternalList(gameLayer, update);
-            }
+            _updateSystems.AddToInternalList(gameLayer, system);
+        }
 
-            if (system is IDrawSystem draw)
-            {
-                _drawSystems.AddToInternalList(gameLayer, draw);
-            }
+        public void Add(GameWorld gameLayer, IDrawSystem system)
+        {
+            _drawSystems.AddToInternalList(gameLayer, system);
         }
 
         public void Update(GameWorld gameLayer, GameTime gameTime)
         {
             foreach (var system in _updateSystems[gameLayer])
             {
-                var systemAsBase = (SystemBase)system;//Guaranteed because we use Add<T>(...) where T : SystemBase, would use a union type if they were available
+                var systemAsBase = system;
 
                 //TODO maybe we can cache these? type lookups every frame/update are not cheap but not brutal
-                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(systemAsBase.RequiredComponentProviders);
+                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. systemAsBase.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)]));
                 if (archetypeChunks.Count > 0)
                 {
                     system.Update(gameTime, archetypeChunks);
@@ -43,7 +42,6 @@ namespace MonoGameLibrary.Systems.Infrastructure
             {
                 archetypesKeyPair.Value.ProcessDeferredUpdates();
             }
-            
         }
 
         public void Draw(SpriteBatch spriteBatch, UserInterfaceManager userInterfaceManager, GameWorld gameLayer)
@@ -53,10 +51,10 @@ namespace MonoGameLibrary.Systems.Infrastructure
             var cullingBounds = userInterfaceManager.GetVisibleScreenBoundsAABB();
             foreach (var system in _drawSystems[gameLayer])
             {
-                var systemAsBase = (SystemBase)system;//Guaranteed cast because we use add<T>(...) where T : SystemBase, would use a union type if they were available
+                var systemAsBase = (ISystem)system;//Guaranteed cast because we use add<T>(...) where T : ISystem, would use a union type if they were available
                 
                 //TODO maybe we can cache these? type lookups every frame/update are not cheap but not brutal
-                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(systemAsBase.RequiredComponentProviders);
+                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. systemAsBase.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)]));
                 if (archetypeChunks.Count > 0)
                 {
                     system.Draw(spriteBatch, cullingBounds, archetypeChunks);
