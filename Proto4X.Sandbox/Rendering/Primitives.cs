@@ -40,6 +40,20 @@ namespace Proto4X.Sandbox.Rendering
             }
         }
 
+        /// <summary>Axis-aligned convenience over the four-corner overload.</summary>
+        public static void DrawRectangleOutline(SpriteBatch spriteBatch, Texture2D pixel, Vector2 topLeft, Vector2 size, Color colour, float thickness = 1f)
+        {
+            ReadOnlySpan<Vector2> corners =
+            [
+                topLeft,
+                new(topLeft.X + size.X, topLeft.Y),
+                topLeft + size,
+                new(topLeft.X, topLeft.Y + size.Y),
+            ];
+
+            DrawRectangleOutline(spriteBatch, pixel, corners, colour, thickness);
+        }
+
         public static void DrawCircleOutline(SpriteBatch spriteBatch, Texture2D pixel, Vector2 centre, float radius, Color colour, float thickness = 1f, int segments = 20)
         {
             var step = MathHelper.TwoPi / segments;
@@ -49,6 +63,29 @@ namespace Proto4X.Sandbox.Rendering
             {
                 var angle = step * i;
                 var next = centre + new Vector2(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius);
+                DrawLine(spriteBatch, pixel, previous, next, colour, thickness);
+                previous = next;
+            }
+        }
+
+        /// <summary>
+        /// A partial circle, swept clockwise from <paramref name="startAngle"/>. The building block
+        /// for radial progress indicators, which are how this game says "wait" without writing it.
+        /// </summary>
+        public static void DrawArc(SpriteBatch spriteBatch, Texture2D pixel, Vector2 centre, float radius, float startAngle, float sweepAngle, Color colour, float thickness = 1f, int segments = 24)
+        {
+            if (MathF.Abs(sweepAngle) < 0.0001f)
+            {
+                return;
+            }
+
+            var step = sweepAngle / segments;
+            var previous = centre + new Vector2(MathF.Cos(startAngle), MathF.Sin(startAngle)) * radius;
+
+            for (var i = 1; i <= segments; i++)
+            {
+                var angle = startAngle + step * i;
+                var next = centre + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
                 DrawLine(spriteBatch, pixel, previous, next, colour, thickness);
                 previous = next;
             }

@@ -23,10 +23,8 @@ namespace Proto4X.Sandbox.Systems
     /// <item>Finished ships are described, not created - see <see cref="SpawnRequest"/>.</item>
     /// </list>
     /// </remarks>
-    public class ProductionSystem : ISystem, IUpdateSystem
+    public class ProductionSystem(SpawnQueue spawnQueue) : ISystem, IUpdateSystem
     {
-        private readonly List<SpawnRequest> pendingSpawns = [];
-
         private static readonly ComponentRef[] requiredComponentProviders =
             [ComponentRef.Of<Position>(), ComponentRef.Of<Faction>(), ComponentRef.Of<Health>(), ComponentRef.Of<Timer>(), ComponentRef.Of<Station>()];
 
@@ -52,7 +50,7 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    if (station.InProgress == ShipType.None)
+                    if (station.InProgress == UnitKind.None)
                     {
                         StartNextInQueue(ref station, ref timer);
                         continue;
@@ -63,35 +61,31 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    pendingSpawns.Add(new SpawnRequest(
+                    spawnQueue.Enqueue(new SpawnRequest(
                         station.InProgress,
                         factionSpan[i].Id,
-                        RallyPointFor(positionSpan[i].Location, station.RallyDistance, station.ShipsBuilt)));
+                        RallyPointFor(positionSpan[i].Location, station.RallyDistance, station.ShipsBuilt),
+                        station.RallyPoint));
 
                     station.ShipsBuilt++;
-                    station.InProgress = ShipType.None;
+                    station.InProgress = UnitKind.None;
                     StartNextInQueue(ref station, ref timer);
                 }
             }
         }
 
-        /// <summary>Hands over everything finished this frame; the caller is responsible for building it.</summary>
-        public IReadOnlyList<SpawnRequest> PendingSpawns => pendingSpawns;
-
-        public void ClearPendingSpawns() => pendingSpawns.Clear();
-
         private static void StartNextInQueue(ref Station station, ref Timer timer)
         {
-            ShipType next;
+            UnitKind next;
             if (station.QueuedMiners > 0)
             {
                 station.QueuedMiners--;
-                next = ShipType.Miner;
+                next = UnitKind.Miner;
             }
             else if (station.QueuedFighters > 0)
             {
                 station.QueuedFighters--;
-                next = ShipType.Fighter;
+                next = UnitKind.Fighter;
             }
             else
             {

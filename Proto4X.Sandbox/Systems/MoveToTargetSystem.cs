@@ -45,6 +45,13 @@ namespace Proto4X.Sandbox.Systems
                     if (moveOrder.Destination is not Vector2 destination)
                     {
                         motion.Acceleration = Vector2.Zero;
+
+                        // Holding position means actually stopping, not coasting to a halt on
+                        // friction - a miner parked on a rock should stay on the rock.
+                        if (moveOrder.IsHoldingPosition)
+                        {
+                            motion.Velocity = Vector2.Zero;
+                        }
                         continue;
                     }
 

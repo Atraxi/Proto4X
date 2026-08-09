@@ -10,17 +10,24 @@ using System.Collections.Generic;
 namespace Proto4X.Sandbox.Systems
 {
     /// <summary>
-    /// The enemy's build order: grow the mining fleet to a target size, then spend everything on
-    /// fighters. Deliberately about as clever as an Age of Empires "Standard" AI on a bad day - it
-    /// exists to give the player something to lose to, not to be a good opponent.
+    /// The build order for every AI faction: grow the mining fleet to a target size, then spend
+    /// everything on fighters. Deliberately about as clever as an Age of Empires "Standard" AI on a
+    /// bad day - it exists to give the player something to lose to, not to be a good opponent.
     /// </summary>
-    public class EnemyProductionAiSystem(Economy economy, FleetCensusSystem fleetCensus) : ISystem, IUpdateSystem
+    /// <remarks>
+    /// Faction-agnostic: it drives whichever factions are listed in <c>Faction.AiControlled</c>, so
+    /// adding a third player to the map cost nothing here. Each AI faction has its own economy, so
+    /// they compete for asteroids without competing for money.
+    /// </remarks>
+    public class EnemyProductionAiSystem(Economy economy, FleetCensusSystem fleetCensus, StationIndexSystem stationIndex) : ISystem, IUpdateSystem
     {
-        private const int TargetMiners = 6;
+        private const int TargetMinersPerStation = 5;
         private const int MaximumQueueDepth = 2;
 
         private static readonly ComponentRef[] requiredComponentProviders =
-            [ComponentRef.Of<Faction>(), ComponentRef.Of<Health>(), ComponentRef.Of<Station>()];
+        [
+            ComponentRef.Of<Faction>(), ComponentRef.Of<Health>(), ComponentRef.Of<Station>(),
+        ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
 
@@ -34,7 +41,8 @@ namespace Proto4X.Sandbox.Systems
 
                 for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
-                    if (factionSpan[i].Id != FactionId.Enemy || healthSpan[i].Current <= 0f)
+                    var faction = factionSpan[i].Id;
+                    if (faction == FactionId.Player || faction == FactionId.Neutral || healthSpan[i].Current <= 0f)
                     {
                         continue;
                     }
@@ -45,15 +53,17 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    var wantsMoreMiners = fleetCensus.MinersFor(FactionId.Enemy) + station.QueuedMiners < TargetMiners;
-                    if (wantsMoreMiners)
+                    // Miner target scales with station count, so an expanding AI keeps staffing the
+                    // bases it founds rather than stalling at a fixed fleet size.
+                    var minerTarget = TargetMinersPerStation * stationIndex.CountFor(faction);
+                    if (fleetCensus.MinersFor(faction) + station.QueuedMiners < minerTarget)
                     {
-                        if (economy.TrySpend(FactionId.Enemy, ShipBlueprints.Miner.MineralCost))
+                        if (economy.TrySpend(faction, ShipBlueprints.Miner.MineralCost))
                         {
                             station.QueuedMiners++;
                         }
                     }
-                    else if (economy.TrySpend(FactionId.Enemy, ShipBlueprints.Fighter.MineralCost))
+                    else if (economy.TrySpend(faction, ShipBlueprints.Fighter.MineralCost))
                     {
                         station.QueuedFighters++;
                     }

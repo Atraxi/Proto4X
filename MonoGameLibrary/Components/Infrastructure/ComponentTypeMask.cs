@@ -10,6 +10,8 @@ namespace MonoGameLibrary.Components.Infrastructure
         readonly ulong BitsA = bitsA;
         readonly ulong BitsB = bitsB;
 
+        public static readonly ComponentTypeMask Empty = new();
+
         public bool ContainsAll(ComponentTypeMask other)
         {
             return (BitsA & other.BitsA) == other.BitsA &&
@@ -75,6 +77,10 @@ namespace MonoGameLibrary.Components.Infrastructure
 
         public static ComponentTypeMask FromTypes(params Type[] componentTypes)
         {
+            if(componentTypes.Length == 0)
+            {
+                return Empty;
+            }
             var mask = FromType(componentTypes[0]);
             for (int index = 1; index < componentTypes.Length; index++)
             {

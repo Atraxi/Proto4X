@@ -18,7 +18,16 @@ namespace MonoGameLibrary.UI
             Camera.Update(viewportBounds, gameTime);
         }
 
-        internal Rectangle GetVisibleScreenBoundsAABB()
+        public Rectangle GetViewport()
+        {
+            return new Rectangle(
+                currentViewport.X,
+                currentViewport.Y,
+                currentViewport.Width,
+                currentViewport.Height);
+        }
+
+        public Rectangle GetVisibleScreenBoundsAABB()
         {
             var viewportPoints = new Vector2[] {
                 currentViewport.Location.ToVector2(),

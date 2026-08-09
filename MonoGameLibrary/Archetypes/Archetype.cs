@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace MonoGameLibrary.Archetypes
 {
-    internal class Archetype : IArchetype
+    internal class Archetype
     {
         private int[] DenseIndexToEntityId;
         private readonly Dictionary<int, int> EntityIdToDenseIndex = [];
@@ -19,15 +19,15 @@ namespace MonoGameLibrary.Archetypes
         private readonly List<int> DeferredEntityRemovalsByIndex = [];
         private readonly List<EntityBuilder> DeferredAdditions = [];
 
-        private readonly Dictionary<int, int> componentTypeIdToComponentArrayIndex = [];
-        private readonly IComponentColumn[] componentArrays;
+        private readonly Dictionary<int, int> ComponentTypeIdToComponentArrayIndex = [];
+        private readonly IComponentColumn[] ComponentArrays;
 
         public Archetype(int initialCapacity, EntityBuilder entityBuilder)
         {
             DenseIndexToEntityId = new int[initialCapacity];
             ComponentMask = entityBuilder.ComponentTypeMask;
             
-            componentArrays = new IComponentColumn[entityBuilder.Components.Count];
+            ComponentArrays = new IComponentColumn[entityBuilder.Components.Count];
             for (int componentsIndex = 0; componentsIndex < entityBuilder.Components.Count; componentsIndex++)
             {
                 entityBuilder.Components[componentsIndex].CreateComponentColumn(this, componentsIndex, initialCapacity);
@@ -38,8 +38,8 @@ namespace MonoGameLibrary.Archetypes
 
         internal void CreateComponentColumn<T>(int componentsIndex, int initialCapacity) where T : struct
         {
-            componentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))] = componentsIndex;
-            componentArrays[componentsIndex] = new ComponentColumn<T>(new T[initialCapacity]);
+            ComponentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))] = componentsIndex;
+            ComponentArrays[componentsIndex] = new ComponentColumn<T>(new T[initialCapacity]);
         }
 
         private void AddEntity(EntityBuilder componentPayloads)
@@ -80,16 +80,16 @@ namespace MonoGameLibrary.Archetypes
         {
             Debug.Assert(entityIndex < count);
             var componentTypeId = ComponentTypeRegistry.GetId(componentData.GetType());
-            int componentsIndex = componentTypeIdToComponentArrayIndex[componentTypeId];
+            int componentsIndex = ComponentTypeIdToComponentArrayIndex[componentTypeId];
 
             //TODO: Would it be better to just cast and crash on a ClassCastException? This should be an impossible situation that would indicate a critical data corruption bug if it happens so a hard crash might be preferable?
-            Debug.Assert(componentArrays[componentsIndex].GetType().IsAssignableTo(typeof(ComponentColumn<T>)));
-            (componentArrays[componentsIndex] as ComponentColumn<T>)?.Values[entityIndex] = componentData;
+            Debug.Assert(ComponentArrays[componentsIndex].GetType().IsAssignableTo(typeof(ComponentColumn<T>)));
+            (ComponentArrays[componentsIndex] as ComponentColumn<T>)?.Values[entityIndex] = componentData;
         }
 
         internal ArchetypeChunk GetMatchingComponents(ComponentTypeMask queriedTypesMask)
         {
-            return new ArchetypeChunk(componentArrays.Where(componentColumn => queriedTypesMask.ContainsType(componentColumn.GetComponentType()))
+            return new ArchetypeChunk(ComponentArrays.Where(componentColumn => queriedTypesMask.ContainsType(componentColumn.GetComponentType()))
                     .ToDictionary(componentColumn => componentColumn.GetComponentType()),
                 count,
                 this);
@@ -113,7 +113,7 @@ namespace MonoGameLibrary.Archetypes
             }
             EntityIdToDenseIndex.Remove(entityId);
 
-            foreach (var componentData in componentArrays)
+            foreach (var componentData in ComponentArrays)
             {
                 componentData.RemoveAtIndexAndCopyLast(index, last);
             }
@@ -126,7 +126,7 @@ namespace MonoGameLibrary.Archetypes
             Debug.Assert(HasEntity(entityId));
 
             var result = new Dictionary<Type, IComponentContainer>();
-            foreach (var componentData in componentArrays)
+            foreach (var componentData in ComponentArrays)
             {
                 var data = componentData.GetComponentContainerForEntity(EntityIdToDenseIndex[entityId], this);
                 result.Add(data.GetComponentType(), data);
@@ -138,7 +138,7 @@ namespace MonoGameLibrary.Archetypes
         {
             Debug.Assert(HasEntity(entityId));
 
-            return ref ((ComponentColumn<T>)componentArrays[componentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
+            return ref ((ComponentColumn<T>)ComponentArrays[ComponentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
                 .GetComponentRefForEntity(EntityIdToDenseIndex[entityId]);
         }
 
@@ -146,7 +146,7 @@ namespace MonoGameLibrary.Archetypes
         {
             Debug.Assert(HasEntity(entityId));
 
-            return ((ComponentColumn<T>)componentArrays[componentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
+            return ((ComponentColumn<T>)ComponentArrays[ComponentTypeIdToComponentArrayIndex[ComponentTypeRegistry.GetId(typeof(T))]])
                 .GetComponentRefForEntity(EntityIdToDenseIndex[entityId]);
         }
 
@@ -188,10 +188,15 @@ namespace MonoGameLibrary.Archetypes
 
             Array.Resize(ref DenseIndexToEntityId, newSize);
 
-            foreach(var componentColumn in componentArrays)
+            foreach(var componentColumn in ComponentArrays)
             {
                 componentColumn.Grow(newSize);
             }
+        }
+
+        public int GetEntityId(int entityIndex)
+        {
+            return DenseIndexToEntityId[entityIndex];
         }
     }
 }

@@ -5,14 +5,14 @@ using System.Collections.ObjectModel;
 
 namespace MonoGameLibrary.Archetypes
 {
-    public class ArchetypeChunk
+    public class ArchetypeChunk : IArchetype
     {
         internal readonly ReadOnlyDictionary<Type, IComponentColumn> Components;
 
         public readonly int EntityCount;
-        private readonly IArchetype archetype;
+        private readonly Archetype archetype;
 
-        internal ArchetypeChunk(Dictionary<Type, IComponentColumn> components, int entityCount, IArchetype archetype)
+        internal ArchetypeChunk(Dictionary<Type, IComponentColumn> components, int entityCount, Archetype archetype)
         {
             this.archetype = archetype;
             Components = components.AsReadOnly();
@@ -37,6 +37,11 @@ namespace MonoGameLibrary.Archetypes
         public void QueueEntityForRemovalByIndex(int entityIndex)
         {
             archetype.QueueEntityForRemovalByIndex(entityIndex);
+        }
+
+        public int GetEntityId(int entityIndex)
+        {
+            return archetype.GetEntityId(entityIndex);
         }
     }
 }

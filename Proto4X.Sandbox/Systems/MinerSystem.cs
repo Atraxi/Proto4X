@@ -10,9 +10,14 @@ using System.Collections.Generic;
 namespace Proto4X.Sandbox.Systems
 {
     /// <summary>
-    /// The gather loop: fly to the nearest asteroid, mine until full, fly home, deposit, repeat.
+    /// The gather loop: claim an asteroid, fly to it, mine until full, fly home, deposit, repeat.
     /// </summary>
     /// <remarks>
+    /// One miner per asteroid. Claims are gathered in a first pass over every miner before any new
+    /// ones are handed out, so a rock already spoken for is invisible to the next miner looking for
+    /// work. The claim is a <em>position</em>, not an entity reference - asteroids never move, so
+    /// their location is a perfectly stable name, and this keeps the no-entity-ids rule intact.
+    ///
     /// A pending <c>MoveOrder.Destination</c> means "someone is already driving this ship", which is
     /// what lets a player order override the loop for free: the miner won't pick a new destination
     /// until it has arrived where the player sent it, then resumes on its own.
@@ -22,19 +27,21 @@ namespace Proto4X.Sandbox.Systems
         private const float AsteroidArrivalRadius = 38f;
         private const float StationArrivalRadius = 64f;
 
-        /// <summary>How many of the closest asteroids miners spread themselves over.</summary>
-        private const int AsteroidChoiceSpread = 3;
-
-        private int nextAsteroidRank;
+        private readonly HashSet<Vector2> claimedAsteroids = [];
 
         private static readonly ComponentRef[] requiredComponentProviders =
-            [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>(), ComponentRef.Of<Faction>(), ComponentRef.Of<Miner>()];
+        [
+            ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>(),
+            ComponentRef.Of<Faction>(), ComponentRef.Of<Miner>(),
+        ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
             var elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            CollectClaims(archetypeChunks);
 
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -49,6 +56,10 @@ namespace Proto4X.Sandbox.Systems
                     ref var moveOrder = ref moveOrderSpan[i];
                     var location = positionSpan[i].Location;
 
+                    // Mining and building are deliberate stops, not idleness - say so, or the
+                    // separation nudge will drift a miner off the rock it's working.
+                    moveOrder.IsHoldingPosition = miner.Task is MinerTask.Mining or MinerTask.Constructing;
+
                     switch (miner.Task)
                     {
                         case MinerTask.FlyingToAsteroid:
@@ -57,28 +68,31 @@ namespace Proto4X.Sandbox.Systems
                                 break;
                             }
 
-                            // Arrival is checked against the closest rock, but the one a miner is
-                            // sent to rotates through the nearest few, so a squad fans out over a
-                            // cluster instead of stacking on one asteroid.
-                            if (asteroidIndex.FindNearest(location) is not Vector2 closestAsteroid)
+                            if (miner.ClaimedAsteroid is not Vector2 claim)
                             {
-                                break;
+                                if (!TryClaimAsteroid(location, ref miner))
+                                {
+                                    break;
+                                }
+
+                                claim = miner.ClaimedAsteroid!.Value;
                             }
 
-                            if (Vector2.DistanceSquared(location, closestAsteroid) <= AsteroidArrivalRadius * AsteroidArrivalRadius)
+                            if (Vector2.DistanceSquared(location, claim) <= AsteroidArrivalRadius * AsteroidArrivalRadius)
                             {
                                 miner.Task = MinerTask.Mining;
-                                break;
                             }
-
-                            nextAsteroidRank = (nextAsteroidRank + 1) % AsteroidChoiceSpread;
-                            moveOrder.Destination = asteroidIndex.FindNearest(location, nextAsteroidRank) ?? closestAsteroid;
+                            else
+                            {
+                                moveOrder.Destination = claim;
+                            }
                             break;
 
                         case MinerTask.Mining:
                             // A move order issued while mining wins - the player told it to go somewhere.
                             if (moveOrder.Destination is not null)
                             {
+                                ReleaseClaim(ref miner);
                                 miner.Task = MinerTask.FlyingToAsteroid;
                                 break;
                             }
@@ -87,6 +101,8 @@ namespace Proto4X.Sandbox.Systems
                             if (miner.Carried >= miner.Capacity)
                             {
                                 miner.Carried = miner.Capacity;
+                                // The rock is freed while hauling, so it isn't held idle across the round trip.
+                                ReleaseClaim(ref miner);
                                 miner.Task = MinerTask.FlyingToStation;
                             }
                             break;
@@ -116,6 +132,48 @@ namespace Proto4X.Sandbox.Systems
                             break;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Every claim currently held, gathered before any are handed out. Miners all share one
+        /// archetype, so a single pass sees the whole fleet.
+        /// </summary>
+        private void CollectClaims(List<ArchetypeChunk> archetypeChunks)
+        {
+            claimedAsteroids.Clear();
+
+            foreach (var archetypeChunk in archetypeChunks)
+            {
+                var minerSpan = archetypeChunk.GetSpan<Miner>();
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
+                {
+                    if (minerSpan[i].ClaimedAsteroid is Vector2 claimed)
+                    {
+                        claimedAsteroids.Add(claimed);
+                    }
+                }
+            }
+        }
+
+        private bool TryClaimAsteroid(Vector2 from, ref Miner miner)
+        {
+            if (asteroidIndex.FindNearestUnclaimed(from, claimedAsteroids) is not Vector2 asteroid)
+            {
+                return false;
+            }
+
+            miner.ClaimedAsteroid = asteroid;
+            claimedAsteroids.Add(asteroid);
+            return true;
+        }
+
+        private void ReleaseClaim(ref Miner miner)
+        {
+            if (miner.ClaimedAsteroid is Vector2 claimed)
+            {
+                claimedAsteroids.Remove(claimed);
+                miner.ClaimedAsteroid = null;
             }
         }
     }

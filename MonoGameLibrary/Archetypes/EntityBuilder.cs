@@ -6,7 +6,7 @@ namespace MonoGameLibrary.Archetypes
 {
     public class EntityBuilder
     {
-        private ComponentTypeMask componentTypeMask = new();
+        private ComponentTypeMask componentTypeMask = ComponentTypeMask.Empty;
         public ComponentTypeMask ComponentTypeMask => componentTypeMask;
 
         private readonly List<IComponentContainer> components = [];

@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary;
 using Proto4X.Sandbox.Components;
+using System;
 
 namespace Proto4X.Sandbox.Game
 {
@@ -14,19 +15,16 @@ namespace Proto4X.Sandbox.Game
     /// The tinting happens here, at load, by baking recoloured copies of the texture, because
     /// <c>Drawable</c> carries no colour and <c>Renderer</c> always draws <c>Color.White</c>.
     /// Baking copies costs a little VRAM but needs no engine change - see "Drawable has no tint,
-    /// scale or layer" in ENGINE_REQUESTS.md.
+    /// scale or layer" in ENGINE_REQUESTS.md. Cost scales with faction count, which is the one
+    /// thing that made adding a third faction non-free.
     /// </remarks>
     public class SpriteSet
     {
-        private static readonly Color PlayerTint = new(120, 190, 255);
-        private static readonly Color EnemyTint = new(255, 120, 110);
+        private static readonly Color[] FactionTints = BuildFactionTints();
 
-        private readonly int playerMiner;
-        private readonly int enemyMiner;
-        private readonly int playerFighter;
-        private readonly int enemyFighter;
-        private readonly int playerStation;
-        private readonly int enemyStation;
+        private readonly int[] minerSprites;
+        private readonly int[] fighterSprites;
+        private readonly int[] stationSprites;
 
         public int[] AsteroidSpriteIds { get; }
 
@@ -42,12 +40,18 @@ namespace Proto4X.Sandbox.Game
             var fighter = content.Load<Texture2D>("Ships/ship_fighter_32x32");
             var station = content.Load<Texture2D>("Stations/station_core_64x64");
 
-            playerMiner = SpriteLibrary.Add(Tint(graphicsDevice, miner, PlayerTint));
-            enemyMiner = SpriteLibrary.Add(Tint(graphicsDevice, miner, EnemyTint));
-            playerFighter = SpriteLibrary.Add(Tint(graphicsDevice, fighter, PlayerTint));
-            enemyFighter = SpriteLibrary.Add(Tint(graphicsDevice, fighter, EnemyTint));
-            playerStation = SpriteLibrary.Add(Tint(graphicsDevice, station, PlayerTint));
-            enemyStation = SpriteLibrary.Add(Tint(graphicsDevice, station, EnemyTint));
+            var factionCount = Enum.GetValues<FactionId>().Length;
+            minerSprites = new int[factionCount];
+            fighterSprites = new int[factionCount];
+            stationSprites = new int[factionCount];
+
+            foreach (var faction in Faction.Playing)
+            {
+                var tint = FactionTints[(int)faction];
+                minerSprites[(int)faction] = SpriteLibrary.Add(Tint(graphicsDevice, miner, tint));
+                fighterSprites[(int)faction] = SpriteLibrary.Add(Tint(graphicsDevice, fighter, tint));
+                stationSprites[(int)faction] = SpriteLibrary.Add(Tint(graphicsDevice, station, tint));
+            }
 
             AsteroidSpriteIds =
             [
@@ -57,18 +61,27 @@ namespace Proto4X.Sandbox.Game
             ];
         }
 
-        public int MinerSpriteFor(FactionId faction) => faction == FactionId.Player ? playerMiner : enemyMiner;
+        public int MinerSpriteFor(FactionId faction) => minerSprites[(int)faction];
 
-        public int FighterSpriteFor(FactionId faction) => faction == FactionId.Player ? playerFighter : enemyFighter;
+        public int FighterSpriteFor(FactionId faction) => fighterSprites[(int)faction];
 
-        public int StationSpriteFor(FactionId faction) => faction == FactionId.Player ? playerStation : enemyStation;
+        public int StationSpriteFor(FactionId faction) => stationSprites[(int)faction];
 
-        public static Color FactionColour(FactionId faction) => faction switch
+        public static Color FactionColour(FactionId faction) => FactionTints[(int)faction];
+
+        private static Color[] BuildFactionTints()
         {
-            FactionId.Player => PlayerTint,
-            FactionId.Enemy => EnemyTint,
-            _ => Color.Gray,
-        };
+            var tints = new Color[Enum.GetValues<FactionId>().Length];
+            for (var i = 0; i < tints.Length; i++)
+            {
+                tints[i] = Color.Gray;
+            }
+
+            tints[(int)FactionId.Player] = new Color(120, 190, 255);
+            tints[(int)FactionId.Enemy] = new Color(255, 120, 110);
+            tints[(int)FactionId.Rival] = new Color(240, 200, 110);
+            return tints;
+        }
 
         private static Texture2D Tint(GraphicsDevice graphicsDevice, Texture2D source, Color tint)
         {

@@ -16,7 +16,12 @@ namespace MonoGameLibrary.World
         internal List<ArchetypeChunk> QueryRelevantComponentArrays(ComponentTypeMask componentProviderTypes)
         {
             List<ArchetypeChunk> result = [];
-            
+
+            if (componentProviderTypes == ComponentTypeMask.Empty)
+            {
+                return result;
+            }
+
             foreach (var (componentTypeMask, archetype) in Archetypes)
             {
                 if (componentTypeMask.ContainsAll(componentProviderTypes))

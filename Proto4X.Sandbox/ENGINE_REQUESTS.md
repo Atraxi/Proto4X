@@ -56,8 +56,8 @@ Keep **Status:**/**Priority:** outside the <details> block so they're visible wi
 </details>
 
 ## Game code has no way to obtain an entity id — from a chunk, or from the entity it just created
-**Status:** Open — designed around
-**Priority:** High
+**Status:** Open — half resolved, half open
+**Priority:** Medium
 
 <details>
 <summary>Details</summary>
@@ -81,64 +81,22 @@ Between them, **no game-side code can obtain a valid entity id for anything it d
 
 **Possible approaches:** (1) is small and self-contained — expose `ArchetypeChunk.GetEntityId(index)`, or a `ReadOnlySpan<int>` of ids alongside the component spans, backed by the `DenseIndexToEntityId` array that already exists. Read-only, no new structural-mutation surface, same cost character as `GetSpan<T>`. (2) is more awkward given ids are deliberately assigned at flush time; the honest options are to assign the id at `AddEntity` time and return it, or to hand back a deferred handle that resolves after `ProcessDeferredUpdates`. Worth noting (2) overlaps heavily with the `EntityView` design below — the generation-stamped id discussed there would answer "what do I hand back" for both.
 
-</details>
+**Update 2026-08-05 — half (1) is done.** `ArchetypeChunk.GetEntityId(index)` now forwards to `Archetype.GetEntityId`, returning `DenseIndexToEntityId[entityIndex]`. Correct: chunk indices *are* dense indices, so no translation is needed. Half (2) — learning the id of an entity you just created — is unchanged and still open, which means ids can be *read* but never *originated*.
 
-## No text rendering
-**Status:** Open — worked around
-**Priority:** High
+**Not yet used by the sandbox, deliberately.** The game is built with no entity ids anywhere (see above), and that decision is still paying: selection-as-component-state and nearest-target-per-frame are both better designs than the id-based versions would have been, not merely adequate substitutes. Adopting stored ids now would reintroduce exactly the dangling-reference class the current design is immune to, so it wants to be a considered decision rather than a drive-by one. What it would unlock, if taken: stable combat targeting (focus fire, chasing a fleeing ship — the sandbox currently re-picks the nearest hostile every frame and so can do neither), and entity-to-entity relationships generally.
 
-<details>
-<summary>Details</summary>
+**Two caveats on the accessor as it stands:**
 
-**What:** no `SpriteFont` loading or `SpriteBatch.DrawString` usage anywhere in `MonoGameLibrary` or either game project.
+- **No bounds check against `count`.** `DenseIndexToEntityId` is capacity-sized, not count-sized, so an index at or past `EntityCount` returns a stale id belonging to a removed entity rather than failing. In-bounds by construction for anything iterating a chunk properly, and `Get<T>` has the same character, so this is consistent rather than newly dangerous — but it is a silent-wrong-answer rather than a throw.
+- **Ids are only valid until `ProcessDeferredUpdates` runs.** Swap-remove reassigns dense indices at end of frame, so an id read this frame describes an entity that may not exist next frame. That's the stale-handle question the `EntityView` entry below raises, arriving via a different door — worth answering there once rather than twice.
 
-**Why it came up:** the MVP loop ends in a stockpile count that needs to be shown somewhere — there's currently no way to render any text at all, HUD or otherwise.
-
-**Tried instead:** sidestepped for the MVP by writing the stockpile count to `Window.Title` each frame (`Proto4X.Sandbox/Sandbox.cs`) instead of drawing it in-world. Fine for a single always-visible counter, not a real HUD solution — doesn't generalize to positioned/multi-value/styled text, and will need solving properly as soon as more than one value needs showing at once.
-
-**Update 2026-08-02 — the workaround is now at its ceiling.** The RTS build has a real HUD's worth of state, and all of it is crammed into one title-bar string (`Sandbox.BuildStatusLine`): minerals, own miner/fighter counts, enemy counts, the build menu with its hotkeys and prices, and the victory/defeat message. It is legible, but it is one line of unstyled text in the window chrome, which means:
-
-- **No per-entity text at all** — no unit labels, no build-progress countdown over the station, no floating damage numbers. Anything attached to a position is simply unavailable.
-- **The build menu is hotkeys-only** (`[1] Miner 50  [2] Fighter 75` in the title bar) because a clickable button needs a drawn label. Fine for an RTS, which has hotkeys anyway; not fine for the next thing that wants a menu.
-- **Nothing can be emphasised**, so "you can't afford this" and "you can" look identical.
-
-Non-text overlays turned out to be easy to solve game-side: `Rendering/Primitives.cs` stretches a 1x1 white texture into lines, circles and bars, which is enough for selection rings, health bars, weapon beams and the drag rectangle. Text is the only thing that genuinely can't be built out of that.
-
-**Possible approaches:** likely just a `SpriteFont` content item plus a thin `IDrawSystem` (or a thing `UserInterfaceManager` can do directly) that draws a string at a screen-space position, unaffected by the world camera transform used for the rest of `SystemScheduler.Draw`. Note this needs the screen-space draw pass below to land first, or it inherits the same camera-transform problem.
-
-</details>
-
-## A system with no component query can't exist — which is exactly what a HUD is
-**Status:** Open
-**Priority:** High
-
-<details>
-<summary>Details</summary>
-
-**What:** `ISystem.RequiredComponentProviders` has no default and no empty case. A system that queries nothing at all fails twice over:
-
-1. `SystemScheduler` builds the mask with `ComponentTypeMask.FromTypes([.. RequiredComponentProviders.Select(...)])`, and `FromTypes` opens with `FromType(componentTypes[0])` — an empty array throws `IndexOutOfRangeException`.
-2. Even if it didn't, the semantics would be wrong in the other direction: an all-zero mask satisfies `ContainsAll` for *every* archetype, so a "no query" system would receive every chunk in the world rather than none.
-
-And a third gate behind those: `Update`/`Draw` both skip a system entirely when `archetypeChunks.Count == 0`, so a system that legitimately matches nothing this frame never runs at all.
-
-**Why it came up:** assessing what's actually still missing for a HUD once `DrawSpace.Screen` lands. A mineral counter, a build menu, a victory banner — none of these are attached to an entity. There is no archetype for "the HUD", so there is no query to declare, so the system can't be expressed. `DrawSpace.Screen` gives such a system the right *coordinates* but no way to get *invoked*.
-
-**Tried instead:** nothing yet — the sandbox HUD is still a `Window.Title` string built in `Sandbox.OnUpdate`, i.e. outside the system model entirely. That's what the workaround has always been, and it's why the limitation hasn't bitten before: the HUD has never been a system.
-
-**Possible approaches:** several shapes, roughly increasing in scope:
-
-- Give `RequiredComponentProviders` a default of `[]` on `ISystem` (matching `RunAfter`), define the empty mask as "matches nothing", and call such systems once per frame with an empty chunk list. Smallest change; makes "no query" mean what it looks like it means.
-- Drop the `archetypeChunks.Count > 0` guard, or make it opt-in, so systems can choose to run on empty. Needed regardless of the above — a system that wants to draw "no units selected" has to run in the frame where nothing matches.
-- A separate, explicitly entity-free system kind. Cleanest to read, but it's another type in the hierarchy, which is the shape the `ISystem`/`DrawSpace` rework just moved away from.
-
-Worth deciding alongside text rendering, since the HUD is the first thing that needs both and neither is much use alone.
+Also worth flagging: `ArchetypeChunk` now implements `IArchetype` and forwards to the archetype it wraps. It reads slightly oddly — a chunk is a per-query view, not an archetype — and it means a chunk can be passed anywhere an `IArchetype` is expected. Harmless today, but the interface is now doing double duty as "the archetype" and "a narrow mutation handle onto one".
 
 </details>
 
 ## No screen-space draw pass — every draw system is inside the camera transform
-**Status:** Open — worked around
-**Priority:** Medium
+**Status:** Open — landed, two defects remain
+**Priority:** High
 
 <details>
 <summary>Details</summary>
@@ -150,6 +108,55 @@ Worth deciding alongside text rendering, since the HUD is the first thing that n
 **Tried instead:** `SelectionOverlayRenderer` transforms each of the drag rectangle's four screen corners back into world space individually and draws it as four lines. This is actually correct under camera rotation and zoom — more correct than converting to a world AABB would be — so it's a genuinely fine answer for a *shape*. It is not an answer for a HUD, and it does mean overlay line thickness scales with zoom, which is wrong for UI even though it looks fine for in-world decoration.
 
 **Possible approaches:** a second draw list — e.g. an `IScreenDrawSystem` (or a flag on `IDrawSystem`) collected separately and drawn in its own `Begin`/`End` with no transform, after the world pass. Also worth deciding at the same time whether draw *order* should be explicit rather than "order the systems were registered in", which is what it is today (see the `Drawable` entry below).
+
+**Implemented 2026-08-05 as `DrawSpace`.** `IDrawSystem` declares `World` or `Screen`, `SystemScheduler.Add` sorts systems into two lists at registration, and `Draw` runs two `Begin`/`End` passes — untransformed for screen, camera-transformed for world. Sorting at `Add` rather than per frame is the right call; the per-frame cost is one extra `Begin`/`End`.
+
+**Now in use by the sandbox:** `MinimapRenderer` (a corner minimap with faction dots and a camera-position outline — the first thing in this game that genuinely could not have been faked in world space, since it must hold its position *and* its scale while the world pans and zooms) and `SelectionBoxRenderer` (the drag rectangle, now drawn from raw mouse coordinates with a constant one-pixel border instead of transforming four corners back into the world). The old combined `SelectionOverlayRenderer` split into `SelectionRingRenderer` (World) and `SelectionBoxRenderer` (Screen), since a system declares exactly one `DrawSpace`.
+
+**Defect 1 — the screen pass draws first, so UI renders *underneath* the world.** `Draw` runs `_drawScreenSystems` before `_drawWorldSystems`, and `SortMode.Deferred` means later draws land on top. Any world sprite overlapping the minimap's corner will cover it. Swapping the two blocks fixes it. Screen space is essentially always meant to be the topmost pass.
+
+**Defect 2 — screen systems receive world coordinates as their `viewport`.** Both passes are handed `userInterfaceManager.GetVisibleScreenBoundsAABB()`, which is the *world-space* AABB of the visible region. That's correct for the world pass (it's the culling bounds) and meaningless for the screen pass, where a system wants the actual viewport rectangle. `MinimapRenderer` works around it by taking `GraphicsDevice` in its constructor and reading `Viewport.Bounds` at draw time, which also survives a window resize. Worth noting the parameter now means two different things depending on which list a system landed in, which is exactly the kind of thing a `DrawContext` struct would let you disambiguate.
+
+Minor: `GetVisibleScreenBoundsAABB()` is called inside the screen loop, so it recomputes (and allocates a `Vector2[4]`) once per screen system per frame. The world pass correctly hoists it above the loop.
+
+**Known and deliberately deferred:** `_drawScreenSystems[gameLayer]` is a raw dictionary index, so a `GameWorld` with no registered screen system throws `KeyNotFoundException` on the first frame — the same shape as the "zero registered systems" entry near the bottom of this file, which `Core` currently masks for the update and world-draw lists by registering `TimerSystem` and `Renderer`. Jason's stated intent is an engine-provided default UI system registered by `Core`, on the reasoning that no real game lacks UI. The sandbox is unaffected in the meantime because it registers two screen systems of its own.
+
+</details>
+
+## SystemScheduler throws on a GameWorld with no system of a given kind
+**Status:** Open — recurring, deferred
+**Priority:** Medium
+
+<details>
+<summary>Details</summary>
+
+**What:** `SystemScheduler.Update`/`Draw` index their dictionaries directly (`_updateSystems[gameLayer]`, `_drawWorldSystems[gameLayer]`, `_drawScreenSystems[gameLayer]`). A `GameWorld` only gets an entry the first time `Add` is called for that world *and that kind of system*, so any kind with no registered system throws `KeyNotFoundException` on the first frame rather than being treated as a no-op.
+
+**Why it keeps coming back:** this was first hit when scaffolding a bare `Core`-derived game with no systems at all. It was masked rather than fixed — `Core.Initialize` registers `Renderer` and `TimerSystem` unconditionally, which guarantees an entry in the update and world-draw lists for every game. Adding `DrawSpace.Screen` created a third list that nothing registers by default, so the same bug reappeared immediately: a game with no screen-space system cannot start, with no useful error.
+
+**Tried instead:** the sandbox registers screen-space systems of its own (minimap, build menu, selection box, performance graph), so it doesn't trip it. That's luck, not a fix.
+
+**Deliberately deferred by Jason**, with the intended direction being an engine-provided default UI system registered by `Core`, on the reasoning that no real game lacks UI. Worth noting that this makes the third list behave like the other two — i.e. it masks the bug a third time rather than removing it. `TryGetValue` at all three sites would close it properly and costs nothing; the default UI system is then a feature rather than a workaround.
+
+**Related:** the same "who registers the defaults" question is the first thing the engine-layering split runs into — see `ENGINE_LAYERING.md`.
+
+</details>
+## Camera position can only be changed by the arrow keys
+**Status:** Open — blocked a feature
+**Priority:** Medium
+
+<details>
+<summary>Details</summary>
+
+**What:** `Camera` keeps `cameraMatrix` private and exposes only `GetCameraTransform()`. Everything that moves it — arrow-key pan, `Z`/`X` rotate, scroll zoom — is hardcoded inside `Camera.Update`, which is `internal`. There is no public way for game code to set or nudge the camera's position, and no way to read where it currently is other than inverting the transform by hand.
+
+**Why it came up:** building `MinimapRenderer`. Click-to-jump on the minimap is the other half of what a minimap is *for* — see where the fight is, click, go there — and it's standard in every RTS. The rendering half works; the navigation half can't be written, because there's nothing to write it against.
+
+**Tried instead:** nothing implemented — the minimap ships as display-only. `MinimapRenderer` already inverts `GetCameraTransform()` to work out which region is on screen for the "you are here" outline, so *reading* the position is possible if inelegant. Writing it isn't possible at all, and faking it by synthesising key presses would be worse than leaving the feature out.
+
+**Possible approaches:** the minimum is a public `Vector2 Position { get; set; }` (or `MoveTo`/`CentreOn(Vector2 worldLocation)`) with the matrix rebuilt from position/rotation/zoom rather than accumulated by repeated `*=`. Worth noting the current implementation multiplies into `cameraMatrix` every frame, which both makes the state hard to read back and accumulates floating-point drift over a long session — storing position/rotation/zoom as fields and composing the matrix on demand would fix the accessibility problem and that one together.
+
+Related but separable: the input handling inside `Camera.Update` is the same "engine owns the keybindings" issue already noted in a TODO comment in that file, and the same split that moved WASD out of `UserInterfaceManager` into a per-game system would apply here.
 
 </details>
 
@@ -239,54 +246,61 @@ Worth deciding alongside text rendering, since the HUD is the first thing that n
 
 </details>
 
-## A non-repeating Timer never disarms — HasJustElapsed is a level, not an edge
-**Status:** Resolved
-**Priority:** Medium
-
-<details>
-<summary>Details</summary>
-
-**What:** `TimerSystem.Update` clears `HasJustElapsed` at the top of each frame, then decrements `Remaining` and re-raises `HasJustElapsed` whenever `Remaining <= 0`. For a repeating timer that's correct, because `Remaining` is reset to `Duration` in the same breath. For a **non-repeating** timer, `Remaining` just keeps going more negative, so `HasJustElapsed` is re-raised **every frame, forever**, despite the name saying "just".
-
-**Why it came up:** `ProductionSystem` drives station build times through the engine's `Timer` rather than a hand-rolled countdown. A one-shot build timer that reports "just elapsed" on every subsequent frame would have produced an infinite stream of free ships.
-
-**Tried instead:** the `station.InProgress != ShipType.None` guard in `ProductionSystem` is what actually makes it safe — the system only believes `HasJustElapsed` while it is expecting a completion, and rearms the timer by hand (`Duration`/`Remaining`/`HasJustElapsed = false`) when starting the next item. Works, but it means the *caller* is carrying the "has this already fired" state that the timer's own name implies it's carrying.
-
-**Possible approaches:** on elapse, if `!ShouldRepeat`, stop counting — e.g. clamp `Remaining` to `0` and only raise `HasJustElapsed` on the transition into that state. That makes the flag a true edge for both timer kinds without changing the repeating behaviour. Cheap, and it removes a trap that isn't visible from the call site. Alternatively rename it to something level-flavoured (`HasElapsed`) so the current behaviour stops being surprising — but the edge version seems more useful.
-
-**Resolved 2026-08-05 — `Timer` is now a countdown, not an event source.** `HasJustElapsed` is gone, replaced by a derived `HasElapsed => Remaining <= 0`, plus `Restart(TimeSpan)` and `Stop()`. `TimerSystem` decrements and, for repeating timers, adds `Duration` back (`+=`, not `=`, so overshoot is preserved and a repeating timer doesn't drift by up to a frame per cycle).
-
-The trap is gone at the root rather than papered over: there is no flag to raise, clear, mis-order, or double-consume, because the elapsed state is derived from the one field that already holds it. Completion semantics move to the consumer, which is where they already lived — `ProductionSystem` needs `InProgress` regardless, to know *what* finished, so storing "has this fired" a second time on the component was the thing creating the trap. `Restart` also makes rearming atomic and puts the `TimeSpan.FromSeconds(x).Ticks` conversion in one place.
-
-**Unplanned bonus: this removed an ordering constraint.** With an edge flag, a consumer had to sit after `TimerSystem` in the frame or it would miss the single frame the flag was up. With a level, a consumer that runs before `TimerSystem` merely sees the countdown one frame late. Ordering is now a latency choice, not a correctness requirement — worth noting alongside the `RunAfter` work, since it is one fewer edge the scheduler has to be trusted to get right.
-
-**Three residuals, none blocking:**
-
-- **Elapsed one-shots keep being decremented forever.** `Remaining` runs unboundedly negative (no practical overflow — ~29,000 years at 60fps — but it's pointless work and `Remaining = -4,000,000,000` doesn't read as "stopped"). An early `if (timer.HasElapsed && !timer.ShouldRepeat) continue;` skips them, and clamping to `0` on the crossing would give "stopped" a single canonical representation shared with `Stop()`.
-- **"Never started" and "already finished" are the same state.** There's no `IsRunning`, so `new Timer(sixSeconds, false)` sitting untouched is indistinguishable from one that has run out. Fine as-is — the consumer has to own completion state anyway — but it means `Timer` alone can never answer "did something just finish".
-- **`Stop()` and natural completion are also indistinguishable**, both being `Remaining <= 0`. No impact today since nothing cancels a build, but if cancel-vs-finish ever needs different handling, that's the seam it will show up at.
-
-Minor: the repeat branch nests `if (Remaining <= 0) { if (ShouldRepeat) ... }`, which collapses to a single `&&`.
-
-</details>
-
-## SystemScheduler crashes on a GameWorld with zero registered systems
-**Status:** Resolved, indirectly
+## No text rendering
+**Status:** Open — deliberately deferred
 **Priority:** Low
 
 <details>
 <summary>Details</summary>
 
-**What:** `SystemScheduler.Update`/`Draw` (`MonoGameLibrary/Systems/Infrastructure/SystemScheduler.cs`) index `_updateSystems[gameLayer]` / `_drawSystems[gameLayer]` directly. A `GameWorld` only gets an entry in those dictionaries the first time `SystemScheduler.Add` is called for it. If `Update`/`Draw` ever runs before any system has been registered for that world, it throws `KeyNotFoundException` instead of treating "no systems yet" as a no-op.
+**What:** no `SpriteFont` loading or `SpriteBatch.DrawString` usage anywhere in `MonoGameLibrary` or either game project.
 
-**Why it came up:** freshly scaffolding `Proto4X.Sandbox` — a bare `Core`-derived class with an empty `Initialize`/`LoadContent`, no systems registered yet — crashed on the very first `Update` call.
+**Why it came up:** the MVP loop ends in a stockpile count that needs to be shown somewhere — there's currently no way to render any text at all, HUD or otherwise.
 
-**Tried instead:** registered a trivial no-op `PlaceholderSystem` in the sandbox's `Initialize` purely to unblock local iteration. Not treating this as "solving" the underlying issue — it just avoided tripping it.
+**Tried instead:** sidestepped for the MVP by writing the stockpile count to `Window.Title` each frame (`Proto4X.Sandbox/Sandbox.cs`) instead of drawing it in-world. Fine for a single always-visible counter, not a real HUD solution — doesn't generalize to positioned/multi-value/styled text, and will need solving properly as soon as more than one value needs showing at once.
 
-**Resolution:** `Core.Initialize` now unconditionally registers `Renderer` and `TimerSystem` before `base.Initialize()` runs, for every `Core`-derived game. Since every real game goes through `Core`, both dictionaries always have an entry before `Update`/`Draw` fire. The underlying fragility (raw indexer instead of `TryGetValue`) is technically still there, it's just unreachable through the only entry point that exists — accepted as fine since it's not a priority. The sandbox's `PlaceholderSystem` became redundant and was deleted once real systems (`MovementSystem`, `GatherSystem`) were registered for the MVP loop.
+**Update 2026-08-02 — the workaround is now at its ceiling.** The RTS build has a real HUD's worth of state, and all of it is crammed into one title-bar string (`Sandbox.BuildStatusLine`): minerals, own miner/fighter counts, enemy counts, the build menu with its hotkeys and prices, and the victory/defeat message. It is legible, but it is one line of unstyled text in the window chrome, which means:
+
+- **No per-entity text at all** — no unit labels, no build-progress countdown over the station, no floating damage numbers. Anything attached to a position is simply unavailable.
+- **The build menu is hotkeys-only** (`[1] Miner 50  [2] Fighter 75` in the title bar) because a clickable button needs a drawn label. Fine for an RTS, which has hotkeys anyway; not fine for the next thing that wants a menu.
+- **Nothing can be emphasised**, so "you can't afford this" and "you can" look identical.
+
+Non-text overlays turned out to be easy to solve game-side: `Rendering/Primitives.cs` stretches a 1x1 white texture into lines, circles and bars, which is enough for selection rings, health bars, weapon beams and the drag rectangle. Text is the only thing that genuinely can't be built out of that.
+
+**Possible approaches:** likely just a `SpriteFont` content item plus a thin `IDrawSystem` (or a thing `UserInterfaceManager` can do directly) that draws a string at a screen-space position, unaffected by the world camera transform used for the rest of `SystemScheduler.Draw`. Note this needs the screen-space draw pass below to land first, or it inherits the same camera-transform problem.
+
+**Downgraded 2026-08-05 — this is now a design constraint, not a gap.** Jason's call: build without text deliberately for a while, and express state through icons, radial progress and other visual feedback instead. The reasoning is that a game which is legible without text is a better game *after* text is added, because text stops being the crutch that explains mechanics the visuals failed to. Text will matter eventually; it is no longer blocking anything, so this drops to Low.
+
+**What that changed in the sandbox, all shipped 2026-08-05:**
+
+- `BuildProgressRenderer` (world) — a radial ring around a station shows build progress, a shrunken sprite of the ship itself sits above it, and one pip per queued item sits below. The ship silhouette does the job the word "Miner" would: a player who has watched a freighter mine already knows what that shape means.
+- `BuildMenuRenderer` (screen) — one slot per buildable ship, each with an affordability ring that fills as minerals accumulate and closes exactly when the ship becomes affordable. "A complete circle means yes" replaces a price tag, and unlike a number it answers "how much longer" without arithmetic. Hotkeys are shown as one pip for `1`, two pips for `2`.
+- `MinimapRenderer` (screen) — position and faction, no labels needed.
+
+Notably, **none of these would have been better with text**, which is a real point in the constraint's favour. The two places it genuinely bites are both about *quantity*: the exact mineral count, and unit counts. The affordability ring converts the first into "can I / how close", which turns out to be the question players actually ask.
+
+**Still text-shaped, still unsolved:** the `Window.Title` line remains the only place showing raw numbers, and it now functions as a debug readout rather than the HUD. Victory and defeat are still title-bar strings — the one remaining piece of genuine UI that has no visual form yet, and the obvious next thing to design without words.
+
+**Design note for whenever text does land:** the hard question isn't the screen-space HUD, it's world-space text attached to entities, because `string` is a managed reference and a dense component column of them undercuts the blittable/SoA premise. Options, roughly increasing in restrictiveness: an int→string table (the trick `SpriteLibrary` already uses for textures), fixed-size inline char buffers via `[InlineArray]`, or numeric-only display components. Worth noting the no-text discipline sidesteps this decision entirely for now, which is a second, unplanned benefit — the engine doesn't have to answer it under pressure.
 
 </details>
 
+## Timer leaves elapsed one-shot timers counting down forever
+**Status:** Open — minor
+**Priority:** Low
+
+<details>
+<summary>Details</summary>
+
+**What:** three loose ends left over after `Timer` was reworked into a countdown (`HasElapsed` derived from `RemainingTicks`, plus `Restart`/`Stop`). The rework itself is done and working; these are the residuals.
+
+- **Elapsed one-shots keep being decremented.** `TimerSystem` doesn't skip a non-repeating timer that has already run out, so `RemainingTicks` runs unboundedly negative. No practical overflow risk (~29,000 years at 60fps), but it's pointless work every frame, and `RemainingTicks = -4000000000` doesn't read as "stopped". An early `if (timer.HasElapsed && !timer.ShouldRepeat) continue;` handles it; clamping to `0` on the crossing would also give "stopped" a single canonical representation shared with `Stop()`.
+- **"Never started" and "already finished" are the same state.** There's no `IsRunning`, so an untouched `new Timer(sixSeconds, false)` is indistinguishable from one that has run out. Fine as-is — the consumer has to own completion state anyway — but it means `Timer` alone can never answer "did something just finish".
+- **`Stop()` and natural completion are indistinguishable**, both being `RemainingTicks <= 0`. No impact while nothing cancels a build; that's the seam cancel-vs-finish will show up at.
+
+**Worth keeping from the rework:** dropping the edge-triggered `HasJustElapsed` flag removed an *ordering* constraint. With an edge, a consumer had to run after `TimerSystem` or miss the single frame the flag was up. With a level, running earlier just means seeing the countdown one frame late. Ordering became a latency choice rather than a correctness requirement — relevant to the `RunAfter` work, as one fewer edge the scheduler has to be trusted to get right.
+
+</details>
 ## Possibly: mutating an existing live entity's component set
 **Status:** Resolved — decided against
 **Priority:** Low

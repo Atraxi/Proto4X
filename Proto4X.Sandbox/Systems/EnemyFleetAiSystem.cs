@@ -10,39 +10,146 @@ using System.Collections.Generic;
 namespace Proto4X.Sandbox.Systems
 {
     /// <summary>
-    /// Enemy fighters loiter near home until there are enough of them, then commit to a wave against
-    /// the player's station. If the wave is ground down, the survivors fall back and the enemy
-    /// rebuilds. Fighters shoot whatever comes into range on the way there - CombatSystem handles
-    /// engagement, this only decides where the fleet is pointed.
+    /// Decides where each AI faction's fighters go: home to defend if their territory is under
+    /// attack, out on a wave if they've massed enough, loitering near a station otherwise.
     /// </summary>
+    /// <remarks>
+    /// Defence takes priority over everything, and that ordering is the whole fix for factions
+    /// collapsing early. Previously a faction committed its entire fleet the moment it hit the wave
+    /// threshold and never looked back, so the first faction to attack was also the first to lose
+    /// its undefended base - and once a base fell, production stopped and that faction was finished.
+    /// Now an attacked faction recalls, which means trading fleets no longer decides the game in the
+    /// first minute.
+    ///
+    /// Threat detection is free here: this system's query already returns every mobile armed ship of
+    /// every faction, so pairing them against the station index needs no extra pass elsewhere.
+    ///
+    /// Waves target the nearest <em>hostile</em> station rather than the player specifically, so AI
+    /// factions fight each other.
+    ///
+    /// <para>The wave threshold scales with <em>station count</em>, not miner count. Stations are
+    /// the better input because the threshold is really asking "do I have enough surplus that
+    /// leaving won't cost me a base", and both halves of that scale with stations: more stations
+    /// means more places to defend, and also more production to reach a bigger number. Scaling on
+    /// miners would instead mean a richer faction waits longer before attacking, which is backwards
+    /// - a strong economy should make a faction more aggressive, not less. Miner count is already
+    /// represented indirectly anyway, since stations are what miners get spent on.</para>
+    /// </remarks>
     public class EnemyFleetAiSystem(StationIndexSystem stationIndex, FleetCensusSystem fleetCensus) : ISystem, IUpdateSystem
     {
-        private const int WaveLaunchStrength = 4;
-        private const int WaveBreakStrength = 2;
-        private const float LoiterRadius = 130f;
+        /// <summary>Fighters needed before a faction with a single station will commit to a wave.</summary>
+        private const int BaseWaveStrength = 8;
 
-        private bool isWaveCommitted;
+        /// <summary>
+        /// Extra fighters demanded per additional station. Scaling on stations rather than on miners
+        /// is deliberate - see the class remarks.
+        /// </summary>
+        private const int WaveStrengthPerExtraStation = 4;
+
+        /// <summary>Ceiling, so a sprawling empire doesn't set itself a target it can never reach.</summary>
+        private const int MaximumWaveStrength = 28;
+
+        private const float LoiterRadius = 150f;
+
+        /// <summary>How close a hostile ship has to get to a station before the owner calls its fleet home.</summary>
+        private const float ThreatRadius = 620f;
+
+        private readonly bool[] waveCommitted = new bool[Enum.GetValues<FactionId>().Length];
+        private readonly Vector2?[] threatenedStation = new Vector2?[Enum.GetValues<FactionId>().Length];
         private int loiterSlot;
 
-        public bool IsWaveCommitted => isWaveCommitted;
-
         private static readonly ComponentRef[] requiredComponentProviders =
-            [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>(), ComponentRef.Of<Faction>(), ComponentRef.Of<Weapon>()];
+        [
+            ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>(),
+            ComponentRef.Of<Faction>(), ComponentRef.Of<Weapon>(),
+        ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
-            var enemyFighters = fleetCensus.FightersFor(FactionId.Enemy);
-            if (!isWaveCommitted && enemyFighters >= WaveLaunchStrength)
-            {
-                isWaveCommitted = true;
-            }
-            else if (isWaveCommitted && enemyFighters <= WaveBreakStrength)
-            {
-                isWaveCommitted = false;
-            }
+            DetectThreats(archetypeChunks);
+            UpdateWaveCommitment();
+            AssignDestinations(archetypeChunks);
+        }
 
+        /// <summary>
+        /// Finds, for each faction, the station of theirs with a hostile ship nearest to it. Runs
+        /// over every armed ship against every station - both small sets, so a plain sweep is fine.
+        /// </summary>
+        private void DetectThreats(List<ArchetypeChunk> archetypeChunks)
+        {
+            Array.Clear(threatenedStation);
+            var closestThreatSquared = new float[threatenedStation.Length];
+            Array.Fill(closestThreatSquared, ThreatRadius * ThreatRadius);
+
+            foreach (var archetypeChunk in archetypeChunks)
+            {
+                var positionSpan = archetypeChunk.GetSpan<Position>();
+                var factionSpan = archetypeChunk.GetSpan<Faction>();
+                var weaponSpan = archetypeChunk.GetSpan<Weapon>();
+
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
+                {
+                    if (weaponSpan[i].Range <= 0f)
+                    {
+                        continue;
+                    }
+
+                    var attackerFaction = factionSpan[i].Id;
+                    var attackerLocation = positionSpan[i].Location;
+
+                    foreach (var station in stationIndex.Stations)
+                    {
+                        if (station.Faction == attackerFaction || station.Faction == FactionId.Neutral)
+                        {
+                            continue;
+                        }
+
+                        var distanceSquared = Vector2.DistanceSquared(attackerLocation, station.Location);
+                        var defender = (int)station.Faction;
+                        if (distanceSquared < closestThreatSquared[defender])
+                        {
+                            closestThreatSquared[defender] = distanceSquared;
+                            threatenedStation[defender] = station.Location;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void UpdateWaveCommitment()
+        {
+            foreach (var faction in Faction.AiControlled)
+            {
+                var fighters = fleetCensus.FightersFor(faction);
+                var launchStrength = WaveLaunchStrengthFor(faction);
+
+                if (fighters >= launchStrength)
+                {
+                    waveCommitted[(int)faction] = true;
+                }
+                else if (fighters <= launchStrength / 3)
+                {
+                    // Breaking off scales with the same figure, so a big empire retreats a big wave
+                    // rather than grinding it down to the last three ships.
+                    waveCommitted[(int)faction] = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// How many fighters a faction masses before attacking, scaled by how many stations it has
+        /// to leave behind.
+        /// </summary>
+        private int WaveLaunchStrengthFor(FactionId faction)
+        {
+            var extraStations = Math.Max(0, stationIndex.CountFor(faction) - 1);
+            return Math.Min(BaseWaveStrength + WaveStrengthPerExtraStation * extraStations, MaximumWaveStrength);
+        }
+
+        private void AssignDestinations(List<ArchetypeChunk> archetypeChunks)
+        {
             foreach (var archetypeChunk in archetypeChunks)
             {
                 var positionSpan = archetypeChunk.GetSpan<Position>();
@@ -52,21 +159,30 @@ namespace Proto4X.Sandbox.Systems
 
                 for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
-                    if (factionSpan[i].Id != FactionId.Enemy || weaponSpan[i].Range <= 0f)
+                    var faction = factionSpan[i].Id;
+                    if (faction == FactionId.Player || faction == FactionId.Neutral || weaponSpan[i].Range <= 0f)
                     {
                         continue;
                     }
 
                     ref var moveOrder = ref moveOrderSpan[i];
+                    var location = positionSpan[i].Location;
+
+                    // Under attack at home overrides an in-flight wave: fighters turn around.
+                    if (threatenedStation[(int)faction] is Vector2 underAttack)
+                    {
+                        moveOrder.Destination = underAttack;
+                        continue;
+                    }
+
                     if (moveOrder.Destination is not null)
                     {
                         continue;
                     }
 
-                    var location = positionSpan[i].Location;
-                    var target = isWaveCommitted
-                        ? stationIndex.FindNearest(location, FactionId.Player)
-                        : Loiter(stationIndex.FindNearest(location, FactionId.Enemy));
+                    var target = waveCommitted[(int)faction]
+                        ? stationIndex.FindNearestHostile(location, faction)
+                        : Loiter(stationIndex.FindNearest(location, faction));
 
                     if (target is Vector2 destination)
                     {

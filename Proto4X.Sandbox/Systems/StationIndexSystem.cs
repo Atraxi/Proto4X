@@ -63,6 +63,30 @@ namespace Proto4X.Sandbox.Systems
             return nearest;
         }
 
+        /// <summary>The nearest station belonging to anyone else - what an attack wave aims at.</summary>
+        public Vector2? FindNearestHostile(Vector2 from, FactionId ownFaction)
+        {
+            Vector2? nearest = null;
+            var nearestDistanceSquared = float.MaxValue;
+
+            foreach (var station in stations)
+            {
+                if (station.Faction == ownFaction || station.Faction == FactionId.Neutral)
+                {
+                    continue;
+                }
+
+                var distanceSquared = Vector2.DistanceSquared(from, station.Location);
+                if (distanceSquared < nearestDistanceSquared)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = station.Location;
+                }
+            }
+
+            return nearest;
+        }
+
         public int CountFor(FactionId faction)
         {
             var count = 0;
