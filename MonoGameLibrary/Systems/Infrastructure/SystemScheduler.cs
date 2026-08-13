@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.UI;
 using MonoGameLibrary.Utils;
@@ -15,6 +16,8 @@ namespace MonoGameLibrary.Systems.Infrastructure
         private readonly Dictionary<GameWorld, List<IUpdateSystem>> _updateSystems = [];
         private readonly Dictionary<GameWorld, List<IDrawSystem>> _drawWorldSystems = [];
         private readonly Dictionary<GameWorld, List<IDrawSystem>> _drawScreenSystems = [];
+
+        private readonly Dictionary<ISystem, List<ArchetypeChunk>> _cachedComponentArrays = [];
 
         public void Add(GameWorld gameLayer, IUpdateSystem system)
         {
@@ -34,15 +37,13 @@ namespace MonoGameLibrary.Systems.Infrastructure
                 default:
                     throw new ArgumentException("The SystemScheduler only has support for screen space and world map camera transforms, other DrawSpaces are not supported", nameof(system));
             }
-            
         }
 
         public void Update(GameWorld gameLayer, GameTime gameTime)
         {
             foreach (var system in _updateSystems[gameLayer])
             {
-                //TODO maybe we can cache these? type lookups every frame/update are not cheap but not brutal
-                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. system.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)]));
+                var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(system, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. system.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
                 system.Update(gameTime, archetypeChunks);
             }
 
@@ -59,8 +60,7 @@ namespace MonoGameLibrary.Systems.Infrastructure
             var cullingBounds = userInterfaceManager.GetVisibleScreenBoundsAABB();
             foreach (var worldSystem in _drawWorldSystems[gameLayer])
             {
-                //TODO maybe we can cache these? type lookups every frame/update are not cheap but not brutal
-                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. worldSystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)]));
+                var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(worldSystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. worldSystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
                 worldSystem.Draw(spriteBatch, cullingBounds, archetypeChunks);
             }
             spriteBatch.End();
@@ -68,8 +68,7 @@ namespace MonoGameLibrary.Systems.Infrastructure
             spriteBatch.Begin();
             foreach (var screenSystem in _drawScreenSystems[gameLayer])
             {
-                //TODO maybe we can cache these? type lookups every frame/update are not cheap but not brutal
-                var archetypeChunks = gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. screenSystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)]));
+                var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(screenSystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. screenSystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
                 screenSystem.Draw(spriteBatch, userInterfaceManager.GetViewport(), archetypeChunks);
             }
             spriteBatch.End();

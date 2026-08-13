@@ -15,7 +15,7 @@ namespace Proto4X.Sandbox
     /// A slim space RTS in the Age of Empires mould - mine, build, expand, fight, raze. See
     /// DESIGN.md for the shape of the game and ENGINE_REQUESTS.md for what the engine made awkward.
     /// </summary>
-    public class Sandbox() : Core("Void Command", 1280, 720, false)
+    public class Sandbox() : Core("Void Command", 1280, 720, true)
     {
         private const int WorldWidth = 6400;
         private const int WorldHeight = 3600;

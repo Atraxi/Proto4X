@@ -21,14 +21,15 @@ namespace MonoGameLibrary
         /// <param name="title">The title to display in the title bar of the game window.</param>
         /// <param name="width">The initial width, in pixels, of the game window.</param>
         /// <param name="height">The initial height, in pixels, of the game window.</param>
-        /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
-        public Core(string title, int width, int height, bool fullScreen)
+        /// <param name="fullscreen">Indicates if the game should start in fullscreen mode.</param>
+        public Core(string title, int width, int height, bool fullscreen)
         {
             Graphics = new GraphicsDeviceManager(this)
             {
                 PreferredBackBufferWidth = width,
                 PreferredBackBufferHeight = height,
-                IsFullScreen = fullScreen,
+                IsFullScreen = fullscreen,
+                HardwareModeSwitch = false,
             };
             Graphics.ApplyChanges();
 
