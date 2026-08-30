@@ -16,7 +16,7 @@ namespace MonoGameLibrary.Archetypes
         public int Count => count;
         private int count;
 
-        private readonly List<int> DeferredEntityRemovalsByIndex = [];
+        private readonly HashSet<int> DeferredEntityRemovalsByIndex = [];
         private readonly List<EntityBuilder> DeferredAdditions = [];
 
         private readonly Dictionary<int, int> ComponentTypeIdToComponentArrayIndex = [];
@@ -158,7 +158,8 @@ namespace MonoGameLibrary.Archetypes
         public void QueueEntityForRemovalById(int entityId)
         {
             Debug.Assert(HasEntity(entityId));
-            DeferredEntityRemovalsByIndex.Add(EntityIdToDenseIndex[entityId]);
+            QueueEntityForRemovalByIndex(EntityIdToDenseIndex[entityId]);
+            
         }
 
         public void QueueEntityForRemovalByIndex(int entityIndex)
@@ -168,7 +169,7 @@ namespace MonoGameLibrary.Archetypes
 
         internal void ProcessDeferredUpdates()
         {
-            DeferredEntityRemovalsByIndex.Sort((A, B) => B - A);
+            DeferredEntityRemovalsByIndex.ToList().Sort((A, B) => B - A);
             foreach (var  entityIndex in DeferredEntityRemovalsByIndex)
             {
                 RemoveEntityAtIndex(entityIndex);
