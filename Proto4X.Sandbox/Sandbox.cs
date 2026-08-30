@@ -82,9 +82,12 @@ namespace Proto4X.Sandbox
             SystemScheduler.Add(World, new StationCommandSystem(economy));
             SystemScheduler.Add(World, new MinerConstructionSystem(economy, spawnQueue));
 
-            SystemScheduler.Add(World, new ExpansionAiSystem(economy, asteroidIndex, stationIndex));
+            // Expansion runs before production because production has to be told what the expansion
+            // fund is before it decides what to spend - see AiDoctrine for the full priority ladder.
+            var expansionAi = new ExpansionAiSystem(economy, asteroidIndex, stationIndex);
+            SystemScheduler.Add(World, expansionAi);
             SystemScheduler.Add(World, new MinerSystem(asteroidIndex, stationIndex, economy));
-            SystemScheduler.Add(World, new EnemyProductionAiSystem(economy, fleetCensus, stationIndex));
+            SystemScheduler.Add(World, new EnemyProductionAiSystem(economy, fleetCensus, stationIndex, expansionAi));
             SystemScheduler.Add(World, new EnemyFleetAiSystem(stationIndex, fleetCensus));
 
             SystemScheduler.Add(World, new MoveToTargetSystem());
@@ -98,6 +101,9 @@ namespace Proto4X.Sandbox
             SystemScheduler.Add(World, new StationRepairSystem());
             SystemScheduler.Add(World, new CombatSystem());
             SystemScheduler.Add(World, new DeathSystem());
+            // Standing orders refill an empty queue just before the factory looks at it, so a
+            // station on repeat starts its next ship on the same frame it finished the last.
+            SystemScheduler.Add(World, new StationAutoQueueSystem(economy));
             SystemScheduler.Add(World, new ProductionSystem(spawnQueue));
         }
 

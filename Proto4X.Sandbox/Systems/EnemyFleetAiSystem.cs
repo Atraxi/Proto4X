@@ -4,6 +4,7 @@ using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
+using Proto4X.Sandbox.Game;
 using System;
 using System.Collections.Generic;
 
@@ -14,6 +15,8 @@ namespace Proto4X.Sandbox.Systems
     /// attack, out on a wave if they've massed enough, loitering near a station otherwise.
     /// </summary>
     /// <remarks>
+    /// Every threshold here lives in <see cref="AiDoctrine"/>, alongside the rest of the AI's rules.
+    ///
     /// Defence takes priority over everything, and that ordering is the whole fix for factions
     /// collapsing early. Previously a faction committed its entire fleet the moment it hit the wave
     /// threshold and never looked back, so the first faction to attack was also the first to lose
@@ -37,23 +40,6 @@ namespace Proto4X.Sandbox.Systems
     /// </remarks>
     public class EnemyFleetAiSystem(StationIndexSystem stationIndex, FleetCensusSystem fleetCensus) : ISystem, IUpdateSystem
     {
-        /// <summary>Fighters needed before a faction with a single station will commit to a wave.</summary>
-        private const int BaseWaveStrength = 8;
-
-        /// <summary>
-        /// Extra fighters demanded per additional station. Scaling on stations rather than on miners
-        /// is deliberate - see the class remarks.
-        /// </summary>
-        private const int WaveStrengthPerExtraStation = 4;
-
-        /// <summary>Ceiling, so a sprawling empire doesn't set itself a target it can never reach.</summary>
-        private const int MaximumWaveStrength = 28;
-
-        private const float LoiterRadius = 150f;
-
-        /// <summary>How close a hostile ship has to get to a station before the owner calls its fleet home.</summary>
-        private const float ThreatRadius = 620f;
-
         private readonly bool[] waveCommitted = new bool[Enum.GetValues<FactionId>().Length];
         private readonly Vector2?[] threatenedStation = new Vector2?[Enum.GetValues<FactionId>().Length];
         private int loiterSlot;
@@ -81,7 +67,7 @@ namespace Proto4X.Sandbox.Systems
         {
             Array.Clear(threatenedStation);
             var closestThreatSquared = new float[threatenedStation.Length];
-            Array.Fill(closestThreatSquared, ThreatRadius * ThreatRadius);
+            Array.Fill(closestThreatSquared, AiDoctrine.ThreatRadius * AiDoctrine.ThreatRadius);
 
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -129,7 +115,7 @@ namespace Proto4X.Sandbox.Systems
                 {
                     waveCommitted[(int)faction] = true;
                 }
-                else if (fighters <= launchStrength / 3)
+                else if (fighters <= launchStrength / AiDoctrine.WaveBreakOffDivisor)
                 {
                     // Breaking off scales with the same figure, so a big empire retreats a big wave
                     // rather than grinding it down to the last three ships.
@@ -145,7 +131,9 @@ namespace Proto4X.Sandbox.Systems
         private int WaveLaunchStrengthFor(FactionId faction)
         {
             var extraStations = Math.Max(0, stationIndex.CountFor(faction) - 1);
-            return Math.Min(BaseWaveStrength + WaveStrengthPerExtraStation * extraStations, MaximumWaveStrength);
+            return Math.Min(
+                AiDoctrine.BaseWaveStrength + AiDoctrine.WaveStrengthPerExtraStation * extraStations,
+                AiDoctrine.MaximumWaveStrength);
         }
 
         private void AssignDestinations(List<ArchetypeChunk> archetypeChunks)
@@ -160,7 +148,7 @@ namespace Proto4X.Sandbox.Systems
                 for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
                     var faction = factionSpan[i].Id;
-                    if (faction == FactionId.Player || faction == FactionId.Neutral || weaponSpan[i].Range <= 0f)
+                    if (!AiDoctrine.Governs(faction) || weaponSpan[i].Range <= 0f)
                     {
                         continue;
                     }
@@ -200,7 +188,7 @@ namespace Proto4X.Sandbox.Systems
             }
 
             var angle = loiterSlot++ * 1.1f;
-            return home + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * LoiterRadius;
+            return home + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * AiDoctrine.LoiterRadius;
         }
     }
 }

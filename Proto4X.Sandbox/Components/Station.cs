@@ -23,6 +23,24 @@ namespace Proto4X.Sandbox.Components
         public int QueuedMiners = 0;
         public int QueuedFighters = 0;
 
+        /// <summary>
+        /// A ship kind this station re-queues on its own whenever the queue runs dry, or
+        /// <c>None</c> for a station that only builds what it is told to. Set with shift + the
+        /// ship's hotkey; pressing the same one again clears it.
+        /// </summary>
+        /// <remarks>
+        /// This is the "standing order" an RTS usually spells infinite-queue, and it exists for the
+        /// same reason: past the opening minutes the interesting decision is <em>which</em> ship a
+        /// base makes, not remembering to press the key again every eight seconds. It's stored as
+        /// one kind rather than a repeating queue because a station's whole queue is two counters -
+        /// see the class summary - and a standing order for a mix would need the list this
+        /// deliberately doesn't have.
+        ///
+        /// The top-up is charged like any other order and simply doesn't happen while a faction is
+        /// broke, so a standing order can't overdraw an economy - it just waits.
+        /// </remarks>
+        public UnitKind AutoQueue = UnitKind.None;
+
         /// <summary>How far from the station newly built ships appear, and the radius they rally around.</summary>
         public float RallyDistance = rallyDistance;
 

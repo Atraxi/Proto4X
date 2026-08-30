@@ -20,6 +20,10 @@ namespace Proto4X.Sandbox.Rendering
     /// The sprite is the label. A player who has seen a freighter mine and a fighter shoot already
     /// knows what those two silhouettes mean, so the icon carries the same information the word
     /// "Miner" would, in less space and in every language.
+    ///
+    /// A station with a standing order (<c>Station.AutoQueue</c>) also gets a badge below it: the
+    /// ship it keeps making, inside a broken ring. The gaps are the whole point - a solid ring is
+    /// already spoken for as "progress", and a dashed one reads as a cycle rather than a measurement.
     /// </remarks>
     public class BuildProgressRenderer(Texture2D pixel, SpriteSet sprites) : ISystem, IDrawSystem
     {
@@ -29,6 +33,11 @@ namespace Proto4X.Sandbox.Rendering
         private const float PipSize = 4f;
         private const float PipSpacing = 7f;
         private const float PipOffsetY = 52f;
+
+        private const float StandingOrderOffsetY = 80f;
+        private const float StandingOrderRadius = 13f;
+        private const float StandingOrderIconSize = 15f;
+        private const int StandingOrderTicks = 6;
 
         /// <summary>Progress starts at 12 o'clock; sprite rotation is measured from +X.</summary>
         private const float RingStartAngle = -MathHelper.PiOver2;
@@ -58,7 +67,7 @@ namespace Proto4X.Sandbox.Rendering
                 for (var i = 0; i < archetypeChunk.EntityCount; i++)
                 {
                     var station = stationSpan[i];
-                    if (station.InProgress == UnitKind.None || healthSpan[i].Current <= 0f)
+                    if (healthSpan[i].Current <= 0f)
                     {
                         continue;
                     }
@@ -66,6 +75,19 @@ namespace Proto4X.Sandbox.Rendering
                     var faction = factionSpan[i].Id;
                     var location = positionSpan[i].Location;
                     var colour = SpriteSet.FactionColour(faction);
+
+                    // The standing-order badge is drawn for an idle station too - "this one keeps
+                    // making fighters" is exactly the thing you want to see while it is waiting for
+                    // the minerals to do so.
+                    if (station.AutoQueue != UnitKind.None)
+                    {
+                        DrawStandingOrderBadge(spriteBatch, station.AutoQueue, faction, colour, location + new Vector2(0f, StandingOrderOffsetY));
+                    }
+
+                    if (station.InProgress == UnitKind.None)
+                    {
+                        continue;
+                    }
 
                     Primitives.DrawCircleOutline(spriteBatch, pixel, location, RingRadius, TrackColour, thickness: 3f);
                     Primitives.DrawArc(
@@ -78,7 +100,7 @@ namespace Proto4X.Sandbox.Rendering
                         colour,
                         thickness: 3f);
 
-                    DrawShipIcon(spriteBatch, station.InProgress, faction, location + new Vector2(0f, IconOffsetY));
+                    DrawShipIcon(spriteBatch, station.InProgress, faction, location + new Vector2(0f, IconOffsetY), IconScreenSize);
                     DrawQueuePips(spriteBatch, station, colour, location + new Vector2(0f, PipOffsetY));
                 }
             }
@@ -95,10 +117,34 @@ namespace Proto4X.Sandbox.Rendering
             return MathHelper.Clamp((float)elapsedTicks / timer.DurationTicks, 0f, 1f);
         }
 
-        private void DrawShipIcon(SpriteBatch spriteBatch, UnitKind kind, FactionId faction, Vector2 centre)
+        /// <summary>
+        /// The ship a station keeps re-ordering, ringed by evenly spaced ticks. Deliberately not a
+        /// solid circle: that shape already means "progress" a few pixels further up.
+        /// </summary>
+        private void DrawStandingOrderBadge(SpriteBatch spriteBatch, UnitKind kind, FactionId faction, Color colour, Vector2 centre)
+        {
+            var tickSweep = MathHelper.TwoPi / (StandingOrderTicks * 2f);
+            for (var tick = 0; tick < StandingOrderTicks; tick++)
+            {
+                Primitives.DrawArc(
+                    spriteBatch,
+                    pixel,
+                    centre,
+                    StandingOrderRadius,
+                    RingStartAngle + tick * tickSweep * 2f,
+                    tickSweep,
+                    colour,
+                    thickness: 2f,
+                    segments: 3);
+            }
+
+            DrawShipIcon(spriteBatch, kind, faction, centre, StandingOrderIconSize);
+        }
+
+        private void DrawShipIcon(SpriteBatch spriteBatch, UnitKind kind, FactionId faction, Vector2 centre, float screenSize)
         {
             var texture = SpriteLibrary.GetTexture(ShipBlueprints.SpriteIdFor(kind, faction, sprites));
-            var scale = IconScreenSize / texture.Width;
+            var scale = screenSize / texture.Width;
 
             spriteBatch.Draw(
                 texture,

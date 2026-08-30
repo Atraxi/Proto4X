@@ -23,11 +23,21 @@ namespace Proto4X.Sandbox.Systems
     /// Charging per miner is deliberately self-limiting: select ten miners with 200 minerals and
     /// exactly one starts building, because the other nine fail <c>TrySpend</c>. No queueing rules
     /// or "who goes first" logic needed.
+    ///
+    /// <para><b>The builder is consumed by the station.</b> A miner that finishes a station is
+    /// removed, so expanding costs minerals <em>and</em> a worker - the base you found is the miner
+    /// you no longer have mining. That's what makes expansion a decision rather than something you
+    /// do automatically whenever the mineral count crosses 200: it dips your income at the moment
+    /// you commit, and pays it back only once the new base is staffed. It also gives the equivalent
+    /// AI rule something to be measured against, since the AI plays the same mechanic (see
+    /// <c>AiDoctrine.MinersKeptWorking</c>).</para>
+    ///
+    /// This system finishes construction for <em>both</em> sides - the player's hotkey and
+    /// <c>ExpansionAiSystem</c>'s dispatch both end in a miner with <c>Task = Constructing</c> and a
+    /// running timer, and one completion path serves both.
     /// </remarks>
     public class MinerConstructionSystem(Economy economy, SpawnQueue spawnQueue) : ISystem, IUpdateSystem
     {
-        private const float StepAsideDistance = 90f;
-
         private static readonly ComponentRef[] requiredComponentProviders =
         [
             ComponentRef.Of<Position>(), ComponentRef.Of<MoveOrder>(), ComponentRef.Of<Faction>(),
@@ -71,7 +81,7 @@ namespace Proto4X.Sandbox.Systems
                     {
                         if (timer.HasElapsed)
                         {
-                            CompleteStation(ref miner, ref moveOrder, positionSpan[i].Location, faction);
+                            CompleteStation(archetypeChunk, i, positionSpan[i].Location, faction);
                         }
                         continue;
                     }
@@ -89,19 +99,31 @@ namespace Proto4X.Sandbox.Systems
                     }
 
                     miner.Task = MinerTask.Constructing;
+                    miner.ClaimedAsteroid = null;
+                    // The player builds where the miner stands, so the site is simply here. Recorded
+                    // anyway because the AI's spacing rule reads every faction's pending sites.
+                    miner.BuildSite = positionSpan[i].Location;
                     moveOrder.Destination = null;
                     timer.Restart(buildDuration);
                 }
             }
         }
 
-        private void CompleteStation(ref Miner miner, ref MoveOrder moveOrder, Vector2 location, FactionId faction)
+        /// <summary>
+        /// The station appears and the miner that built it does not survive the process.
+        /// </summary>
+        /// <remarks>
+        /// Removal is queued and applied by <c>Archetype.ProcessDeferredUpdates</c> after every
+        /// system has run, so the miner is still there for the rest of this frame - which is fine,
+        /// because its task is <c>Constructing</c> and every system that cares leaves a builder
+        /// alone. The station itself can't be created here either: systems describe what they built
+        /// and <c>Sandbox.OnUpdate</c> drains the queue. So the two halves of "miner becomes
+        /// station" are a queued add and a queued remove that land in the same gap between frames.
+        /// </remarks>
+        private void CompleteStation(ArchetypeChunk archetypeChunk, int entityIndex, Vector2 location, FactionId faction)
         {
             spawnQueue.Enqueue(new SpawnRequest(UnitKind.Station, faction, location));
-
-            // Step clear of the station that just appeared underneath, then resume the gather loop.
-            miner.Task = MinerTask.FlyingToAsteroid;
-            moveOrder.Destination = location + new Vector2(StepAsideDistance, 0f);
+            archetypeChunk.QueueEntityForRemovalByIndex(entityIndex);
         }
     }
 }

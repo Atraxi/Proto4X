@@ -20,7 +20,9 @@ namespace Proto4X.Sandbox.Systems
     ///
     /// A pending <c>MoveOrder.Destination</c> means "someone is already driving this ship", which is
     /// what lets a player order override the loop for free: the miner won't pick a new destination
-    /// until it has arrived where the player sent it, then resumes on its own.
+    /// until it has arrived where the player sent it, then resumes on its own - after the grace
+    /// period on that order runs out, so a miner flown to a field the player intends to build on
+    /// waits there instead of immediately claiming the nearest rock and leaving.
     /// </remarks>
     public class MinerSystem(AsteroidIndexSystem asteroidIndex, StationIndexSystem stationIndex, Economy economy) : ISystem, IUpdateSystem
     {
@@ -57,13 +59,19 @@ namespace Proto4X.Sandbox.Systems
                     var location = positionSpan[i].Location;
 
                     // Mining and building are deliberate stops, not idleness - say so, or the
-                    // separation nudge will drift a miner off the rock it's working.
-                    moveOrder.IsHoldingPosition = miner.Task is MinerTask.Mining or MinerTask.Constructing;
+                    // separation nudge will drift a miner off the rock it's working. A miner
+                    // sitting out the grace on a player's order is a third kind of deliberate
+                    // stop: it should still be where they put it when they press the next key.
+                    // A builder that has reached its site but can't be paid for yet counts too, or
+                    // the separation nudge walks it off the spot it was sent to.
+                    var isWaitingOnPlayer = moveOrder.Destination is null && moveOrder.CommandGraceRemaining > 0f;
+                    moveOrder.IsHoldingPosition = isWaitingOnPlayer
+                        || miner.Task is MinerTask.Mining or MinerTask.Constructing or MinerTask.FlyingToBuildSite;
 
                     switch (miner.Task)
                     {
                         case MinerTask.FlyingToAsteroid:
-                            if (moveOrder.Destination is not null)
+                            if (moveOrder.Destination is not null || isWaitingOnPlayer)
                             {
                                 break;
                             }
@@ -108,7 +116,7 @@ namespace Proto4X.Sandbox.Systems
                             break;
 
                         case MinerTask.FlyingToStation:
-                            if (moveOrder.Destination is not null)
+                            if (moveOrder.Destination is not null || isWaitingOnPlayer)
                             {
                                 break;
                             }
@@ -129,6 +137,14 @@ namespace Proto4X.Sandbox.Systems
                             {
                                 moveOrder.Destination = station;
                             }
+                            break;
+
+                        case MinerTask.FlyingToBuildSite:
+                        case MinerTask.Constructing:
+                            // Founding a station is somebody else's state machine - see
+                            // ExpansionAiSystem and MinerConstructionSystem. Listed rather than
+                            // left to fall through, because "the gather loop deliberately does not
+                            // touch a builder" is a rule, not an omission.
                             break;
                     }
                 }

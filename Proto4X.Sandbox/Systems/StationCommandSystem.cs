@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
@@ -19,6 +20,12 @@ namespace Proto4X.Sandbox.Systems
     /// any RTS: click the station you want producing, then press the key. Select several and they
     /// all queue - each charged separately, so a shortfall simply stops partway down the list
     /// rather than overdrawing.
+    ///
+    /// <b>Shift + the same key</b> sets a standing order instead of queueing one ship: the station
+    /// re-queues that kind for itself whenever its queue runs dry (see <c>StationAutoQueueSystem</c>
+    /// and <c>Station.AutoQueue</c>). Pressing it again clears the standing order. It's the same
+    /// modifier an RTS conventionally uses for an infinite queue, and it costs nothing at the moment
+    /// it's pressed - the charge happens per ship, later, as each top-up is queued.
     /// </remarks>
     public class StationCommandSystem(Economy economy) : ISystem, IUpdateSystem
     {
@@ -34,6 +41,7 @@ namespace Proto4X.Sandbox.Systems
         {
             var keyboard = InputManager.Instance.KeyboardInfo;
             var commands = ShipBlueprints.CommandsFor(UnitKind.Station);
+            var wantsStandingOrder = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
 
             foreach (var command in commands)
             {
@@ -42,7 +50,40 @@ namespace Proto4X.Sandbox.Systems
                     continue;
                 }
 
-                QueueOnSelectedStations(archetypeChunks, command.Produces);
+                if (wantsStandingOrder)
+                {
+                    ToggleStandingOrderOnSelectedStations(archetypeChunks, command.Produces);
+                }
+                else
+                {
+                    QueueOnSelectedStations(archetypeChunks, command.Produces);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Turns a standing order on, or off again if it was already set to this kind - one key for
+        /// both, because "press it again to stop" is the only rule worth having to remember.
+        /// </summary>
+        private static void ToggleStandingOrderOnSelectedStations(List<ArchetypeChunk> archetypeChunks, UnitKind produces)
+        {
+            foreach (var archetypeChunk in archetypeChunks)
+            {
+                var factionSpan = archetypeChunk.GetSpan<Faction>();
+                var healthSpan = archetypeChunk.GetSpan<Health>();
+                var selectableSpan = archetypeChunk.GetSpan<Selectable>();
+                var stationSpan = archetypeChunk.GetSpan<Station>();
+
+                for (var i = 0; i < archetypeChunk.EntityCount; i++)
+                {
+                    if (!selectableSpan[i].IsSelected || factionSpan[i].Id != FactionId.Player || healthSpan[i].Current <= 0f)
+                    {
+                        continue;
+                    }
+
+                    ref var station = ref stationSpan[i];
+                    station.AutoQueue = station.AutoQueue == produces ? UnitKind.None : produces;
+                }
             }
         }
 

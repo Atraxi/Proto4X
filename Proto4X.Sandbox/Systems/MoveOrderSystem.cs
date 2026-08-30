@@ -16,9 +16,22 @@ namespace Proto4X.Sandbox.Systems
     /// doesn't pile onto one pixel. There's no collision or flocking - the ring is what stops a
     /// selection of twelve ships looking like one ship.
     /// </summary>
+    /// <remarks>
+    /// Every order issued here is stamped with a grace period - see
+    /// <c>MoveOrder.CommandGraceRemaining</c>. A commanded move ends at the exact moment the player
+    /// is most likely to be reaching for the next key, and without the pause a miner claims a rock
+    /// and leaves before they get there.
+    /// </remarks>
     public class MoveOrderSystem(Camera camera) : ISystem, IUpdateSystem
     {
         private const float RingSpacing = 34f;
+
+        /// <summary>
+        /// How long a unit waits at the end of a player's move order before self-tasking. Long
+        /// enough to press a key without hurrying, short enough that a miner sent somewhere with no
+        /// follow-up order is back at work before it reads as broken.
+        /// </summary>
+        private const float CommandGraceSeconds = 2.5f;
 
         private static readonly ComponentRef[] requiredComponentProviders =
             [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>(), ComponentRef.Of<Selectable>()];
@@ -48,7 +61,9 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    moveOrderSpan[i].Destination = destination + FormationOffset(orderedCount);
+                    ref var moveOrder = ref moveOrderSpan[i];
+                    moveOrder.Destination = destination + FormationOffset(orderedCount);
+                    moveOrder.CommandGraceRemaining = CommandGraceSeconds;
                     orderedCount++;
                 }
             }

@@ -12,10 +12,16 @@ namespace Proto4X.Sandbox.Game
     {
         private readonly float[] mineralsByFaction = new float[Enum.GetValues<FactionId>().Length];
 
+        /// <summary>
+        /// Everyone who plays starts with the same stockpile - iterating <c>Faction.Playing</c>
+        /// rather than naming factions, so a fourth one on the map is funded by existing.
+        /// </summary>
         public Economy(int startingMinerals)
         {
-            mineralsByFaction[(int)FactionId.Player] = startingMinerals;
-            mineralsByFaction[(int)FactionId.Enemy] = startingMinerals;
+            foreach (var faction in Faction.Playing)
+            {
+                mineralsByFaction[(int)faction] = startingMinerals;
+            }
         }
 
         public int GetMinerals(FactionId faction) => (int)mineralsByFaction[(int)faction];

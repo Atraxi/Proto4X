@@ -14,6 +14,12 @@ namespace Proto4X.Sandbox.Systems
     /// clears the order on arrival. Clearing it is the signal every other system watches for -
     /// "no destination" is how a miner knows it's free to pick its own next job.
     /// </summary>
+    /// <remarks>
+    /// It also runs down <c>MoveOrder.CommandGraceRemaining</c>, and only while the unit has no
+    /// destination, which is what makes that field a pause <em>at the destination</em> rather than
+    /// a delay on the journey. Steering owns it because steering owns the transition the grace is
+    /// measured from: this system is the only place an order is spent.
+    /// </remarks>
     public class MoveToTargetSystem : ISystem, IUpdateSystem
     {
         private const float Acceleration = 250f;
@@ -30,6 +36,8 @@ namespace Proto4X.Sandbox.Systems
 
         public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
         {
+            var elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
             foreach (var archetypeChunk in archetypeChunks)
             {
                 var positionSpan = archetypeChunk.GetSpan<Position>();
@@ -45,6 +53,12 @@ namespace Proto4X.Sandbox.Systems
                     if (moveOrder.Destination is not Vector2 destination)
                     {
                         motion.Acceleration = Vector2.Zero;
+
+                        // The order is spent, so the player's grace period starts running here.
+                        if (moveOrder.CommandGraceRemaining > 0f)
+                        {
+                            moveOrder.CommandGraceRemaining = MathF.Max(0f, moveOrder.CommandGraceRemaining - elapsedSeconds);
+                        }
 
                         // Holding position means actually stopping, not coasting to a halt on
                         // friction - a miner parked on a rock should stay on the rock.
