@@ -34,7 +34,7 @@ namespace MonoGameLibrary.UI
                 new(currentViewport.Right, currentViewport.Top),
                 new(currentViewport.Right, currentViewport.Bottom),
                 new(currentViewport.Left, currentViewport.Bottom)
-            }.Transform(Camera.GetCameraTransform());
+            }.Transform(Matrix.Invert(Camera.GetCameraTransform()));
 
             return viewportPoints.ToAABB();
         }
