@@ -16,6 +16,32 @@ namespace Proto4X.Factory.Rendering
     /// </summary>
     public static class Snapshot
     {
+        /// <summary>
+        /// Every building baked in each sprite projection, written as the raw atlases over grey - a
+        /// contact sheet of the art the sprite styles draw from.
+        /// </summary>
+        public static void WriteSpriteSheets(string directory)
+        {
+            Directory.CreateDirectory(directory);
+            foreach (var projection in (Models.SpriteProjection[])[Models.SpriteProjection.TopDown, Models.SpriteProjection.Oblique, Models.SpriteProjection.Isometric])
+            {
+                var atlas = new AtlasBuilder(2048);
+                var density = projection == Models.SpriteProjection.Isometric ? 48f : 64f;
+                _ = new Models.BuildingSprites(atlas, projection, density, new Color(20, 18, 16));
+                var sheet = new CpuImage(atlas.Image.Width, atlas.Image.Height);
+                sheet.Fill(new Color(96, 96, 100));
+                for (var i = 0; i < sheet.Pixels.Length; i++)
+                {
+                    var pixel = atlas.Image.Pixels[i];
+                    var under = sheet.Pixels[i];
+                    var inverse = 255 - pixel.A;
+                    sheet.Pixels[i] = new Color(pixel.R + under.R * inverse / 255, pixel.G + under.G * inverse / 255, pixel.B + under.B * inverse / 255, 255);
+                }
+
+                PngWriter.Write(Path.Combine(directory, $"sprites-{projection}.png"), sheet);
+            }
+        }
+
         /// <summary>One picture: which surface, where, how close, and how far the grid is turned from upright.</summary>
         public readonly record struct Shot(string Name, int Surface, Vector2 LocalTile, float Zoom, float ScreenRotation, bool WithStressBlock = false);
 
@@ -64,6 +90,7 @@ namespace Proto4X.Factory.Rendering
 
                 var surface = universe.Surfaces[shot.Surface];
                 style.AimCamera(camera, surface, shot.LocalTile, shot.Zoom, shot.ScreenRotation);
+                style.PrepareFrame(camera, surface);
 
                 var world = style.WorldTransform(surface);
                 var bounds = camera.GetVisibleLocalBounds(world);

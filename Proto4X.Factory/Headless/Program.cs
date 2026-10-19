@@ -6,6 +6,12 @@ using System.Linq;
 //   dotnet run -c Release                        scenario checks + determinism
 //   dotnet run -c Release -- bench [modules] [idle-first]   benchmark (default 2000 modules, ~56k buildings)
 //   dotnet run -c Release -- snapshot [directory]           render the game's draw systems to PNGs, no window
+if (args.Length > 0 && args[0] == "sprites")
+{
+    Proto4X.Factory.Rendering.Snapshot.WriteSpriteSheets(args.Length > 1 ? args[1] : "snapshots");
+    return 0;
+}
+
 if (args.Length > 0 && args[0] == "snapshot")
 {
     Proto4X.Factory.Rendering.Snapshot.CaptureAll(args.Length > 1 ? args[1] : "snapshots");

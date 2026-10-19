@@ -113,6 +113,7 @@ namespace Proto4X.Factory
             if (SpriteBatch is not null)
             {
                 var surface = controller.Surface;
+                style.PrepareFrame(UserInterfaceManager.Camera, surface);
                 SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
             }
         }

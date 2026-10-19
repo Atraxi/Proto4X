@@ -55,7 +55,16 @@ namespace Proto4X.Factory.Rendering
             }
         }
 
+        /// <summary>What this frame's camera and surface look like, for renderers that need it (sprite styles keep billboards upright with it).</summary>
+        public ViewState View { get; } = new();
+
         public Matrix WorldTransform(Surface surface) => SurfaceView.WorldTransform(surface.Frame);
+
+        /// <summary>Called once per frame before the surface is drawn, by the game and by snapshots.</summary>
+        public void PrepareFrame(Camera camera, Surface surface)
+        {
+            View.Update(camera, WorldTransform(surface));
+        }
 
         /// <summary>
         /// Puts <paramref name="localTile"/> of <paramref name="surface"/> at the screen centre, at
