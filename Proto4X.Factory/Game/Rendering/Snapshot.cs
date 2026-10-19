@@ -55,7 +55,8 @@ namespace Proto4X.Factory.Rendering
             new("iso-ortho", 0, new Vector2(15f, 8.5f), 1.25f, 0f, Preset: "iso"),
         ];
 
-        public static void CaptureAll(string directory, int width = 1280, int height = 720, int supersample = 2, int ticks = 900)
+        /// <param name="supersample">1 matches the game, which has no MSAA and no mipmaps; higher flatters every style, sprites most.</param>
+        public static void CaptureAll(string directory, int width = 1280, int height = 720, int supersample = 1, int ticks = 900)
         {
             Directory.CreateDirectory(directory);
             var style = new RenderStyle();

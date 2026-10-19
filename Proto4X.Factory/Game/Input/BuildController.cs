@@ -40,6 +40,13 @@ namespace Proto4X.Factory.Input
 
         public Surface Surface => universe.Surfaces[ActiveSurface];
 
+        /// <summary>
+        /// The grid-local point under a screen point: the camera's ground pick, then into the
+        /// surface's frame. The 3D camera's world is in tiles, so there's no pixel scale to undo.
+        /// </summary>
+        public static Vector2 ScreenToLocal(Camera camera, Surface surface, Vector2 screen) =>
+            surface.Frame.WorldToLocal(camera.ScreenToWorld(screen));
+
         public void Update(Point screenMouse)
         {
             var keyboard = InputManager.Instance.KeyboardInfo;
@@ -68,8 +75,7 @@ namespace Proto4X.Factory.Input
                 ActiveSurface = (ActiveSurface + 1) % universe.Surfaces.Count;
             }
 
-            // The 3D camera's world is in tiles: a ray to the ground, then into the surface's frame.
-            var local = Surface.Frame.WorldToLocal(camera.ScreenToWorld(screenMouse.ToVector2()));
+            var local = ScreenToLocal(camera, Surface, screenMouse.ToVector2());
             var size = Tool == BuildingKind.None ? 1 : Buildings.Size(Tool);
             // Multi-tile footprints centre on the cursor rather than hanging off its corner.
             Hovered = ((int)MathF.Floor(local.X - (size - 1) * 0.5f), (int)MathF.Floor(local.Y - (size - 1) * 0.5f));

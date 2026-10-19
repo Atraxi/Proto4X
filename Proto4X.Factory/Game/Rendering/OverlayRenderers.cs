@@ -41,11 +41,7 @@ namespace Proto4X.Factory.Rendering
         }
     }
 
-    /// <summary>
-    /// Per-surface screen overlay: the hovered building's power satisfaction as a bar. Every world
-    /// needs at least one screen-space system or <c>SystemScheduler.Draw</c> throws, so this is
-    /// also what keeps each surface drawable (ENGINE_REQUESTS.md, "Scheduler throws").
-    /// </summary>
+    /// <summary>Per-surface screen overlay: the hovered building's power satisfaction as a bar.</summary>
     public sealed class SurfaceStatusRenderer(Surface surface, BuildController controller, Texture2D pixel) : IDrawSystem
     {
         public DrawSpace DrawSpace => DrawSpace.Screen;

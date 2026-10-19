@@ -6,6 +6,20 @@ using System.Linq;
 //   dotnet run -c Release                        scenario checks + determinism
 //   dotnet run -c Release -- bench [modules] [idle-first]   benchmark (default 2000 modules, ~56k buildings)
 //   dotnet run -c Release -- snapshot [directory]           render the game's draw systems to PNGs, no window
+//   dotnet run -c Release -- sprites [directory]            the baked sprite atlases as contact sheets
+//   dotnet run -c Release -- bench-draw                     CPU cost of building a frame's geometry, zoom sweep
+//   dotnet run -c Release -- picking                        screen -> tile round trip for every on-screen tile
+if (args.Length > 0 && args[0] == "bench-draw")
+{
+    Proto4X.Factory.Rendering.DrawBenchmark.Run();
+    return 0;
+}
+
+if (args.Length > 0 && args[0] == "picking")
+{
+    return Proto4X.Factory.Rendering.PickingCheck.Run() == 0 ? 0 : 1;
+}
+
 if (args.Length > 0 && args[0] == "sprites")
 {
     Proto4X.Factory.Rendering.Snapshot.WriteSpriteSheets(args.Length > 1 ? args[1] : "snapshots");

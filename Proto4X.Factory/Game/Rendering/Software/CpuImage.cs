@@ -101,6 +101,9 @@ namespace Proto4X.Factory.Rendering.Software
         public CpuImage Image { get; }
         public Vector2 WhiteUv { get; }
 
+        /// <summary>How far down the atlas the packed shelves reach, 0-1: a rough measure of how much art a style needs.</summary>
+        public float FilledFraction => (shelfY + shelfHeight) / (float)Image.Height;
+
         public AtlasRegion Add(CpuImage source)
         {
             var w = source.Width + 2 * Border;
