@@ -50,6 +50,32 @@ namespace MonoGameLibrary.UI
             return Vector2.Transform(screen, Matrix.Invert(GetCameraTransform()));
         }
 
+        /// <summary>
+        /// The ground under the viewport, in the local space of a world drawn through
+        /// <paramref name="worldTransform"/>: each corner goes through <see cref="ScreenToWorld"/>
+        /// (so a projected camera culls correctly), then the inverse world transform. Whole units,
+        /// rounded outwards.
+        /// </summary>
+        public Rectangle GetVisibleLocalBounds(Matrix worldTransform)
+        {
+            var worldToLocal = Matrix.Invert(worldTransform);
+            var min = new Vector2(float.MaxValue);
+            var max = new Vector2(float.MinValue);
+            for (var corner = 0; corner < 4; corner++)
+            {
+                var screen = new Vector2(
+                    corner is 1 or 2 ? Viewport.Right : Viewport.Left,
+                    corner >= 2 ? Viewport.Bottom : Viewport.Top);
+                var local = Vector2.Transform(ScreenToWorld(screen), worldToLocal);
+                min = Vector2.Min(min, local);
+                max = Vector2.Max(max, local);
+            }
+
+            var left = (int)System.MathF.Floor(min.X);
+            var top = (int)System.MathF.Floor(min.Y);
+            return new Rectangle(left, top, (int)System.MathF.Ceiling(max.X) - left, (int)System.MathF.Ceiling(max.Y) - top);
+        }
+
         /// <summary>Moves the camera by <paramref name="screenDelta"/> pixels, the world slides the other way.</summary>
         public void Pan(Vector2 screenDelta)
         {

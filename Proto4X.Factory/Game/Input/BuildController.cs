@@ -68,7 +68,7 @@ namespace Proto4X.Factory.Input
                 ActiveSurface = (ActiveSurface + 1) % universe.Surfaces.Count;
             }
 
-            var world = Vector2.Transform(screenMouse.ToVector2(), Matrix.Invert(camera.GetCameraTransform()));
+            var world = camera.ScreenToWorld(screenMouse.ToVector2());
             var local = SurfaceView.WorldToTile(Surface.Frame, world);
             var size = Tool == BuildingKind.None ? 1 : Buildings.Size(Tool);
             // Multi-tile footprints centre on the cursor rather than hanging off its corner.
