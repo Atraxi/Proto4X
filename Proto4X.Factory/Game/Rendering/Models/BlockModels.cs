@@ -165,7 +165,7 @@ namespace Proto4X.Factory.Rendering.Models
                 Box(0.08f, 0.08f, 0f, 1.92f, 1.92f, 0.5f, collector),
                 Box(0.3f, 0.3f, 0.5f, 1.4f, 1.7f, 1.0f, Shade(collector, 1.15f)),
                 Box(1.4f, 0.4f, 0.3f, 1.98f, 1.6f, 0.9f, darkSteel),
-                Box(1.9f, 0.55f, 0.4f, 1.98f, 1.45f, 0.8f, new Color(190, 140, 255), emissive: true),
+                Box(1.93f, 0.55f, 0.4f, 1.995f, 1.45f, 0.8f, new Color(190, 140, 255), emissive: true),
             ]);
 
             return table;
