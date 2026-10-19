@@ -30,6 +30,8 @@ namespace MonoGameLibrary
                 PreferredBackBufferHeight = height,
                 IsFullScreen = fullscreen,
                 HardwareModeSwitch = false,
+                // The geometry pass depth-tests; asked for explicitly rather than trusting the platform default.
+                PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8,
             };
             Graphics.ApplyChanges();
 

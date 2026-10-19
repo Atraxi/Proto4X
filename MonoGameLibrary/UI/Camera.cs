@@ -24,12 +24,28 @@ namespace MonoGameLibrary.UI
             return WorldProjection * ScreenTransform;
         }
 
-        public Vector2 WorldToScreen(Vector2 world)
+        /// <summary>View matrix for the geometry pass. A flat camera's view is its 2D transform: world to screen pixels.</summary>
+        public virtual Matrix GetViewMatrix()
+        {
+            return GetCameraTransform();
+        }
+
+        /// <summary>
+        /// Projection for the geometry pass: screen pixels to clip space, top-left origin. View-space
+        /// z in [-1, 1] is depth, larger z nearer the viewer, so a flat game sorts by writing z.
+        /// </summary>
+        public virtual Matrix GetProjectionMatrix()
+        {
+            return Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, -1, 1);
+        }
+
+        public virtual Vector2 WorldToScreen(Vector2 world)
         {
             return Vector2.Transform(world, GetCameraTransform());
         }
 
-        public Vector2 ScreenToWorld(Vector2 screen)
+        /// <summary>The world point under a screen point, on the ground plane (z = 0). Culling and picking both go through this.</summary>
+        public virtual Vector2 ScreenToWorld(Vector2 screen)
         {
             return Vector2.Transform(screen, Matrix.Invert(GetCameraTransform()));
         }
@@ -59,6 +75,12 @@ namespace MonoGameLibrary.UI
         }
 
         internal void Update(Rectangle viewportBounds)
+        {
+            Resize(viewportBounds);
+        }
+
+        /// <summary>What the engine calls each frame with the window's bounds; public so a headless renderer can size a camera too.</summary>
+        public void Resize(Rectangle viewportBounds)
         {
             // On resize, shift by half the size change so the centre stays put rather than the top-left.
             if (!Viewport.IsEmpty && viewportBounds.Size != Viewport.Size)
