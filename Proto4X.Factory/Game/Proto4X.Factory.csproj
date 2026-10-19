@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The playable shell: input, camera use, rendering. No content pipeline - every texture is the
+    1x1 white pixel made at load, so the project needs no MGCB tool restore and ships no art.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RollForward>Major</RollForward>
+    <RootNamespace>Proto4X.Factory</RootNamespace>
+    <AssemblyName>Proto4X.Factory</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Simulation\Proto4X.Factory.Simulation.csproj" />
+    <ProjectReference Include="..\..\MonoGameLibrary\MonoGameLibrary.csproj" />
+    <ProjectReference Include="..\..\Analyzers\Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

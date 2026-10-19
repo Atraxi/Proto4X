@@ -1,78 +1,72 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using MonoGameLibrary.Input;
 
 namespace MonoGameLibrary.UI
 {
-    public class Camera
+    /// <summary>World to screen: <see cref="WorldProjection"/> lays the world flat, then <see cref="ScreenTransform"/> pans, zooms and rotates it.</summary>
+    public class Camera(float minZoom = 0.05f, float maxZoom = 20f)
     {
-        private Matrix cameraMatrix = Matrix.Identity;
-        private const int CAMERA_SPEED = 100;
+        public float MinZoom { get; } = minZoom;
+        public float MaxZoom { get; } = maxZoom;
+
+        /// <summary>How the world is laid flat: identity for top-down, or e.g. isometric. True perspective breaks picking and culling.</summary>
+        public Matrix WorldProjection { get; set; } = Matrix.Identity;
+
+        /// <summary>Pan, zoom and rotation in screen pixels from the top-left; identity shows world (0, 0) there at 1:1.</summary>
+        public Matrix ScreenTransform { get; set; } = Matrix.Identity;
+
+        /// <summary>Current scale of <see cref="ScreenTransform"/>.</summary>
+        public float Zoom => new Vector2(ScreenTransform.M11, ScreenTransform.M12).Length();
+
+        public Rectangle Viewport { get; private set; }
 
         public Matrix GetCameraTransform()
         {
-            return cameraMatrix;
+            return WorldProjection * ScreenTransform;
         }
 
-        internal void Update(Rectangle viewportBounds, GameTime gameTime)
+        public Vector2 WorldToScreen(Vector2 world)
         {
-            //TODO maybe this should be moved into UIManager to consolidate input detection? Or maybe instead I should implement stub APIs to isolate key codes for later rebinding support?
-            var keyboard = InputManager.Instance.KeyboardInfo;
-            var mouse = InputManager.Instance.MouseInfo;
+            return Vector2.Transform(world, GetCameraTransform());
+        }
 
-            float cameraX = 0;
-            float cameraY = 0;
-            if (keyboard.IsKeyDown(Keys.Up))
-            {
-                cameraY -= (float)(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            if (keyboard.IsKeyDown(Keys.Down))
-            {
-                cameraY += (float)(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            if (keyboard.IsKeyDown(Keys.Left))
-            {
-                cameraX -= (float)(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            if (keyboard.IsKeyDown(Keys.Right))
-            {
-                cameraX += (float)(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            cameraMatrix *= Matrix.CreateTranslation((float)cameraX, (float)cameraY, 0);
+        public Vector2 ScreenToWorld(Vector2 screen)
+        {
+            return Vector2.Transform(screen, Matrix.Invert(GetCameraTransform()));
+        }
 
-            float cameraRotation = 0;
-            if (keyboard.IsKeyDown(Keys.Z))
-            {
-                cameraRotation -= (float)double.DegreesToRadians(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            if (keyboard.IsKeyDown(Keys.X))
-            {
-                cameraRotation += (float)double.DegreesToRadians(CAMERA_SPEED * gameTime.ElapsedGameTime.TotalSeconds);
-            }
-            
-            cameraMatrix *= Matrix.CreateTranslation(-viewportBounds.Width / 2, -viewportBounds.Height / 2, 0) *
-                Matrix.CreateRotationZ((float)cameraRotation) *
-                Matrix.CreateTranslation(viewportBounds.Width / 2, viewportBounds.Height / 2, 0);
+        /// <summary>Moves the camera by <paramref name="screenDelta"/> pixels, the world slides the other way.</summary>
+        public void Pan(Vector2 screenDelta)
+        {
+            ScreenTransform *= Matrix.CreateTranslation(-screenDelta.X, -screenDelta.Y, 0);
+        }
 
+        /// <summary>Zooms by <paramref name="factor"/>, keeping <paramref name="screenPoint"/> fixed. Clamped to the zoom limits.</summary>
+        public void ZoomAt(Vector2 screenPoint, float factor)
+        {
+            var current = Zoom;
+            var step = MathHelper.Clamp(current * factor, MinZoom, MaxZoom) / current;
+            ScreenTransform *= Matrix.CreateTranslation(-screenPoint.X, -screenPoint.Y, 0) *
+                Matrix.CreateScale(step, step, 1) *
+                Matrix.CreateTranslation(screenPoint.X, screenPoint.Y, 0);
+        }
 
-            //var scale = (float)Math.Pow(1.1f, mouse.ScrollWheelDelta / 120);
-            float cameraZoom = 1;
-            if (mouse.ScrollWheelDelta < 0)
-            {
-                cameraZoom *= 0.9f;
-            }
-            else if (mouse.ScrollWheelDelta > 0)
-            {
-                cameraZoom *= 1.1f;
-            }
-            cameraMatrix *= Matrix.CreateTranslation(-mouse.Position.X, -mouse.Position.Y, 0) *
-                Matrix.CreateScale(cameraZoom, cameraZoom, 1) *
-                Matrix.CreateTranslation(mouse.Position.X, mouse.Position.Y, 0);
+        /// <summary>Turns the camera by <paramref name="radians"/> about <paramref name="screenPoint"/>, the world turns the other way.</summary>
+        public void RotateAround(Vector2 screenPoint, float radians)
+        {
+            ScreenTransform *= Matrix.CreateTranslation(-screenPoint.X, -screenPoint.Y, 0) *
+                Matrix.CreateRotationZ(-radians) *
+                Matrix.CreateTranslation(screenPoint.X, screenPoint.Y, 0);
+        }
 
-            if (viewportBounds.Contains(mouse.Position))
+        internal void Update(Rectangle viewportBounds)
+        {
+            // On resize, shift by half the size change so the centre stays put rather than the top-left.
+            if (!Viewport.IsEmpty && viewportBounds.Size != Viewport.Size)
             {
-                //if(mouse.Position.X < 0)
+                ScreenTransform *= Matrix.CreateTranslation((viewportBounds.Width - Viewport.Width) / 2f, (viewportBounds.Height - Viewport.Height) / 2f, 0);
             }
+
+            Viewport = viewportBounds;
         }
     }
 }

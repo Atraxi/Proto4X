@@ -38,10 +38,11 @@ namespace MonoGameLibrary
             IsMouseVisible = true;
 
             World = InitializeGameWorld();
-            UserInterfaceManager = new UserInterfaceManager();
+            UserInterfaceManager = new UserInterfaceManager(InitializeCamera());
             SystemScheduler = new SystemScheduler();
         }
         protected abstract GameWorld InitializeGameWorld();
+        protected virtual Camera InitializeCamera() => new();
 
         protected sealed override void Initialize()
         {

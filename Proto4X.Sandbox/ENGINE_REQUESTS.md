@@ -92,6 +92,8 @@ Between them, **no game-side code can obtain a valid entity id for anything it d
 
 Also worth flagging: `ArchetypeChunk` now implements `IArchetype` and forwards to the archetype it wraps. It reads slightly oddly — a chunk is a per-query view, not an archetype — and it means a chunk can be passed anywhere an `IArchetype` is expected. Harmless today, but the interface is now doing double duty as "the archetype" and "a narrow mutation handle onto one".
 
+**Update 2026-09-14 — half (2) now has a consumer.** Entity-to-entity references are going through a system-declared, frame-bound archetype handle (see "Entity-to-entity references through system-declared archetype handles" below), with referenced ids most naturally stored in component data. That makes learning an entity's id at creation a real prerequisite rather than a nice-to-have. External addressability — save files, network messages, scripted scenarios, debugger commands — remains the other reason this stays open.
+
 </details>
 
 ## No screen-space draw pass — every draw system is inside the camera transform
@@ -207,27 +209,57 @@ Related but separable: the input handling inside `Camera.Update` is the same "en
 
 </details>
 
-## EntityView — entity lifecycle handle
-**Status:** Open — design discussed, not yet built
-**Priority:** Medium
+## No efficient filtering API for systems
+**Status:** Open
+**Priority:** Low
 
 <details>
 <summary>Details</summary>
 
-**What:** a proposed lightweight per-entity handle utility, in response to "what's the path to interact with a specific entity" now that `GameWorld` access, queueing, and removal are split across a few different surfaces (`GameWorld`, `IArchetype`, `ArchetypeChunk`).
+**What:** a system receives every chunk whose mask satisfies its AND-query, then filters by hand with a scalar loop testing a field per entity — `if (weapon.Range <= 0f) continue;`, `if (minerSpan[i].ClaimedAsteroid is Vector2 claimed)`, and so on. There is no engine-provided way to declare or evaluate a per-entity predicate efficiently.
 
-**Intended shape and constraints:**
+**Why it came up:** declared component iteration is the primary entity access path, and by-id access is only reachable through a declared, frame-bound handle (see "Ad-hoc random access to entities outside a system's declared dependencies" below). Filtering cost is therefore close to the cost of all entity access, which makes it worth making fast.
 
-- Carries only: the entity id, a `GameWorld` reference, and possibly an `IArchetype` handle. **Explicitly does not carry component data or values.**
-- Purpose is lifecycle interaction (remove, requeue, existence checks) — not a data-access convenience.
-- Deliberately designed to be awkward to build an OOP-style architecture on top of — actively resisting becoming a `GameObject`-style handle that invites storing long-lived references and treating entities as objects, which would erode the archetype/SoA model this engine is built around.
-- Stale-id handling is an acknowledged open question, raised in review and agreed as valid: an `EntityView` can outlive the entity it names (removed elsewhere, handle held on). Not yet decided whether `Get`/lifecycle calls on a dead handle throw, return a bool/nullable, or something else — needs a deliberate answer before this ships, not an accidental one.
-- Because ids don't map to a stable dense index across frames (swap-remove), any future data-returning method on a handle-style object would necessarily return copies, not `ref`s — different shape than `ArchetypeChunk.Get<T>(index)`/`GetSpan<T>()`, which is part of why data access is being kept off `EntityView` entirely rather than added later.
-- Should stay aware that `GameWorld` access is currently a global static (`Core.Instance.World`, already the existing pattern via `UserInterfaceManager`'s right-click spawn) as an intentional MVP placeholder, not a permanent design — the expected evolution is toward "the currently selected/user-active `GameWorld`," with other worlds tracked separately through a process not yet designed. `EntityView` holding a `GameWorld` reference directly (rather than resolving one implicitly) is likely the right call precisely because it doesn't bake in a single-world assumption any harder than necessary.
+**Measured (i7-7820X, .NET 10, single core):** predicate *storage* dominates, and the gap is large. A branchy scan over an 8-byte `Selectable` testing its `bool` costs ~0.94 ns/entity. The identical predicate held as a packed bit-per-entity column, walked with popcount/trailing-zero-count, costs ~0.0055 ns/entity — roughly **170x cheaper**, because 64 entities fit in 8 bytes instead of 512. That is a data-layout decision, not a codegen one, so it is available without touching any system's code shape.
 
-**Second, distinct motivation surfaced later (2026-07-21):** the original design above is about lifecycle *interaction* (remove/requeue/existence). A separate but compatible use case showed up discussing `GameWorld.TryGetComponent<T>`/`SetComponent<T>` (the public single-entity component API that replaced the internal-type leak from `GetComponentsForEntity`/`ComponentContainerAttached<T>`): those calls re-resolve an entity's archetype/dense-index independently on every call, so a caller holding an id across two calls (e.g. read-then-later-write) has no protection if the entity was structurally removed in between — today this can't actually happen mid-frame (`SystemScheduler` is synchronous/single-threaded and structural changes are deferred to `ProcessDeferredUpdates`), but it's an unenforced invariant, not a guaranteed one, and would become a real hazard the moment anything defers between an entity's read and its write (an `await`, a future parallel scheduler, etc). A generation-stamped id (id + version bumped on removal, compared at access time to fail loud instead of silently writing to a resurrected/reused id) would cover this too, and fits naturally on the same handle rather than being a second bolt-on mechanism. Doesn't change the shape or constraints above — still id + `GameWorld` ref, still no component data, still lifecycle-only — just widens why a stale handle needs a defined answer, and makes the stale-id question above less theoretical.
+**Possible approaches:** not scoped. Rough shape: let a component declare a bit-flag field that `Archetype` maintains as a separate packed `ulong[]` column alongside the struct column, and give `ArchetypeChunk` an iterator that walks set bits instead of indices. Cheap AND/OR/NOT across several such columns falls out for free, which overlaps with the mask-expressiveness half of the join entry above.
 
-**Related open question, not decided:** whether to remove single-entity/random-access reads from the engine entirely — specifically `ArchetypeChunk.Get<T>(index)` — to push the architecture harder toward "systems + iteration" as the only access pattern, with `EntityView` handling lifecycle-only concerns instead. Acknowledged tension: UI selection/interaction (the WASD-selected-entity flow in `UserInterfaceManager`, `UserInterfaceManager.cs:57-110`) currently depends on exactly this kind of single-entity random access to read/write the selected entity's `Position`/`Motion`. Unclear yet how restrictive a pure iteration-only model would be for cases like this. Left open.
+**Caveat worth recording before anyone quotes the 170x:** the packed scan *finds* matches nearly for free, but fetching each match's component data is a scattered read, and that fetch is what actually sets the cost. So this is a real win for sparse predicates over large sets, and close to neutral when most entities match. It does not make filtering free, it makes the search part free.
+
+</details>
+
+## Entity-to-entity references through system-declared archetype handles
+**Status:** Open — design direction set
+**Priority:** Low
+
+<details>
+<summary>Details</summary>
+
+**What:** an entity cannot hold a stable reference to another entity and have a system act on the referenced entity's components. Stored targets (focus fire, pursuing one specific entity), claims and reservations that outlive a single lookup (agent job claiming in the RimWorld/Dwarf Fortress sense), and ownership links (a turret and its hull, cargo and its carrier) all need it.
+
+**Why it came up:** discussing random entity access (see "Ad-hoc random access to entities outside a system's declared dependencies" below). Removing the ad-hoc by-id path would otherwise have closed off entity-to-entity references too. They are a valid requirement, and they need a shape consistent with the rest of the engine.
+
+**Decided shape — a direction, not a spec:**
+
+- A system **requests an archetype view/handle as a declared dependency**, alongside its component queries — the same declaration surface as `RequiredComponentProviders`, so the scheduler knows every access the system can make.
+- Exposed **through an interface**, not the concrete archetype type, so storage and lookup stay engine-internal and free to change.
+- It offers **frame-bound per-entity component queries**: resolve a referenced id to that entity's components for the current frame. Nothing it returns is valid past the frame boundary.
+
+**Why not `EntityView`:** a per-entity handle reaches a similar end result, but it opposes the core architecture by encouraging systems to maintain their own lists of entities, which bypasses the component iteration path. Keeping every access in one shape — declared, frame-bound, scheduler-visible — is what leaves the most room for aggressive optimisation when it is needed.
+
+**Properties that fall out of the shape:**
+
+- **Read/write sets stay complete.** If the handle declares which component types it reads and writes, cross-entity access joins the same metadata a parallel scheduler or change-version scheme needs (see the access-safety options in `EVENT_STREAMS.md` §6, which currently lives only in the `Proto4X-events` copy).
+- **Lookup cost is not the concern.** The measurement in the entry below puts one O(1) lookup at roughly 2—27ns depending on cache residency; a dense id-to-location table behind the interface is enough.
+- **The id scheme becomes an internal detail.** Monotonic, never-reused ids make a stale id resolve to nothing, which is the property to keep. If ids are ever pooled, a generation counter is required, or it is the ABA bug.
+
+**Open questions, not decided:**
+
+1. Where referenced ids live. Component data (`Target { EntityId }`) is the natural reading, and keeps references inside the iteration path rather than in system state.
+2. What a query against an id that no longer resolves does — a `Try`/`bool` shape or something else — and how that stays both cheap and impossible to ignore.
+3. How the handle is scoped: which archetypes or component sets it can resolve against, declared up front the way component queries are.
+4. Whether returned access is `ref`, a `ref struct` view, or read-only unless declared writable — the same read/write footgun question as `EVENT_STREAMS.md` §6.
+5. Half (2) of the entity-id entry — learning an entity's id at creation — becomes a real prerequisite once references live in component data.
 
 </details>
 
@@ -315,5 +347,55 @@ Notably, **none of these would have been better with text**, which is a real poi
 **Why it came up:** a gather loop where an idle ship "becomes" a cargo-carrying ship reads naturally as a component being added/removed.
 
 **Decision:** enforced as delete-and-recreate, not in-place migration. No archetype-migration mechanism is planned. A convenience method wrapping delete+recreate may be worth adding later, depending on how many call sites end up needing it and what access routes are available at that point — not committed now.
+
+</details>
+
+## EntityView — entity lifecycle handle
+**Status:** Resolved — decided against
+**Priority:** Medium
+
+<details>
+<summary>Details</summary>
+
+**What:** a proposed lightweight per-entity handle utility, in response to "what's the path to interact with a specific entity" now that `GameWorld` access, queueing, and removal are split across a few different surfaces (`GameWorld`, `IArchetype`, `ArchetypeChunk`).
+
+**Intended shape and constraints:**
+
+- Carries only: the entity id, a `GameWorld` reference, and possibly an `IArchetype` handle. **Explicitly does not carry component data or values.**
+- Purpose is lifecycle interaction (remove, requeue, existence checks) — not a data-access convenience.
+- Deliberately designed to be awkward to build an OOP-style architecture on top of — actively resisting becoming a `GameObject`-style handle that invites storing long-lived references and treating entities as objects, which would erode the archetype/SoA model this engine is built around.
+- Stale-id handling is an acknowledged open question, raised in review and agreed as valid: an `EntityView` can outlive the entity it names (removed elsewhere, handle held on). Not yet decided whether `Get`/lifecycle calls on a dead handle throw, return a bool/nullable, or something else — needs a deliberate answer before this ships, not an accidental one.
+- Because ids don't map to a stable dense index across frames (swap-remove), any future data-returning method on a handle-style object would necessarily return copies, not `ref`s — different shape than `ArchetypeChunk.Get<T>(index)`/`GetSpan<T>()`, which is part of why data access is being kept off `EntityView` entirely rather than added later.
+- Should stay aware that `GameWorld` access is currently a global static (`Core.Instance.World`, already the existing pattern via `UserInterfaceManager`'s right-click spawn) as an intentional MVP placeholder, not a permanent design — the expected evolution is toward "the currently selected/user-active `GameWorld`," with other worlds tracked separately through a process not yet designed. `EntityView` holding a `GameWorld` reference directly (rather than resolving one implicitly) is likely the right call precisely because it doesn't bake in a single-world assumption any harder than necessary.
+
+**Second, distinct motivation surfaced later (2026-07-21):** the original design above is about lifecycle *interaction* (remove/requeue/existence). A separate but compatible use case showed up discussing `GameWorld.TryGetComponent<T>`/`SetComponent<T>` (the public single-entity component API that replaced the internal-type leak from `GetComponentsForEntity`/`ComponentContainerAttached<T>`): those calls re-resolve an entity's archetype/dense-index independently on every call, so a caller holding an id across two calls (e.g. read-then-later-write) has no protection if the entity was structurally removed in between — today this can't actually happen mid-frame (`SystemScheduler` is synchronous/single-threaded and structural changes are deferred to `ProcessDeferredUpdates`), but it's an unenforced invariant, not a guaranteed one, and would become a real hazard the moment anything defers between an entity's read and its write (an `await`, a future parallel scheduler, etc). A generation-stamped id (id + version bumped on removal, compared at access time to fail loud instead of silently writing to a resurrected/reused id) would cover this too, and fits naturally on the same handle rather than being a second bolt-on mechanism. Doesn't change the shape or constraints above — still id + `GameWorld` ref, still no component data, still lifecycle-only — just widens why a stale handle needs a defined answer, and makes the stale-id question above less theoretical.
+
+**Related open question, not decided:** whether to remove single-entity/random-access reads from the engine entirely — specifically `ArchetypeChunk.Get<T>(index)` — to push the architecture harder toward "systems + iteration" as the only access pattern, with `EntityView` handling lifecycle-only concerns instead. Acknowledged tension: UI selection/interaction (the WASD-selected-entity flow in `UserInterfaceManager`, `UserInterfaceManager.cs:57-110`) currently depends on exactly this kind of single-entity random access to read/write the selected entity's `Position`/`Motion`. Unclear yet how restrictive a pure iteration-only model would be for cases like this. Left open.
+
+**Decision (2026-09-14) — not building this.** A per-entity handle could reach a similar end result, but it opposes the core architecture: it encourages systems to maintain their own lists of entities, which bypasses component iteration — and iteration is being kept as one hyper-focused path for future optimisation. The needs this entry answered go to declared shapes instead: entity-to-entity references through a system-declared, frame-bound archetype handle (see "Entity-to-entity references through system-declared archetype handles" above), and lifecycle interaction during iteration via `ArchetypeChunk.QueueEntityForRemovalById`/`ByIndex`. The stale-handle question this entry raised needs no answer, because no handle is retainable. `MonoGameLibrary/Archetypes/EntityView.cs` is currently an empty class with an empty finalizer, which forces a pointless finalizer-queue promotion; it should be deleted.
+
+</details>
+
+## Ad-hoc random access to entities outside a system's declared dependencies
+**Status:** Resolved — decided against
+**Priority:** Low
+
+<details>
+<summary>Details</summary>
+
+**What:** `GameWorld.TryGetComponent<T>`, `MutateComponent<T>` and `GetComponentsForEntity(id)` reach one entity's components by id from anywhere holding a `GameWorld` — outside any system's declared dependencies, with no frame boundary on the result. **Decision: no ad-hoc access path.** Every form of entity access is a dependency a system declares and the scheduler hands it, valid for one frame. Component iteration is the primary form; entity-to-entity references are the second and get their own declared shape (see "Entity-to-entity references through system-declared archetype handles" above). These `GameWorld` methods go `internal` or away. Neither a retainable per-entity handle (`EntityView`) nor a multi-pass `provideData`/`doThing`/`cleanUp` system lifecycle is being built.
+
+**Why it came up:** the engine iterates bulk entity sets well but had no good shape for one-off or short-list access, and the by-id methods were a second access surface beside the scheduler. Folding by-id access into the archetype/scheduler machinery was the tempting unification; the objection at the time was that the query declaration and the implementation both come out unusual.
+
+**Why a multi-pass lifecycle does not work:** a `provideData` pass must name entities before the work pass runs, but a system selecting a target, a claim or a builder only discovers *which* entity as a result of its own iteration. Prefetching would need a fixpoint or a frame of latency.
+
+**Performance did not settle it — measured, i7-7820X, .NET 10, single core:** with an O(1) id-to-location table, random access beats a packed-filter iteration until roughly **1% of entities** are touched: ~20 lookups at N=1,000, ~200 at 10,000, ~1,800 at 100,000, ~12,000 at 1,000,000. So lookups are cheap enough to offer; the objection is to *where* they are reachable from, not what they cost, and the same table can sit behind the declared handle as an internal detail. Hardware trend is neutral-to-supportive: memory latency has been flat for two decades while bandwidth and cache size keep growing, so sequential iteration keeps getting relatively cheaper.
+
+**What settled it — architecture:** an ad-hoc by-id path, or a handle game code can keep, opposes the core design. It invites systems to keep their own lists of entities, which routes around component iteration — and iteration is being kept as one hyper-focused path for future optimisation. When every access is declared and frame-bound, the scheduler sees all of it, which leaves the most room for aggressive optimisation later: parallel scheduling from read/write sets, change versions, storage layout changes.
+
+**Consequences:**
+
+- `Proto4X/Systems/PlayerInputSystem.cs:23,42` are the only callers. Making the methods `internal` breaks that build until those calls move onto a declared path — which is what happened when the change was trialled in the `Proto4X-events` copy.
+- External addressability (save files, scripted scenarios, network messages, debugger commands) is untouched by this decision and stays open under the entity-id entry.
 
 </details>
