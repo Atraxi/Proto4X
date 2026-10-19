@@ -108,6 +108,11 @@ namespace Proto4X.Factory.Rendering
                     orbit.Orthographic = false;
                     orbit.Pitch = 1.3f;
                     break;
+                case "overhead":
+                    // The top-down look from the same models: orthographic, as steep as the clamp allows.
+                    orbit.Orthographic = true;
+                    orbit.Pitch = orbit.MaxPitch;
+                    break;
                 case "iso":
                     // True isometric: 45 degrees round, arctan(1/sqrt 2) up, orthographic.
                     orbit.Orthographic = true;

@@ -53,6 +53,7 @@ namespace Proto4X.Factory.Rendering
             new("overview", 0, new Vector2(118f, 40f), 0.2f, 0f, WithStressBlock: true, Preset: "top"),
             new("low-angle", 0, new Vector2(13f, 6f), 1.6f, 0f, Preset: "low"),
             new("iso-ortho", 0, new Vector2(15f, 8.5f), 1.25f, 0f, Preset: "iso"),
+            new("overhead-ortho", 0, new Vector2(15f, 8.5f), 1.25f, 0f, Preset: "overhead"),
         ];
 
         /// <param name="supersample">1 matches the game, which has no MSAA and no mipmaps; higher flatters every style, sprites most.</param>
