@@ -2,58 +2,53 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.UI;
-using Proto4X.Factory.Rendering;
 using Proto4X.Factory.Simulation;
+using System;
 using System.Collections.Generic;
 
 namespace Proto4X.Factory.Input
 {
     /// <summary>
-    /// Arrow keys pan, the wheel zooms about the cursor, Z/X rotate - one remembered view per surface.
+    /// Orbit controls, one remembered view per surface: arrows pan, the wheel zooms, Z/X turn,
+    /// Page Up/Down tilt, F2 toggles perspective/orthographic, F3 snaps to true isometric.
     /// </summary>
     /// <remarks>
-    /// The view is kept as "grid-local pixels to screen" for the surface on show, and the camera's
-    /// world view is rebuilt from it against the surface's frame every frame. Two things fall out of
-    /// that: the view rides along with a moving ship, so its deck stays put and upright on screen
-    /// while it drifts and turns, and switching surfaces returns to where you left each one.
-    /// <para>
-    /// Run after <see cref="BuildController.Update"/> and the sim step: picking then resolves against
-    /// the frame that was on screen, and drawing follows where the ship has moved to this tick.
-    /// </para>
+    /// The view is kept relative to the surface on show (target in grid-local tiles, yaw relative to
+    /// the frame), so on a moving ship the camera rides along and the deck stays put on screen -
+    /// the same contract as the 2D controller, in orbit terms.
     /// </remarks>
-    public sealed class CameraController(Camera camera, IReadOnlyList<Surface> surfaces)
+    public sealed class CameraController(OrbitCamera camera, IReadOnlyList<Surface> surfaces)
     {
-        private const float PanPixelsPerSecond = 800f;
-        private const float RotationDegreesPerSecond = 100f;
-        private const float ZoomStep = 1.1f;
+        private const float PanScreensPerSecond = 0.9f;
+        private const float TurnDegreesPerSecond = 90f;
+        private const float TiltDegreesPerSecond = 50f;
+        private const float ZoomStep = 1.12f;
 
-        // Grid-local pixels to screen, relative to the screen centre so a resize while a surface is
-        // hidden doesn't shift it.
-        private readonly Matrix?[] savedViews = new Matrix?[surfaces.Count];
+        private readonly View?[] savedViews = new View?[surfaces.Count];
         private int shownSurface = -1;
-        private Matrix shownFrame;
+        private View current;
 
-        /// <summary>Where a surface's view starts: this tile centred, 1:1, upright. Otherwise its grid centre.</summary>
+        private struct View
+        {
+            public Vector2 LocalTarget;
+            public float LocalYaw;
+            public float Pitch;
+            public float Distance;
+            public bool Orthographic;
+        }
+
         public void SetView(int surface, Vector2 localTile)
         {
-            savedViews[surface] = Matrix.CreateTranslation(-localTile.X * SurfaceView.TileSize, -localTile.Y * SurfaceView.TileSize, 0);
+            savedViews[surface] = new View { LocalTarget = localTile, LocalYaw = 0f, Pitch = 0.95f, Distance = 26f };
         }
 
         public void Update(int activeSurface, GameTime gameTime)
         {
-            var centre = Matrix.CreateTranslation(camera.Viewport.Width / 2f, camera.Viewport.Height / 2f, 0);
-
-            Matrix localToScreen;
-            if (activeSurface == shownSurface)
-            {
-                // Last frame's mapping, including this frame's resize adjustment from the engine.
-                localToScreen = shownFrame * camera.ScreenTransform;
-            }
-            else
+            if (activeSurface != shownSurface)
             {
                 if (shownSurface >= 0)
                 {
-                    savedViews[shownSurface] = shownFrame * camera.ScreenTransform * Matrix.Invert(centre);
+                    savedViews[shownSurface] = current;
                 }
 
                 if (savedViews[activeSurface] is null)
@@ -62,22 +57,20 @@ namespace Proto4X.Factory.Input
                     SetView(activeSurface, new Vector2(grid.Width / 2f, grid.Height / 2f));
                 }
 
-                localToScreen = savedViews[activeSurface]!.Value * centre;
+                current = savedViews[activeSurface]!.Value;
                 shownSurface = activeSurface;
             }
 
-            var frame = FrameMatrix(surfaces[activeSurface].Frame);
-            camera.ScreenTransform = Matrix.Invert(frame) * localToScreen;
-            shownFrame = frame;
-
             ApplyInput(gameTime);
-        }
 
-        /// <summary>Grid-local pixels to world pixels; the matrix form of <see cref="SurfaceView.TileToWorld"/>.</summary>
-        private static Matrix FrameMatrix(in SurfaceFrame frame)
-        {
-            return Matrix.CreateRotationZ(frame.Rotation) *
-                Matrix.CreateTranslation(frame.Position.X * SurfaceView.TileSize, frame.Position.Y * SurfaceView.TileSize, 0);
+            var frame = surfaces[activeSurface].Frame;
+            camera.Target = new Vector3(frame.LocalToWorld(current.LocalTarget), 0f);
+            camera.Yaw = frame.Rotation + current.LocalYaw;
+            camera.Pitch = current.Pitch;
+            camera.Distance = current.Distance;
+            camera.Orthographic = current.Orthographic;
+            current.Pitch = camera.Pitch;
+            current.Distance = camera.Distance;
         }
 
         private void ApplyInput(GameTime gameTime)
@@ -86,8 +79,8 @@ namespace Proto4X.Factory.Input
             var mouse = InputManager.Instance.MouseInfo;
             var seconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // Screen terms: Up always moves the view towards the top of the screen, at the same
-            // on-screen speed whatever the rotation and zoom.
+            // Pan in screen terms: up moves the view towards the top of the screen, at a speed
+            // proportional to how much ground is on screen.
             var pan = Vector2.Zero;
             if (keyboard.IsKeyDown(Keys.Up)) pan.Y -= 1;
             if (keyboard.IsKeyDown(Keys.Down)) pan.Y += 1;
@@ -95,16 +88,32 @@ namespace Proto4X.Factory.Input
             if (keyboard.IsKeyDown(Keys.Right)) pan.X += 1;
             if (pan != Vector2.Zero)
             {
-                camera.Pan(Vector2.Normalize(pan) * PanPixelsPerSecond * seconds);
+                pan = Vector2.Normalize(pan) * PanScreensPerSecond * seconds * current.Distance;
+                var forward = new Vector2(MathF.Sin(current.LocalYaw), -MathF.Cos(current.LocalYaw));
+                var right = new Vector2(MathF.Cos(current.LocalYaw), MathF.Sin(current.LocalYaw));
+                current.LocalTarget += right * pan.X - forward * pan.Y;
             }
 
-            var screenCentre = camera.Viewport.Center.ToVector2();
-            if (keyboard.IsKeyDown(Keys.Z)) camera.RotateAround(screenCentre, MathHelper.ToRadians(RotationDegreesPerSecond) * seconds);
-            if (keyboard.IsKeyDown(Keys.X)) camera.RotateAround(screenCentre, -MathHelper.ToRadians(RotationDegreesPerSecond) * seconds);
+            if (keyboard.IsKeyDown(Keys.Z)) current.LocalYaw += MathHelper.ToRadians(TurnDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.X)) current.LocalYaw -= MathHelper.ToRadians(TurnDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.PageUp)) current.Pitch += MathHelper.ToRadians(TiltDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.PageDown)) current.Pitch -= MathHelper.ToRadians(TiltDegreesPerSecond) * seconds;
+
+            if (keyboard.WasKeyJustPressed(Keys.F2))
+            {
+                current.Orthographic = !current.Orthographic;
+            }
+
+            if (keyboard.WasKeyJustPressed(Keys.F3))
+            {
+                current.Orthographic = true;
+                current.LocalYaw = -MathF.PI / 4f;
+                current.Pitch = MathF.Atan(1f / MathF.Sqrt(2f));
+            }
 
             if (mouse.ScrollWheelDelta != 0)
             {
-                camera.ZoomAt(mouse.Position.ToVector2(), mouse.ScrollWheelDelta > 0 ? ZoomStep : 1f / ZoomStep);
+                current.Distance *= mouse.ScrollWheelDelta > 0 ? 1f / ZoomStep : ZoomStep;
             }
         }
     }

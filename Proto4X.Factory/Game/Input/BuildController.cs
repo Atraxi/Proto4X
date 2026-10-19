@@ -68,8 +68,8 @@ namespace Proto4X.Factory.Input
                 ActiveSurface = (ActiveSurface + 1) % universe.Surfaces.Count;
             }
 
-            var world = camera.ScreenToWorld(screenMouse.ToVector2());
-            var local = SurfaceView.WorldToTile(Surface.Frame, world);
+            // The 3D camera's world is in tiles: a ray to the ground, then into the surface's frame.
+            var local = Surface.Frame.WorldToLocal(camera.ScreenToWorld(screenMouse.ToVector2()));
             var size = Tool == BuildingKind.None ? 1 : Buildings.Size(Tool);
             // Multi-tile footprints centre on the cursor rather than hanging off its corner.
             Hovered = ((int)MathF.Floor(local.X - (size - 1) * 0.5f), (int)MathF.Floor(local.Y - (size - 1) * 0.5f));

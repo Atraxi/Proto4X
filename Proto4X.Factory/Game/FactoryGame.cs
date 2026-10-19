@@ -41,16 +41,15 @@ namespace Proto4X.Factory
 
         protected override GameWorld InitializeGameWorld() => new(0, 0, 1, 1);
 
-        // 32 px tiles: 0.1 fits the whole 240-tile planet on screen, 4 is 128 px per tile.
         protected override Camera InitializeCamera() => style.CreateCamera();
 
         protected override void OnInitialize()
         {
             universe = FactoryScene.Create(SystemScheduler, out planet, out _);
             controller = new BuildController(universe, UserInterfaceManager.Camera);
-            cameraController = new CameraController(UserInterfaceManager.Camera, universe.Surfaces);
-            // Open on the starter scene, roughly where the old top-left-origin view sat at 1280x720.
-            cameraController.SetView(0, new Vector2(20, 11));
+            cameraController = new CameraController((OrbitCamera)UserInterfaceManager.Camera, universe.Surfaces);
+            // Open looking at the starter scene.
+            cameraController.SetView(0, new Vector2(15, 8.5f));
         }
 
         protected override void LoadContent()
@@ -138,7 +137,7 @@ namespace Proto4X.Factory
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
                 + $" | in flight {universe.InTransit.Count}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause";
+                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
         }
     }
 }

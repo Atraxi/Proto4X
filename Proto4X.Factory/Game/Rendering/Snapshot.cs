@@ -43,14 +43,16 @@ namespace Proto4X.Factory.Rendering
         }
 
         /// <summary>One picture: which surface, where, how close, and how far the grid is turned from upright.</summary>
-        public readonly record struct Shot(string Name, int Surface, Vector2 LocalTile, float Zoom, float ScreenRotation, bool WithStressBlock = false);
+        public readonly record struct Shot(string Name, int Surface, Vector2 LocalTile, float Zoom, float ScreenRotation, bool WithStressBlock = false, string Preset = "");
 
         public static readonly Shot[] Shots =
         [
             new("factory", 0, new Vector2(15f, 8.5f), 1.25f, 0f),
             new("closeup", 0, new Vector2(10f, 3.5f), 3.5f, 0f),
             new("ship", 1, new Vector2(11.5f, 8f), 1.9f, 0.55f),
-            new("overview", 0, new Vector2(118f, 56f), 0.2f, 0f, WithStressBlock: true),
+            new("overview", 0, new Vector2(118f, 40f), 0.2f, 0f, WithStressBlock: true, Preset: "top"),
+            new("low-angle", 0, new Vector2(13f, 6f), 1.6f, 0f, Preset: "low"),
+            new("iso-ortho", 0, new Vector2(15f, 8.5f), 1.25f, 0f, Preset: "iso"),
         ];
 
         public static void CaptureAll(string directory, int width = 1280, int height = 720, int supersample = 2, int ticks = 900)
@@ -90,6 +92,7 @@ namespace Proto4X.Factory.Rendering
 
                 var surface = universe.Surfaces[shot.Surface];
                 style.AimCamera(camera, surface, shot.LocalTile, shot.Zoom, shot.ScreenRotation);
+                style.AimSpecial(camera, shot.Preset);
                 style.PrepareFrame(camera, surface);
 
                 var world = style.WorldTransform(surface);
