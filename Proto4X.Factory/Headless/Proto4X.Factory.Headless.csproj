@@ -17,8 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Simulation\Proto4X.Factory.Simulation.csproj" />
-    <!-- The game's renderers, for snapshot: they run against a CPU rasterizer, never a window. -->
-    <ProjectReference Include="..\Game\Proto4X.Factory.csproj" />
     <ProjectReference Include="..\..\MonoGameLibrary\MonoGameLibrary.csproj" />
     <ProjectReference Include="..\..\Analyzers\Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

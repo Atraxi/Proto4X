@@ -27,11 +27,6 @@ namespace MonoGameLibrary.UI
                 currentViewport.Height);
         }
 
-        public Rectangle GetVisibleScreenBoundsAABB()
-        {
-            return GetVisibleLocalBounds(Matrix.Identity);
-        }
-
         /// <summary>See <see cref="Camera.GetVisibleLocalBounds"/>.</summary>
         public Rectangle GetVisibleLocalBounds(Matrix worldTransform)
         {

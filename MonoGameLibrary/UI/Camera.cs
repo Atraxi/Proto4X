@@ -102,12 +102,6 @@ namespace MonoGameLibrary.UI
 
         internal void Update(Rectangle viewportBounds)
         {
-            Resize(viewportBounds);
-        }
-
-        /// <summary>What the engine calls each frame with the window's bounds; public so a headless renderer can size a camera too.</summary>
-        public void Resize(Rectangle viewportBounds)
-        {
             // On resize, shift by half the size change so the centre stays put rather than the top-left.
             if (!Viewport.IsEmpty && viewportBounds.Size != Viewport.Size)
             {

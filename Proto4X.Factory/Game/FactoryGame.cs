@@ -26,13 +26,17 @@ namespace Proto4X.Factory
     /// </remarks>
     public sealed class FactoryGame() : Core("Factory Slice", 1280, 720, false)
     {
+        private const int PlanetWidth = 240;
+        private const int PlanetHeight = 180;
+        private const int StressColumns = 10;
+        private const int StressRows = 10;
+
         private readonly RenderStyle style = new();
         private Universe universe = null!;
         private Surface planet = null!;
         private BuildController controller = null!;
         private CameraController cameraController = null!;
         private Texture2D pixel = null!;
-        private Texture2D atlas = null!;
 
         private bool paused;
         private int stressBlocksStamped;
@@ -45,7 +49,10 @@ namespace Proto4X.Factory
 
         protected override void OnInitialize()
         {
-            universe = FactoryScene.Create(SystemScheduler, out planet, out _);
+            universe = new Universe(SystemScheduler);
+            planet = universe.AddSurface("planet", SurfaceKind.Planet, PlanetWidth, PlanetHeight);
+            var ship = universe.AddSurface("ship", SurfaceKind.Orbit, 24, 16);
+            Layouts.BuildStarterScene(planet, ship);
             controller = new BuildController(universe, UserInterfaceManager.Camera);
             cameraController = new CameraController((OrbitCamera)UserInterfaceManager.Camera, universe.Surfaces);
             // Open looking at the starter scene.
@@ -56,11 +63,6 @@ namespace Proto4X.Factory
         {
             pixel = new Texture2D(GraphicsDevice, 1, 1);
             pixel.SetData([Color.White]);
-
-            var image = style.Atlas.Image;
-            atlas = new Texture2D(GraphicsDevice, image.Width, image.Height);
-            atlas.SetData(image.Pixels);
-            SystemScheduler.Geometry.Texture = atlas;
 
             foreach (var surface in universe.Surfaces)
             {
@@ -97,13 +99,6 @@ namespace Proto4X.Factory
                 StampStressBlock();
             }
 
-            // Debug switch: if the world ever draws blank, F4 tells you whether the vertex-buffer
-            // path is to blame (see RenderStyle.Retained).
-            if (keyboard.WasKeyJustPressed(Keys.F4))
-            {
-                style.Retained = !style.Retained;
-            }
-
             controller.Update(InputManager.Instance.MouseInfo.Position);
 
             if (!paused)
@@ -126,18 +121,38 @@ namespace Proto4X.Factory
             if (SpriteBatch is not null)
             {
                 var surface = controller.Surface;
-                style.PrepareFrame(UserInterfaceManager.Camera, surface);
+                style.PrepareFrame(UserInterfaceManager.Camera);
                 SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
             }
         }
 
-        /// <summary>F5: see <see cref="FactoryScene.StampStressBlock"/>.</summary>
+        /// <summary>
+        /// F5: a 10x10 block of self-powered smelting modules east of the start area, 2,800 buildings
+        /// per press - the in-game version of the headless benchmark, for watching it run.
+        /// </summary>
+        /// <remarks>
+        /// Debug exception to "commands are the only way input reaches the sim": this calls
+        /// <see cref="Surface.TryPlace"/> directly, between ticks. Safe (it's outside Step), but a
+        /// replay wouldn't contain it.
+        /// </remarks>
         private void StampStressBlock()
         {
-            if (FactoryScene.StampStressBlock(planet, stressBlocksStamped))
+            const int originX = 40;
+            var originY = 2 + stressBlocksStamped * StressRows * Layouts.ModuleHeight;
+            if (originY + StressRows * Layouts.ModuleHeight > PlanetHeight)
             {
-                stressBlocksStamped++;
+                return;
             }
+
+            for (var row = 0; row < StressRows; row++)
+            {
+                for (var column = 0; column < StressColumns; column++)
+                {
+                    Layouts.StampSmeltingModule(planet, originX + column * Layouts.ModuleWidth, originY + row * Layouts.ModuleHeight, 50_000);
+                }
+            }
+
+            stressBlocksStamped++;
         }
 
         /// <summary>Debug readout. Numbers live here rather than in the HUD.</summary>
@@ -150,8 +165,8 @@ namespace Proto4X.Factory
                 + $"{(gameTime.IsRunningSlowly ? " SLOW" : "")} | {fps:F0} fps"
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
-                + $" | in flight {universe.InTransit.Count} | {(style.Retained ? "retained" : "IMMEDIATE")}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso  F4 retained/immediate";
+                + $" | in flight {universe.InTransit.Count}"
+                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
         }
     }
 }

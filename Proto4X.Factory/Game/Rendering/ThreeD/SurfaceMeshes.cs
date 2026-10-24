@@ -57,7 +57,7 @@ namespace Proto4X.Factory.Rendering.ThreeD
     /// up to two tiles past the chunk, which <see cref="BodyBounds"/> allows for.
     /// </para>
     /// </remarks>
-    public sealed class SurfaceMeshes(Surface surface, Vector2 whiteUv) : IDisposable
+    public sealed class SurfaceMeshes(Surface surface) : IDisposable
     {
         /// <summary>Height of the tallest model, rounded up, for bounds of chunks not yet built.</summary>
         private const float MaxModelHeight = 3f;
@@ -73,27 +73,14 @@ namespace Proto4X.Factory.Rendering.ThreeD
 
         private readonly ChunkMeshSet[] chunks = CreateChunks(surface.Grid);
 
-        /// <summary>
-        /// One shared scratch buffer every rebuild writes into before it is copied out compactly.
-        /// Untextured geometry samples the atlas's white texel, so it must know where that is.
-        /// </summary>
-        private readonly GeometryBuffer scratch = new() { WhiteUv = whiteUv };
+        /// <summary>One shared scratch buffer every rebuild writes into before it is copied out compactly.</summary>
+        private readonly GeometryBuffer scratch = new();
 
         /// <summary>Whether the mesh being built read belt shapes, which are only current once the belt network is clean.</summary>
         private bool readBeltShapes;
 
-        public SurfaceGrid Grid => surface.Grid;
+        private SurfaceGrid Grid => surface.Grid;
         public int ChunkCount => chunks.Length;
-
-        /// <summary>Chunk meshes built since the last call, for diagnostics.</summary>
-        public int TakeRebuildCount()
-        {
-            var count = rebuilds;
-            rebuilds = 0;
-            return count;
-        }
-
-        private int rebuilds;
 
         /// <summary>
         /// A conservative box around everything a chunk's body mesh can contain, valid before it is
@@ -122,12 +109,12 @@ namespace Proto4X.Factory.Rendering.ThreeD
         /// <summary>
         /// The chunk's body mesh at <paramref name="tier"/>, built now if it never has been. A stale
         /// one is rebuilt only while <paramref name="rebuildBudget"/> lasts; otherwise the old one is
-        /// returned and caught up on a later frame. <paramref name="force"/> rebuilds regardless.
+        /// returned and caught up on a later frame.
         /// </summary>
-        public StaticMesh Body(int chunk, DetailTier tier, ref int rebuildBudget, bool force = false)
+        public StaticMesh Body(int chunk, DetailTier tier, ref int rebuildBudget)
         {
             ref var slot = ref chunks[chunk].Bodies[(int)tier];
-            if (NeedsBuild(ref slot, chunk, ref rebuildBudget, force))
+            if (NeedsBuild(ref slot, chunk, ref rebuildBudget))
             {
                 scratch.Clear();
                 readBeltShapes = false;
@@ -139,10 +126,10 @@ namespace Proto4X.Factory.Rendering.ThreeD
         }
 
         /// <summary>The chunk's shadow casters (for the fine and mid tiers), under the same rules as <see cref="Body"/>.</summary>
-        public StaticMesh Shadows(int chunk, ref int rebuildBudget, bool force = false)
+        public StaticMesh Shadows(int chunk, ref int rebuildBudget)
         {
             ref var slot = ref chunks[chunk].Shadows;
-            if (NeedsBuild(ref slot, chunk, ref rebuildBudget, force))
+            if (NeedsBuild(ref slot, chunk, ref rebuildBudget))
             {
                 scratch.Clear();
                 readBeltShapes = false;
@@ -151,24 +138,6 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
 
             return slot.Mesh!;
-        }
-
-        /// <summary>Bytes held on the CPU by every built mesh (the GPU holds as much again).</summary>
-        public long CpuBytes
-        {
-            get
-            {
-                long total = 0;
-                foreach (var set in chunks)
-                {
-                    foreach (var body in set.Bodies)
-                    {
-                        total += body.Mesh?.CpuBytes ?? 0;
-                    }
-                    total += set.Shadows.Mesh?.CpuBytes ?? 0;
-                }
-                return total;
-            }
         }
 
         public void Dispose()
@@ -183,9 +152,9 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
         }
 
-        private bool NeedsBuild(ref CachedMesh slot, int chunk, ref int rebuildBudget, bool force)
+        private bool NeedsBuild(ref CachedMesh slot, int chunk, ref int rebuildBudget)
         {
-            if (slot.Mesh is null || force)
+            if (slot.Mesh is null)
             {
                 return true;
             }
@@ -206,7 +175,6 @@ namespace Proto4X.Factory.Rendering.ThreeD
             slot.Mesh.CopyFrom(scratch);
             slot.Version = Grid.ChunkContentVersion(chunk);
             slot.Provisional = readBeltShapes && surface.Belts.IsDirty;
-            rebuilds++;
         }
 
         private (int X0, int Y0, int X1, int Y1) TileRange(int chunk)
@@ -224,7 +192,7 @@ namespace Proto4X.Factory.Rendering.ThreeD
             var grid = Grid;
             var (x0, y0, x1, y1) = TileRange(chunk);
 
-            // Terrain first, then what stands on it, in the same order as the spike's per-system
+            // Terrain first, then what stands on it, in the same order as the old per-system
             // passes, so depth ties between coplanar faces resolve the same way.
             if (tier == DetailTier.Coarse)
             {
@@ -296,6 +264,8 @@ namespace Proto4X.Factory.Rendering.ThreeD
 
                     // Opaque, in one colour per building - the ground under its origin, darkened -
                     // so overlapping shadow faces never double-darken.
+                    // shortcut: shadows aren't clipped to the ground, so one cast past a deck's edge
+                    // floats over space; stencil them to the deck if building at the edge matters.
                     var model = BlockModels.For(buildings.KindOf(slot));
                     var place = BlockModels.Facing(buildings.DirectionOf(slot), model.Size) * Matrix.CreateTranslation(x, y, 0f);
                     var shade = ModelMesher.Scale(Palette.Tile(grid.TileAt(x, y)), ShadowDarkness);

@@ -87,10 +87,17 @@ namespace MonoGameLibrary.Systems.Infrastructure
             //TODO if I ever swap to some sort of skewed/orthographic perspective then I may not be able to keep AABB, in the worst case that could become a massive region
             var cullingBounds = userInterfaceManager.GetVisibleLocalBounds(worldTransform);
 
-            if (_geometrySystems.ContainsKey(gameLayer))
+            if (_geometrySystems.TryGetValue(gameLayer, out var geometrySystems))
             {
                 Geometry.Clear();
-                CollectGeometry(gameLayer, Geometry, CreateGeometryContext(camera, worldTransform, cullingBounds));
+                _geometryFrustum.Matrix = worldTransform * camera.GetViewMatrix() * camera.GetProjectionMatrix();
+                var context = new GeometryDrawContext(cullingBounds, _geometryFrustum, worldTransform);
+                foreach (var geometrySystem in geometrySystems)
+                {
+                    var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(geometrySystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. geometrySystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
+                    geometrySystem.Draw(Geometry, context, archetypeChunks);
+                }
+
                 Geometry.Flush(spriteBatch.GraphicsDevice, worldTransform, camera.GetViewMatrix(), camera.GetProjectionMatrix());
             }
 
@@ -114,34 +121,6 @@ namespace MonoGameLibrary.Systems.Infrastructure
                     screenSystem.Draw(spriteBatch, userInterfaceManager.GetViewport(), archetypeChunks);
                 }
                 spriteBatch.End();
-            }
-        }
-
-        /// <summary>
-        /// This frame's view of a world drawn through <paramref name="worldTransform"/>. The frustum
-        /// is the scheduler's single reused instance, so a context is only valid until the next call.
-        /// </summary>
-        public GeometryDrawContext CreateGeometryContext(Camera camera, Matrix worldTransform, Rectangle? localCullingBounds = null)
-        {
-            _geometryFrustum.Matrix = worldTransform * camera.GetViewMatrix() * camera.GetProjectionMatrix();
-            return new GeometryDrawContext(localCullingBounds ?? camera.GetVisibleLocalBounds(worldTransform), _geometryFrustum, worldTransform);
-        }
-
-        /// <summary>
-        /// Runs a world's geometry systems into <paramref name="batch"/> without touching the GPU -
-        /// the half of the geometry pass a headless renderer or a test can call.
-        /// </summary>
-        public void CollectGeometry(GameWorld gameLayer, GeometryBatch batch, in GeometryDrawContext context)
-        {
-            if (!_geometrySystems.TryGetValue(gameLayer, out var geometrySystems))
-            {
-                return;
-            }
-
-            foreach (var geometrySystem in geometrySystems)
-            {
-                var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(geometrySystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. geometrySystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
-                geometrySystem.Draw(batch, context, archetypeChunks);
             }
         }
     }

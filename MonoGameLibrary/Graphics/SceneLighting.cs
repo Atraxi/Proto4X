@@ -15,8 +15,7 @@ namespace MonoGameLibrary.Graphics
     /// in the sky while the ship turns under it - with no rebuild.
     /// <para>
     /// <see cref="Configure"/> pins <see cref="BasicEffect"/> down to exactly that formula (no
-    /// specular, one light, no fog) and <see cref="Intensity"/> is the same formula on the CPU, which
-    /// the software rasterizer uses. Keep the two in step.
+    /// specular, one light, no fog).
     /// </para>
     /// </remarks>
     public sealed class SceneLighting
@@ -32,9 +31,6 @@ namespace MonoGameLibrary.Graphics
 
         public float Ambient { get; set; } = 0.52f;
         public float Diffuse { get; set; } = 0.48f;
-
-        /// <summary>The light reaching a surface with this world-space normal (0 to Ambient + Diffuse).</summary>
-        public float Intensity(Vector3 worldNormal) => Ambient + Diffuse * MathF.Max(0f, Vector3.Dot(worldNormal, sun));
 
         /// <summary>
         /// The sun's direction in the local space of a world drawn through
@@ -66,7 +62,7 @@ namespace MonoGameLibrary.Graphics
                 0, 0, lift, 1);
         }
 
-        /// <summary>Sets a lit <see cref="BasicEffect"/> to evaluate exactly <see cref="Intensity"/>.</summary>
+        /// <summary>Sets a lit <see cref="BasicEffect"/> to evaluate exactly the formula above.</summary>
         internal void Configure(BasicEffect effect)
         {
             effect.LightingEnabled = true;

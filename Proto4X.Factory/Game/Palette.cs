@@ -7,10 +7,8 @@ namespace Proto4X.Factory
     /// <summary>Presentation colours. Kept out of the simulation, which has no business knowing what anything looks like.</summary>
     public static class Palette
     {
-        public static readonly Color Background = new(10, 12, 18);
         public static readonly Color Ground = new(52, 46, 38);
         public static readonly Color Foundation = new(58, 64, 76);
-        public static readonly Color FoundationEdge = new(96, 108, 128);
         public static readonly Color Belt = new(70, 70, 64);
         public static readonly Color BeltChevron = new(150, 132, 60);
         public static readonly Color Valid = new(90, 220, 120, 140);
@@ -34,8 +32,6 @@ namespace Proto4X.Factory
             ItemId.HullSegment => new Color(150, 200, 240),
             _ => Color.Magenta,
         };
-
-        public static Color Ore(ItemId ore) => Item(ore) * 0.55f;
 
         public static Color Building(BuildingKind kind) => kind switch
         {

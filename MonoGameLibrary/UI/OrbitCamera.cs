@@ -72,9 +72,6 @@ namespace MonoGameLibrary.UI
         /// <summary>Ground direction the camera faces (unit, z = 0): screen-up as it lands on the ground.</summary>
         public Vector2 Forward => new(MathF.Sin(Yaw), -MathF.Cos(Yaw));
 
-        /// <summary>Ground direction to screen-right.</summary>
-        public Vector2 Right => new(MathF.Cos(Yaw), MathF.Sin(Yaw));
-
         public override Matrix GetViewMatrix()
         {
             // An orthographic eye sits far back along the same line, so nothing near the target is

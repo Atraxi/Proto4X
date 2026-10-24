@@ -30,23 +30,14 @@ namespace Proto4X.Factory.Rendering.ThreeD
         /// <summary>Shadows sit this far above the ground so they never fight it for depth.</summary>
         private const float ShadowLift = 0.004f;
 
+        private const int RebuildBudget = 4;
+
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
-
-        /// <summary>False rebuilds every visible chunk every frame: the immediate behaviour, for comparison and debugging.</summary>
-        public bool Retained { get; set; } = true;
-
-        /// <summary>False submits every chunk, visible or not. For proving the culling is exact.</summary>
-        public bool CullChunks { get; set; } = true;
-
-        public int RebuildBudget { get; set; } = 4;
-
-        public SurfaceMeshes Meshes => meshes;
 
         public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             var tier = detail.Tier;
             var budget = RebuildBudget;
-            var force = !Retained;
             var frustum = context.LocalFrustum;
 
             // The sun is fixed in the sky (camera world space); the shadow matrix has to aim along it
@@ -56,14 +47,14 @@ namespace Proto4X.Factory.Rendering.ThreeD
 
             for (var chunk = 0; chunk < meshes.ChunkCount; chunk++)
             {
-                if (!CullChunks || frustum.Intersects(meshes.BodyBounds(chunk)))
+                if (frustum.Intersects(meshes.BodyBounds(chunk)))
                 {
-                    batch.Draw(meshes.Body(chunk, tier, ref budget, force), Matrix.Identity);
+                    batch.Draw(meshes.Body(chunk, tier, ref budget), Matrix.Identity);
                 }
 
-                if (tier != DetailTier.Coarse && (!CullChunks || frustum.Intersects(meshes.ShadowBounds(chunk, localSun))))
+                if (tier != DetailTier.Coarse && frustum.Intersects(meshes.ShadowBounds(chunk, localSun)))
                 {
-                    batch.Draw(meshes.Shadows(chunk, ref budget, force), shadowTransform);
+                    batch.Draw(meshes.Shadows(chunk, ref budget), shadowTransform);
                 }
             }
         }

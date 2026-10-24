@@ -15,28 +15,21 @@ This document has six parts:
 
 ## How this was checked
 
-The game was never launched, per the standing rule. Everything below was checked headlessly:
+The game was never launched, per the standing rule. During development the renderer was checked
+headlessly against a CPU copy of the GPU path: a software rasterizer, pixel comparisons of the chunk
+cache against full rebuilds (and of culled against unculled frames), a picking round trip, and a draw
+benchmark. Those tools have since been removed from the branch. The numbers in §3 come from them.
+What still runs: the solution build and the 42 sim checks (`dotnet run -c Release` in
+`Proto4X.Factory/Headless`).
 
-- **Build:** the whole solution builds with 0 warnings and 0 errors (Sandbox, Proto4X, Factory, Headless, Analyzers).
-- **Simulation:** the 42 sim checks pass. Determinism is unchanged; nothing in the sim reads the new content versions.
-- **Picking:** `picking` gives 0 wrong tiles on the planet at two zooms and on the turned ship.
-- **`render-check`:** new. 101 checks; details in 5.11.
-  - What the chunk cache draws equals a full rebuild, pixel for pixel. This holds when warm, and after each of these: ore mined out, buildings removed (both pending and torn down), belts placed across a chunk edge (before and after the tick), a whole stress block stamped, and 300 ticks of normal running.
-  - Frustum culling on equals culling off, pixel for pixel.
-  - No see-through holes.
-  - The ship relights when it turns under a locked camera.
-- **Against the spike:** the snapshots compare like this.
-  - Planet shots: every pixel is within ±2 per channel, except 2–30 single pixels per 1280×720 image on shadow edges. Those flip coverage because the shadow is now projected by a matrix at draw time.
-  - Ship shot: 2% of pixels differ, which is intended. The sun no longer turns with the deck.
-  - The pictures are in `../snapshots/production/`, next to the spike's in `../snapshots/blocky3d/`.
-    `ship-spike-vs-production.png` stacks the two ship shots.
+Against the spike, the planet pictures matched within ±2 per channel apart from a few shadow-edge
+pixels. The ship picture differed on purpose: the sun no longer turns with the deck. Pictures from that
+time are in `../snapshots/production/`, outside the repo.
 
 **Not verified until you run it:** the GPU path itself, meaning vertex buffers, `BasicEffect` lighting
 and the device state. Run `dotnet run --project Proto4X.Factory/Game`.
-- **If the world is blank or wrong, press F4.** It switches to the immediate path, which streams the
-  same meshes from the CPU every frame, the way the spike drew. If F4 fixes it, the fault is in the
-  vertex buffer code (`StaticMesh.Upload` / `DrawLayer`).
-- **If both modes are wrong,** suspect the lit `BasicEffect` setup (`SceneLighting.Configure`).
+- **If the world is blank,** suspect the vertex buffer code first (`StaticMesh.Upload` / `DrawLayer`).
+- **If it draws but is lit wrong,** suspect the lit `BasicEffect` setup (`SceneLighting.Configure`).
 
 ---
 
@@ -55,15 +48,14 @@ were all good. It was not a foundation. The findings, most serious first:
 | 6 | **No ownership of GPU resources.** Nothing was disposable. | Low now, high once meshes are retained | **Fixed:** `StaticMesh`, `SurfaceMeshes` and `RenderStyle` are `IDisposable` |
 | 7 | **`OrbitCamera` inherits the 2D `Camera`'s API.** `Zoom`, `Pan`, `RotateAround`, `ScreenTransform` and `WorldProjection` mean nothing for it, but are callable. | Medium (API honesty) | **Open.** See §4.8 |
 | 8 | **The mirrored view needs culling off.** The ground frame (x east, y south, z up) is left-handed, so the view mirrors x, which flips winding, so back-face culling stays off. That costs up to 2× fragment work on closed boxes. | Low (GPU cost never measured) | **Open, deliberately.** See §4.7 |
-| 9 | **Engine: the system query cache never caches.** `_cachedComponentArrays` is never written to. `GetValueOrDefault(key, fallback)` evaluates its fallback argument every call, so every system re-runs a LINQ archetype query every frame. That is the ~6 KB/frame of allocation in every measurement. | Low to medium | **Open, not touched.** Caching it properly needs invalidation when new archetypes appear (commit 2faef50 notes this). `SystemScheduler.cs:60`, `:102`, `:113`, `:143` |
-| 10 | **The GPU path had never executed.** Correctness rested on the CPU rasterizer copying its rules. | Inherent to the no-launch rule | **Mitigated:** F4 fallback, plus the CPU rasterizer now mirrors the lit path exactly |
+| 9 | **Engine: the system query cache never caches.** `_cachedComponentArrays` is never written to. `GetValueOrDefault(key, fallback)` evaluates its fallback argument every call, so every system re-runs a LINQ archetype query every frame. That is the ~6 KB/frame of allocation in every measurement. | Low to medium | **Open, not touched.** Caching it properly needs invalidation when new archetypes appear (commit 2faef50 notes this). `SystemScheduler.cs:60`, `:97`, `:109`, `:120` |
+| 10 | **The GPU path had never executed.** Correctness rested on the CPU rasterizer copying its rules. | Inherent to the no-launch rule | **Open.** The CPU rasterizer and the F4 fallback that covered for this were removed, so the first launch is the first test |
 
 What was already production-quality and was kept as is:
 - `OrbitCamera`: its picking ray, the pitch clamp that keeps the horizon off screen, and orthographic and perspective framed the same.
-- The block models and the CPU rasterizer's clipping and edge rules.
+- The block models.
 - 16-bit-index paging, so meshes draw on any graphics profile.
 - The per-world draw transform.
-- The headless tooling.
 
 ---
 
@@ -90,13 +82,12 @@ Engine API changes, which are breaking only for geometry systems (Factory is the
 - `IGeometryDrawSystem.Draw` takes an `in GeometryDrawContext` instead of a bare `Rectangle`.
 - `GeometryBatch` no longer has `AddQuad`. Immediate geometry goes into `batch.Immediate`.
 - `GeometryLayer` gained `Emissive`. Opaque is now lit, and there is no alpha test.
-- `SystemScheduler.CreateGeometryContext` is new. Headless callers use it.
 
 ---
 
 ## 3. Measurements
 
-From headless `bench-draw`: both stress blocks (5,694 buildings), 1280×720, medians of 50. It measures
+From the `bench-draw` tool (since removed): both stress blocks (5,694 buildings), 1280×720, medians of 50. It measures
 the CPU cost of the geometry pass, and not the GPU.
 
 | zoom | tier | spike: tris, ms | production, cache on: tris, ms | production, cache off: ms |
@@ -136,7 +127,7 @@ Each choice lists what this branch does, the alternatives, and when to switch.
 ### 4.1 Lighting: `BasicEffect` versus a custom shader
 
 **Chosen:** stock `BasicEffect`, per-vertex, one directional light plus ambient. It needs no content
-pipeline step, and its formula is simple enough to copy exactly in the CPU rasterizer.
+pipeline step.
 
 **Costs:** it can't do the following.
 - Per-vertex emissive. That is why `Emissive` is a separate layer and an extra draw call per mesh.
@@ -151,7 +142,7 @@ The `Content.mgcb` files exist but nothing goes through them yet.
 - It would make later effects possible: outlines, selection highlights, a blueprint overlay.
 
 **Switch when:** you want any of those, or textured models (§4.9). You will want a custom shader
-eventually. The cost is the build step, and the CPU rasterizer must copy whatever the shader does.
+eventually. The cost is the build step.
 
 ### 4.2 Shadows: planar projection, shadow maps, or blobs
 
@@ -171,7 +162,6 @@ matrix applied at draw time.
   - Shadows fall on everything, and they come out right on a ship because the map is rendered per frame.
   - Needs: a custom shader, a render target, bias tuning to avoid acne and peter-panning, and cascades
     to cover large zoom ranges.
-  - It can't be checked headless unless the CPU rasterizer gains it too.
 - **Blob shadows.** A dark quad under each building. Cheapest, and good enough at far zoom.
 
 **Switch when:** buildings get tall enough that shadows falling on neighbours matter visually. Planar
@@ -216,8 +206,8 @@ different distances for switching up and down, so chunks on a tier boundary don'
 
 **Options, roughly in the order to do them:**
 1. **Evict unused tiers.** Free a tier no chunk has drawn for N seconds. This cuts memory to about one tier's worth.
-2. **Drop the CPU copy after upload.** Keep it only headless, where the CPU rasterizer needs it. The F4
-   fallback then has to rebuild instead of re-streaming.
+2. **Drop the CPU copy after upload.** A refill then allocates fresh arrays, or meshes straight into
+   the GPU buffer.
 3. **A smaller vertex, about 20–24 B:**
    - pack the normal into 4 bytes (`NormalizedByte4`)
    - drop the UV until there are textures
@@ -253,7 +243,6 @@ factories get big.
   `CullClockwiseFace` culls back faces. This needs every face wound consistently outward:
   - `ModelMesher` already is.
   - The hull edges and flats would need checking.
-  - The CPU rasterizer must cull the same way, so a missing face shows up in `render-check`.
 - **(b) Make the world right-handed (y north).** This touches the sim, picking and every renderer.
 
 **Switch when:** the GPU is measured as the bottleneck. Until then, culling saves nothing visible and
@@ -278,17 +267,16 @@ controls. Do it when the next game picks up the 3D camera.
 
 ### 4.9 Textured models (the Kenney kits)
 
-The batch already carries a texture atlas and UVs, but everything samples the white texel today. Real
-textured models need four things:
+The engine batch accepts a texture (`GeometryBatch.Texture`) and every vertex carries a UV, but nothing
+sets a texture today: the batch falls back to a 1x1 white one. Real textured models need four things:
 1. **A model loader.** glTF or OBJ at runtime, or MonoGame's `Model` through the content pipeline.
 2. **A texture atlas** with padding between entries, and mipmaps.
 3. **Linear sampling.**
 4. **A rule for which mesh goes in which layer.**
 
-One pitfall already bit this branch: anything that writes untextured geometry must know where the
-white texel is (`GeometryBuffer.WhiteUv`), or it samples transparent atlas space and vanishes.
-`render-check` now fails on any see-through pixel to catch exactly that. Reintroducing the bug makes
-80 of its checks fail.
+One pitfall from this branch: untextured geometry uses `GeometryBuffer.WhiteUv`, so once an atlas is
+set that must point at a white texel in it, or the geometry samples transparent atlas space and
+vanishes.
 
 ### 4.10 Smaller decisions
 
@@ -296,14 +284,18 @@ white texel is (`GeometryBuffer.WhiteUv`), or it samples transparent atlas space
   - Today there is none, as in the spike.
   - The fix: `GraphicsDeviceManager.PreferMultiSampling = true`, which gives MSAA. It is cheap on
     modern GPUs and removes the stair-stepping on box edges.
-  - That is a one-line change in `Core`, plus a matching supersample in the snapshots.
+  - That is a one-line change in `Core`.
+- **Shadows past a deck's edge.** Planar shadows aren't clipped to the ground. A building on a
+  ship's south or east edge throws its shadow over empty space, where it floats as a dark slab. The
+  fix is a stencil: the deck marks the stencil buffer, and shadows draw only where it is marked. That
+  needs a stencil pass in `GeometryBatch`. It is marked as a `shortcut:` in `SurfaceMeshes.MeshShadows`.
 - **Translucency.** Translucent geometry is drawn in submission order, unsorted. That is fine for a
   ghost and pending removals. It would be wrong for overlapping glass.
 - **Worlds don't occlude each other.** Depth is cleared per world, so a ship drawn over the planet
   never hides behind planet buildings. That's right for a separate surface view, and wrong if both are
   ever shown in one scene.
 - **Picking hits the ground plane, not models.** Picking a building's roof selects the tile behind it at
-  low angles. For model picking, test a ray against each building's box. The bounds already exist.
+  low angles. For model picking, test a ray against each building's model boxes.
 
 ---
 
@@ -314,8 +306,8 @@ The frame, end to end:
 ```
 FactoryGame.OnDraw
  └ SystemScheduler.Draw(world, worldTransform)
-    ├ CreateGeometryContext   frustum = world × view × projection, culling rect
-    ├ CollectGeometry         each IGeometryDrawSystem, in registration order:
+    ├ GeometryDrawContext     frustum = world × view × projection, culling rect
+    ├ each IGeometryDrawSystem, in registration order:
     │   ├ StaticSurface3DRenderer   per chunk: frustum test → batch.Draw(body mesh)
     │   │                                                    → batch.Draw(shadow mesh, shadow matrix)
     │   └ live renderers            triangles into batch.Immediate
@@ -348,7 +340,7 @@ pass an array of these to a draw call.
 
 Everything is triangles. **Indexed** drawing stores each corner once in a vertex array, then lists
 triangles as triples of indices into it. A quad is 4 vertices and 6 indices: (0,1,2) and (0,2,3), the
-two triangles sharing the a–c diagonal (`:104`).
+two triangles sharing the a–c diagonal (`:76`).
 
 **Indices are `short`** (16-bit), so one array can address at most 32,767 vertices. That is why
 geometry lives in **pages** of 32,764 vertices, each drawn with its own call. The alternative, 32-bit
@@ -361,7 +353,7 @@ Pages are reused across frames (`Clear` just resets counts), so steady-state fil
 
 ### 5.3 Effects and device state
 
-`MonoGameLibrary/Graphics/GeometryBatch.cs:105`
+`MonoGameLibrary/Graphics/GeometryBatch.cs:82`
 
 To draw, the GPU needs four kinds of state.
 
@@ -370,7 +362,7 @@ To draw, the GPU needs four kinds of state.
   `Projection`, `Texture`, lights and material colours.
 - Setting a property only changes a C# field. **`effect.CurrentTechnique.Passes[0].Apply()`** is what
   pushes the parameters to the GPU and binds the shaders.
-- That is why `DrawLayer` (`:138`) calls `Apply` again after setting each mesh's `World`.
+- That is why `DrawLayer` (`:115`) calls `Apply` again after setting each mesh's `World`.
 
 **2. `BlendState`:** how a new pixel combines with the one already there.
 - `Opaque` replaces it.
@@ -383,7 +375,7 @@ To draw, the GPU needs four kinds of state.
 
 **4. `RasterizerState`:** culling. `CullNone` here (§4.7).
 
-**`SamplerState`** controls how texture pixels are filtered. Point sampling keeps the white texel exact.
+**`SamplerState`** controls how texture pixels are filtered. Point sampling keeps a white texel exact.
 
 `Flush` sets all of this explicitly. `SpriteBatch` changes the same device state and doesn't restore it,
 so assuming any state would break the moment a HUD draws first.
@@ -410,13 +402,13 @@ There are two ways to feed the GPU vertices:
   - **Nothing crosses the bus per frame.**
   - `WriteOnly` promises the CPU will never read it back, which lets the driver put it in the fastest memory for the GPU.
 
-`StaticMesh.CopyFrom` (`:58`) copies a scratch `GeometryBuffer` into exact-size arrays. Pages are
-1.3 MB; a chunk needs kilobytes. It also computes a bounding box.
+`StaticMesh.CopyFrom` (`:35`) copies a scratch `GeometryBuffer` into exact-size arrays. Pages are
+1.3 MB; a chunk needs kilobytes.
 
-`Upload` (`:211`) runs lazily on first draw, and again whenever `CopyFrom` marked the mesh stale. It
+`Upload` (`:160`) runs lazily on first draw, and again whenever `CopyFrom` marked the mesh stale. It
 reuses the GPU buffers when the new content fits, and recreates them only when it outgrew them.
 
-`DrawLayer` (`:124`) picks buffers or the streaming fallback (`UseVertexBuffers`, the F4 switch).
+`DrawLayer` (`:83`) uploads any stale segment, binds its buffers and draws.
 
 GPU buffers are unmanaged resources, so `Dispose` them. The garbage collector doesn't know how big they are.
 
@@ -434,10 +426,10 @@ local tile  ──place──►  surface-local  ──World──►  camera wo
 - **World**, per surface, is `RenderStyle.WorldTransform`: rotate about z by the frame's angle, then
   translate. Geometry is built once in surface-local tiles and never touched again. The ship turning
   changes only this one matrix.
-- **View**, `OrbitCamera.GetViewMatrix` at `MonoGameLibrary/UI/OrbitCamera.cs:78`:
+- **View**, `OrbitCamera.GetViewMatrix` at `MonoGameLibrary/UI/OrbitCamera.cs:75`:
   `Matrix.CreateLookAt(eye, target, up)` turns the world so the eye sits at the origin looking down −z.
   The `CreateScale(-1, 1, 1)` after it is the handedness mirror (§4.7).
-- **Projection** (`:86`): `CreatePerspectiveFieldOfView(fov, aspect, near, far)` makes far things
+- **Projection** (`:83`): `CreatePerspectiveFieldOfView(fov, aspect, near, far)` makes far things
   smaller. It maps the view volume to clip space, where x and y are in [−w, w] and z in [0, w];
   the GPU divides by w afterwards.
   - Near and far scale with distance, which keeps depth precision proportional. With 24 bits of depth,
@@ -445,7 +437,7 @@ local tile  ──place──►  surface-local  ──World──►  camera wo
   - `CreateOrthographic` drops the divide, so there is no foreshortening. That gives true isometric and
     the overhead look.
 - **Picking** runs the chain backwards: `Matrix.Invert(view × projection)` takes a screen point at
-  depth 0 and at depth 1 back to two world points. That line is intersected with z = 0 (`:124`).
+  depth 0 and at depth 1 back to two world points. That line is intersected with z = 0 (`:105`).
 
 ### 5.6 Normals and lighting
 
@@ -466,10 +458,9 @@ with no rebuild. Baking (the spike) froze the sun into the ship's frame.
 **The inverse-transpose.** Normals don't transform like positions. Under a non-uniform scale or a skew,
 transforming a normal by `M` tilts it off its surface; the correct transform is `(M⁻¹)ᵀ`.
 - `BasicEffect` computes that for you from `World`, as `WorldInverseTranspose`.
-- The CPU rasterizer does the same (`SoftwareRasterizer.cs`, `DrawTransform`).
 - For pure rotation it equals `M`. It matters for shadows (§5.7).
 
-**`Configure`** (`:70`) pins `BasicEffect` to exactly the formula above:
+**`Configure`** (`:66`) pins `BasicEffect` to exactly the formula above:
 - `AmbientLightColor` = ambient
 - one `DirectionalLight` with diffuse = 0.48
 - zero specular everywhere
@@ -484,7 +475,7 @@ light, so the foot shade survives.
 
 ### 5.7 Planar shadows
 
-`SceneLighting.PlanarShadow` (`:59`)
+`SceneLighting.PlanarShadow` (`:55`)
 
 To flatten a point `p` onto z = 0 along the sun direction `s`, slide it down the sun ray until z hits 0:
 
@@ -494,7 +485,7 @@ That gives `x' = x − (s.x/s.z)·z` and `y' = y − (s.y/s.z)·z`. As a row-vec
 `(−s.x/s.z, −s.y/s.z, 0)`.
 
 The shadow mesh is the models' boxes, untransformed. The renderer draws it with
-`World = PlanarShadow(localSun) × surfaceWorld` (`Renderers3D.cs:54`).
+`World = PlanarShadow(localSun) × surfaceWorld` (`Renderers3D.cs:46`).
 - `localSun` is the world sun turned back into the surface's frame (`SunInLocal`).
 - As the ship turns, the shadows swing correctly with no rebuild.
 
@@ -522,13 +513,13 @@ bumped by:
 It bumps every chunk within one tile of the change, because a belt's curve and a deck's hull edge read
 their neighbours.
 
-A cached mesh remembers the counter it was built from. A mismatch means stale (`NeedsBuild`, `:186`).
+A cached mesh remembers the counter it was built from. A mismatch means stale (`NeedsBuild`, `:155`).
 
 This array is separate from the sim's `chunkVersions` on purpose. A rendering need must never make
 inserters re-resolve their targets.
 
 **Ownership.** A building is meshed by the chunk holding its **origin** tile (`OwnedBuildingAt`,
-`:311`), so it is meshed exactly once. Buildings are found **through occupancy**, not through ECS
+`:281`), so it is meshed exactly once. Buildings are found **through occupancy**, not through ECS
 entities. Removal frees a building's tiles immediately, so it leaves the static mesh at once, and the
 live pass draws it see-through until the entity goes.
 
@@ -536,7 +527,7 @@ live pass draws it see-through until the entity goes.
 recomputed at the next tick boundary. A mesh that read them while the network was dirty is marked
 provisional, and rebuilt once the network is clean.
 
-**Budget** (`Body`, `:127`):
+**Budget** (`Body`, `:114`):
 - A never-built chunk is built immediately. The alternative is a hole.
 - A stale chunk is rebuilt only while the per-frame budget lasts; otherwise last frame's mesh is drawn.
   For a frame or two, a removed building can linger, rather than the frame hitching.
@@ -553,16 +544,15 @@ A `BoundingFrustum` is the six planes of the camera's view volume.
 
 So the renderer tests each chunk's local-space `BoundingBox` directly, with no per-chunk transform.
 
-**The boxes are conservative** (`BodyBounds`, `:103`):
+**The boxes are conservative** (`BodyBounds`, `:90`):
 - the chunk's tiles
 - plus 2 tiles of overhang east and south, for a 3×3 model owned at its corner
 - from the hull's underside up to the tallest model
 
-Shadows get a box stretched away from the sun by the longest possible shadow (`ShadowBounds`, `:113`).
+Shadows get a box stretched away from the sun by the longest possible shadow (`ShadowBounds`, `:100`).
 
-`render-check` is the evidence the boxes are big enough: culled and unculled renders match pixel for
-pixel in all ten test views. That includes the mirrored view, which is the case most likely to break
-plane extraction.
+During development, culled and unculled frames matched pixel for pixel in ten test views, so the
+boxes are big enough. That included the mirrored view, the case most likely to break plane extraction.
 
 `SystemScheduler` keeps **one** `BoundingFrustum` and resets its `Matrix` each frame, because it is a
 class and would otherwise allocate.
@@ -583,45 +573,18 @@ These rebuild every frame into `batch.Immediate`:
 Each culls by the padded ground rectangle in `GeometryDrawContext.LocalCullingBounds`. The status pass
 doesn't iterate at all when nothing it draws would be visible: Mid tier with no pending removals.
 
-### 5.11 Verification tooling
+### 5.11 First run checklist
 
-`Proto4X.Factory/Headless`
-
-Run from `Proto4X.Factory/Headless`:
-
-| Command | What it does |
-|---|---|
-| `dotnet run -c Release` | 42 sim checks plus determinism |
-| `dotnet run -c Release -- render-check [dir]` | Cache = rebuild, culling = no culling, no holes, sun fixed. Failing pairs are saved to `dir` as `-a`/`-b` PNGs |
-| `dotnet run -c Release -- snapshot [dir]` | The 7 standard shots at 1280×720 |
-| `dotnet run -c Release -- bench-draw` | §3's tables |
-| `dotnet run -c Release -- picking` | Screen → tile round trip |
-
-The CPU rasterizer (`Software/SoftwareRasterizer.cs`) copies the GPU path rule for rule:
-- layer order, and retained meshes before immediate
-- depth test and write per layer
-- premultiplied blending
-- per-vertex lighting with the inverse-transpose normal (`ToClip`, `:153`)
-- D3D-style clip-space z, and near/far clipping
-
-**Any change to `GeometryBatch.Flush` or `SceneLighting.Configure` must be copied there,** or the
-snapshots stop meaning anything.
-
-### 5.12 First run checklist
-
-1. **Launch.** The planet should look like `../snapshots/production/blocky3d-factory.png`: lit, with
-   shadows falling south-east. That folder holds this branch's seven shots; `../snapshots/blocky3d/` is
-   the spike's.
-2. **F4.** The title bar says `IMMEDIATE` and nothing on screen should change. If anything changes, the
-   two paths disagree; report which one looks right.
-3. **Tab to the ship, then turn the camera with Z/X.** The ship's shadows should point the same
+1. **Launch.** The planet should look like `../snapshots/production/blocky3d-factory.png` (outside the
+   repo): lit, with shadows falling south-east.
+2. **Tab to the ship, then turn the camera with Z/X.** The ship's shadows should point the same
    world direction as the planet's, south-east, whatever the ship's heading. They should not turn
    with the deck. `../snapshots/production/ship-spike-vs-production.png` shows the difference: spike on
    top, this branch below.
-4. **F5 a stress block.**
+3. **F5 a stress block.**
    - At most a frame or two of the old mesh in the stamped area.
    - No hitch beyond the stamp itself.
-5. **Zoom out across distance 70 and 140.** These are the tier switches, with a one-off build the first
+4. **Zoom out across distance 70 and 140.** These are the tier switches, with a one-off build the first
    time each tier is seen.
 
 ---

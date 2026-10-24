@@ -46,18 +46,6 @@ namespace MonoGameLibrary.Graphics
 
         public int PageCount(GeometryLayer layer) => layers[(int)layer].Used;
 
-        public ReadOnlySpan<MeshVertex> PageVertices(GeometryLayer layer, int page)
-        {
-            var p = layers[(int)layer].Pages[page];
-            return new ReadOnlySpan<MeshVertex>(p.Vertices, 0, p.VertexCount);
-        }
-
-        public ReadOnlySpan<short> PageIndices(GeometryLayer layer, int page)
-        {
-            var p = layers[(int)layer].Pages[page];
-            return new ReadOnlySpan<short>(p.Indices, 0, p.IndexCount);
-        }
-
         internal (MeshVertex[] Vertices, int VertexCount, short[] Indices, int IndexCount) RawPage(GeometryLayer layer, int page)
         {
             var p = layers[(int)layer].Pages[page];
@@ -65,22 +53,6 @@ namespace MonoGameLibrary.Graphics
         }
 
         public bool IsEmpty => layers[0].Used == 0 && layers[1].Used == 0 && layers[2].Used == 0 && layers[3].Used == 0;
-
-        public int TriangleCount
-        {
-            get
-            {
-                var total = 0;
-                foreach (var layer in layers)
-                {
-                    for (var i = 0; i < layer.Used; i++)
-                    {
-                        total += layer.Pages[i].IndexCount / 3;
-                    }
-                }
-                return total;
-            }
-        }
 
         public void Clear()
         {

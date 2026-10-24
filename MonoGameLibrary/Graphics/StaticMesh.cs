@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -15,10 +14,9 @@ namespace MonoGameLibrary.Graphics
     /// buildings, their shadows - should be built once, live in GPU memory, and cost one draw call
     /// per frame. That's this.
     /// <para>
-    /// <b>CPU copy.</b> The vertices and indices stay in managed arrays after upload. That doubles
-    /// the memory (36 bytes a vertex, twice), but it lets the software rasterizer draw exactly what
-    /// the GPU draws, lets <see cref="GeometryBatch.UseVertexBuffers"/> fall back to the
-    /// immediate draw path for debugging, and makes a device reset recoverable.
+    /// <b>CPU copy.</b> The vertices and indices stay in managed arrays after upload, which doubles
+    /// the memory (36 bytes a vertex, twice). They let the upload wait for the first draw, where a
+    /// device is at hand, and let a refill reuse them.
     /// </para>
     /// <para>
     /// <b>Reuse.</b> <see cref="CopyFrom"/> refills an existing mesh, keeping its arrays and GPU
@@ -30,38 +28,14 @@ namespace MonoGameLibrary.Graphics
         private readonly List<Segment>[] layers = [[], [], [], []];
         private bool disposed;
 
-        /// <summary>Bounds of every vertex, in the mesh's own space. Empty mesh: a zero box at the origin.</summary>
-        public BoundingBox Bounds { get; private set; }
-
         public int VertexCount { get; private set; }
-        public int TriangleCount { get; private set; }
         public bool IsEmpty => VertexCount == 0;
-
-        /// <summary>Bytes of vertex and index data held on the CPU (the GPU holds the same again once uploaded).</summary>
-        public long CpuBytes
-        {
-            get
-            {
-                long total = 0;
-                foreach (var layer in layers)
-                {
-                    foreach (var segment in layer)
-                    {
-                        total += segment.Vertices.Length * 36L + segment.Indices.Length * 2L;
-                    }
-                }
-                return total;
-            }
-        }
 
         /// <summary>Replaces the contents with a copy of <paramref name="source"/>. The source can be cleared and reused straight after.</summary>
         public void CopyFrom(GeometryBuffer source)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
-            var min = new Vector3(float.MaxValue);
-            var max = new Vector3(float.MinValue);
             var vertexCount = 0;
-            var triangleCount = 0;
 
             for (var layer = 0; layer < GeometryBuffer.LayerCount; layer++)
             {
@@ -76,14 +50,7 @@ namespace MonoGameLibrary.Graphics
                     }
 
                     segments[page].Fill(vertices, vCount, indices, iCount);
-                    for (var v = 0; v < vCount; v++)
-                    {
-                        min = Vector3.Min(min, vertices[v].Position);
-                        max = Vector3.Max(max, vertices[v].Position);
-                    }
-
                     vertexCount += vCount;
-                    triangleCount += iCount / 3;
                 }
 
                 // Segments past the new page count are emptied, not freed, so a mesh that shrinks
@@ -95,8 +62,6 @@ namespace MonoGameLibrary.Graphics
             }
 
             VertexCount = vertexCount;
-            TriangleCount = triangleCount;
-            Bounds = vertexCount > 0 ? new BoundingBox(min, max) : default;
         }
 
         public bool HasLayer(GeometryLayer layer)
@@ -111,17 +76,11 @@ namespace MonoGameLibrary.Graphics
             return false;
         }
 
-        /// <summary>One layer's triangles, for CPU consumers: (vertices, indices) per segment.</summary>
-        public int SegmentCount(GeometryLayer layer) => layers[(int)layer].Count;
-        public ReadOnlySpan<MeshVertex> SegmentVertices(GeometryLayer layer, int segment) => layers[(int)layer][segment].VertexSpan;
-        public ReadOnlySpan<short> SegmentIndices(GeometryLayer layer, int segment) => layers[(int)layer][segment].IndexSpan;
-
         /// <summary>
-        /// Issues the draw calls for one layer. The caller has already applied the effect pass. With
-        /// <paramref name="useVertexBuffers"/> the data comes from GPU buffers, uploaded here if
-        /// stale; without, it's streamed from the CPU copy like immediate geometry.
+        /// Issues the draw calls for one layer, uploading any segment whose GPU copy is stale. The
+        /// caller has already applied the effect pass.
         /// </summary>
-        internal void DrawLayer(GraphicsDevice device, GeometryLayer layer, bool useVertexBuffers)
+        internal void DrawLayer(GraphicsDevice device, GeometryLayer layer)
         {
             foreach (var segment in layers[(int)layer])
             {
@@ -130,17 +89,10 @@ namespace MonoGameLibrary.Graphics
                     continue;
                 }
 
-                if (useVertexBuffers)
-                {
-                    segment.Upload(device);
-                    device.SetVertexBuffer(segment.VertexBuffer);
-                    device.Indices = segment.IndexBuffer;
-                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, segment.IndexCount / 3);
-                }
-                else
-                {
-                    device.DrawUserIndexedPrimitives(PrimitiveType.TriangleList, segment.Vertices, 0, segment.VertexCount, segment.Indices, 0, segment.IndexCount / 3);
-                }
+                segment.Upload(device);
+                device.SetVertexBuffer(segment.VertexBuffer);
+                device.Indices = segment.IndexBuffer;
+                device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, segment.IndexCount / 3);
             }
         }
 
@@ -172,9 +124,6 @@ namespace MonoGameLibrary.Graphics
             public VertexBuffer? VertexBuffer;
             public IndexBuffer? IndexBuffer;
             private bool gpuStale = true;
-
-            public ReadOnlySpan<MeshVertex> VertexSpan => new(Vertices, 0, VertexCount);
-            public ReadOnlySpan<short> IndexSpan => new(Indices, 0, IndexCount);
 
             public void Fill(MeshVertex[] vertices, int vertexCount, short[] indices, int indexCount)
             {

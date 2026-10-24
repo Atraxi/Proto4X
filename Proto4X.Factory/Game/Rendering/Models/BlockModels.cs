@@ -31,13 +31,11 @@ namespace Proto4X.Factory.Rendering.Models
     }
 
     /// <summary>
-    /// The art, such as it is: every building as blocks. The same models feed every style - drawn
-    /// directly as 3D, or baked into sprites for the 2D projections - so the styles differ only in
-    /// how they get the models to the screen.
+    /// The art, such as it is: every building as blocks, meshed into the chunk caches and drawn
+    /// live for ghosts and pending removals.
     /// </summary>
     /// <remarks>
-    /// Moving parts (inserter arms, belt items, the rocket) are not here; each style's renderers
-    /// draw those live.
+    /// Moving parts (inserter arms, belt items, the rocket) are not here; the live renderers draw them.
     /// </remarks>
     public static class BlockModels
     {
@@ -56,9 +54,6 @@ namespace Proto4X.Factory.Rendering.Models
                 Matrix.CreateRotationZ(((int)direction - (int)Direction.East) * MathHelper.PiOver2) *
                 Matrix.CreateTranslation(half, half, 0);
         }
-
-        /// <summary>Whether every facing looks the same, so a sprite style can bake just one.</summary>
-        public static bool IsSymmetric(BuildingKind kind) => kind is BuildingKind.Chest or BuildingKind.Pole or BuildingKind.Receiver or BuildingKind.LaunchSilo;
 
         private static ModelBox Box(float x0, float y0, float z0, float x1, float y1, float z1, Color colour, bool emissive = false) =>
             new(new Vector3(x0, y0, z0), new Vector3(x1, y1, z1), colour, emissive);

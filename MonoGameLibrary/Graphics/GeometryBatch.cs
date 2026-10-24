@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace MonoGameLibrary.Graphics
 {
     /// <summary>A retained mesh submitted for this frame, with the transform from its own space into the world's local space.</summary>
-    public readonly record struct MeshDraw(StaticMesh Mesh, Matrix Transform);
+    internal readonly record struct MeshDraw(StaticMesh Mesh, Matrix Transform);
 
     /// <summary>
     /// One frame's 3D drawing for one world: retained <see cref="StaticMesh"/>es submitted by
@@ -53,28 +53,6 @@ namespace MonoGameLibrary.Graphics
 
         public SamplerState Sampler { get; set; } = SamplerState.PointClamp;
 
-        /// <summary>
-        /// Draw retained meshes from GPU vertex buffers (true) or stream their CPU copies like
-        /// immediate geometry (false). The false path is the simpler, older one - a debugging
-        /// fallback if the buffers ever draw nothing.
-        /// </summary>
-        public bool UseVertexBuffers { get; set; } = true;
-
-        public ReadOnlySpan<MeshDraw> MeshDraws => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(meshDraws);
-
-        public int TriangleCount
-        {
-            get
-            {
-                var total = Immediate.TriangleCount;
-                foreach (var draw in meshDraws)
-                {
-                    total += draw.Mesh.TriangleCount;
-                }
-                return total;
-            }
-        }
-
         public void Clear()
         {
             Immediate.Clear();
@@ -90,8 +68,7 @@ namespace MonoGameLibrary.Graphics
             }
         }
 
-        /// <summary>Whether a layer's geometry is lit. The software rasterizer asks this too, so both agree.</summary>
-        public static bool IsLit(GeometryLayer layer) => layer is GeometryLayer.Opaque or GeometryLayer.Translucent;
+        private static bool IsLit(GeometryLayer layer) => layer is GeometryLayer.Opaque or GeometryLayer.Translucent;
 
         /// <summary>
         /// Draws every layer. Clears depth first, so each call (one per world) composites on its own
@@ -153,7 +130,7 @@ namespace MonoGameLibrary.Graphics
                 effect.World = draw.Transform * world;
                 effect.CurrentTechnique.Passes[0].Apply();
                 device.SamplerStates[0] = Sampler;
-                draw.Mesh.DrawLayer(device, layer, UseVertexBuffers);
+                draw.Mesh.DrawLayer(device, layer);
             }
 
             var pages = Immediate.PageCount(layer);
