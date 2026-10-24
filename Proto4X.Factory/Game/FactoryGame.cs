@@ -72,6 +72,13 @@ namespace Proto4X.Factory
             SystemScheduler.Add(World, new HudRenderer(controller, pixel, universe.Surfaces));
         }
 
+        /// <summary>Releases the chunk meshes' GPU buffers. The device would on exit anyway; this keeps ownership honest.</summary>
+        protected override void UnloadContent()
+        {
+            style.Dispose();
+            base.UnloadContent();
+        }
+
         protected override void OnUpdate(GameTime gameTime)
         {
             var keyboard = InputManager.Instance.KeyboardInfo;
@@ -88,6 +95,13 @@ namespace Proto4X.Factory
             if (keyboard.WasKeyJustPressed(Keys.F5))
             {
                 StampStressBlock();
+            }
+
+            // Debug switch: if the world ever draws blank, F4 tells you whether the vertex-buffer
+            // path is to blame (see RenderStyle.Retained).
+            if (keyboard.WasKeyJustPressed(Keys.F4))
+            {
+                style.Retained = !style.Retained;
             }
 
             controller.Update(InputManager.Instance.MouseInfo.Position);
@@ -136,8 +150,8 @@ namespace Proto4X.Factory
                 + $"{(gameTime.IsRunningSlowly ? " SLOW" : "")} | {fps:F0} fps"
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
-                + $" | in flight {universe.InTransit.Count}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
+                + $" | in flight {universe.InTransit.Count} | {(style.Retained ? "retained" : "IMMEDIATE")}"
+                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso  F4 retained/immediate";
         }
     }
 }

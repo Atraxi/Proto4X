@@ -1,40 +1,16 @@
 using Microsoft.Xna.Framework;
-using MonoGameLibrary.Archetypes;
-using MonoGameLibrary.Components.Infrastructure;
-using MonoGameLibrary.Graphics;
-using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Factory.Simulation;
 using Proto4X.Factory.Simulation.Belts;
 using Proto4X.Factory.Simulation.Grid;
-using System.Collections.Generic;
 
 namespace Proto4X.Factory.Rendering
 {
-    /// <summary>
-    /// Items riding belts, read straight out of the lane segments - they are not entities, so there is
-    /// nothing for the scheduler to hand this system. Curves are drawn as if straight along the tile's
-    /// own direction, which is wrong by a few pixels on the corner tile and nowhere else.
-    /// </summary>
-    public sealed class BeltItemRenderer(Surface surface) : IGeometryDrawSystem
-    {
-        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
-
-        public void Draw(GeometryBatch batch, Rectangle localCullingBounds, List<ArchetypeChunk> archetypeChunks)
-        {
-            var visible = SurfaceView.VisibleTiles(localCullingBounds, surface.Grid);
-            foreach (var item in BeltItems.Visible(surface, visible))
-            {
-                Shapes.FillCentred(batch, GeometryLayer.Opaque, item.Position, new Vector2(0.22f), 0f, FlatDepth.BeltItem, Palette.Item(item.Item));
-            }
-        }
-    }
-
     /// <summary>One item on a belt, in grid-local tiles.</summary>
     public readonly record struct BeltItem(Vector2 Position, Simulation.Data.ItemId Item, Direction Direction);
 
     /// <summary>
     /// Walks every lane segment and yields the items on visible tiles with their grid-local
-    /// position. Shared by every style so they all agree on where an item is.
+    /// position. A read-out of simulation state, kept apart from any one renderer.
     /// </summary>
     public static class BeltItems
     {

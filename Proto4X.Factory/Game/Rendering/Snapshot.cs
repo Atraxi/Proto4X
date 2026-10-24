@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using MonoGameLibrary.Systems.Infrastructure;
+using MonoGameLibrary.UI;
 using Proto4X.Factory.Rendering.Software;
 using Proto4X.Factory.Simulation;
 using System;
@@ -16,32 +17,6 @@ namespace Proto4X.Factory.Rendering
     /// </summary>
     public static class Snapshot
     {
-        /// <summary>
-        /// Every building baked in each sprite projection, written as the raw atlases over grey - a
-        /// contact sheet of the art the sprite styles draw from.
-        /// </summary>
-        public static void WriteSpriteSheets(string directory)
-        {
-            Directory.CreateDirectory(directory);
-            foreach (var projection in (Models.SpriteProjection[])[Models.SpriteProjection.TopDown, Models.SpriteProjection.Oblique, Models.SpriteProjection.Isometric])
-            {
-                var atlas = new AtlasBuilder(2048);
-                var density = projection == Models.SpriteProjection.Isometric ? 48f : 64f;
-                _ = new Models.BuildingSprites(atlas, projection, density, new Color(20, 18, 16));
-                var sheet = new CpuImage(atlas.Image.Width, atlas.Image.Height);
-                sheet.Fill(new Color(96, 96, 100));
-                for (var i = 0; i < sheet.Pixels.Length; i++)
-                {
-                    var pixel = atlas.Image.Pixels[i];
-                    var under = sheet.Pixels[i];
-                    var inverse = 255 - pixel.A;
-                    sheet.Pixels[i] = new Color(pixel.R + under.R * inverse / 255, pixel.G + under.G * inverse / 255, pixel.B + under.B * inverse / 255, 255);
-                }
-
-                PngWriter.Write(Path.Combine(directory, $"sprites-{projection}.png"), sheet);
-            }
-        }
-
         /// <summary>One picture: which surface, where, how close, and how far the grid is turned from upright.</summary>
         public readonly record struct Shot(string Name, int Surface, Vector2 LocalTile, float Zoom, float ScreenRotation, bool WithStressBlock = false, string Preset = "");
 
@@ -56,70 +31,110 @@ namespace Proto4X.Factory.Rendering
             new("overhead-ortho", 0, new Vector2(15f, 8.5f), 1.25f, 0f, Preset: "overhead"),
         ];
 
-        /// <param name="supersample">1 matches the game, which has no MSAA and no mipmaps; higher flatters every style, sprites most.</param>
+        /// <param name="supersample">1 matches the game, which has no MSAA and no mipmaps.</param>
         public static void CaptureAll(string directory, int width = 1280, int height = 720, int supersample = 1, int ticks = 900)
         {
             Directory.CreateDirectory(directory);
-            var style = new RenderStyle();
-            var scheduler = new SystemScheduler();
-            var universe = FactoryScene.Create(scheduler, out var planet, out _);
-            foreach (var surface in universe.Surfaces)
-            {
-                style.RegisterSurface(scheduler, surface, controller: null);
-            }
-
-            for (var t = 0; t < ticks; t++)
-            {
-                universe.Step();
-            }
-
-            var stressStamped = false;
-            var camera = style.CreateCamera();
+            using var scene = new Scene(ticks);
+            var camera = scene.Style.CreateCamera();
             camera.Resize(new Rectangle(0, 0, width, height));
             var rasterizer = new SoftwareRasterizer(width * supersample, height * supersample);
             var report = new List<string>();
 
             foreach (var shot in Shots)
             {
-                if (shot.WithStressBlock && !stressStamped)
-                {
-                    FactoryScene.StampStressBlock(planet, 0);
-                    for (var t = 0; t < 600; t++)
-                    {
-                        universe.Step();
-                    }
-
-                    stressStamped = true;
-                }
-
-                var surface = universe.Surfaces[shot.Surface];
-                style.AimCamera(camera, surface, shot.LocalTile, shot.Zoom, shot.ScreenRotation);
-                style.AimSpecial(camera, shot.Preset);
-                style.PrepareFrame(camera, surface);
-
-                var world = style.WorldTransform(surface);
-                var bounds = camera.GetVisibleLocalBounds(world);
+                scene.PrepareFor(shot);
                 var timer = Stopwatch.StartNew();
-                scheduler.Geometry.Clear();
-                scheduler.CollectGeometry(surface.World, scheduler.Geometry, bounds);
-                var collectMs = timer.Elapsed.TotalMilliseconds;
-
-                // The projection maps the camera's window pixels to clip space, so a rasterizer
-                // with more pixels than the window simply supersamples.
-                var view = camera.GetViewMatrix();
-                var projection = camera.GetProjectionMatrix();
-                rasterizer.Clear(style.Background);
-                rasterizer.Draw(scheduler.Geometry, world, view, projection, style.Atlas.Image, style.LinearSampling);
-                var image = rasterizer.Resolve(supersample);
-                var path = Path.Combine(directory, $"{style.Name}-{shot.Name}.png");
+                var image = scene.Render(shot, camera, rasterizer, supersample);
+                var path = Path.Combine(directory, $"{scene.Style.Name}-{shot.Name}.png");
                 PngWriter.Write(path, image);
 
-                var line = $"{shot.Name,-9} {scheduler.Geometry.TriangleCount,8:N0} triangles  collect {collectMs,6:F2} ms  -> {path}";
+                var line = $"{shot.Name,-14} {scene.Scheduler.Geometry.TriangleCount,8:N0} triangles  {scene.Scheduler.Geometry.MeshDraws.Length,4} meshes  render {timer.Elapsed.TotalMilliseconds,7:F1} ms  -> {path}";
                 report.Add(line);
                 Console.WriteLine(line);
             }
 
-            File.WriteAllLines(Path.Combine(directory, $"{style.Name}-report.txt"), report);
+            File.WriteAllLines(Path.Combine(directory, $"{scene.Style.Name}-report.txt"), report);
+        }
+
+        /// <summary>
+        /// The opening scene with the style registered, stepped and ready to photograph: shared by
+        /// the snapshots, the render checks and the draw benchmark.
+        /// </summary>
+        public sealed class Scene : IDisposable
+        {
+            private bool stressStamped;
+
+            public Scene(int ticks = 900)
+            {
+                Universe = FactoryScene.Create(Scheduler, out var planet, out var ship);
+                Planet = planet;
+                Ship = ship;
+                foreach (var surface in Universe.Surfaces)
+                {
+                    Style.RegisterSurface(Scheduler, surface, controller: null);
+                }
+
+                // Headless pictures must show the current state, never a mesh waiting its turn.
+                foreach (var renderer in Style.StaticRenderers)
+                {
+                    renderer.RebuildBudget = int.MaxValue;
+                }
+
+                Step(ticks);
+            }
+
+            public RenderStyle Style { get; } = new();
+            public SystemScheduler Scheduler { get; } = new();
+            public Universe Universe { get; }
+            public Surface Planet { get; }
+            public Surface Ship { get; }
+
+            public void Step(int ticks)
+            {
+                for (var t = 0; t < ticks; t++)
+                {
+                    Universe.Step();
+                }
+            }
+
+            /// <summary>Stamps the first stress block (once) for shots that ask for it.</summary>
+            public void PrepareFor(Shot shot)
+            {
+                if (shot.WithStressBlock && !stressStamped)
+                {
+                    FactoryScene.StampStressBlock(Planet, 0);
+                    Step(600);
+                    stressStamped = true;
+                }
+            }
+
+            /// <summary>Aims the camera for the shot and collects its geometry into the scheduler's batch.</summary>
+            public Matrix Collect(Shot shot, Camera camera)
+            {
+                var surface = Universe.Surfaces[shot.Surface];
+                Style.AimCamera(camera, surface, shot.LocalTile, shot.Zoom, shot.ScreenRotation);
+                Style.AimSpecial(camera, shot.Preset);
+                Style.PrepareFrame(camera, surface);
+
+                var world = Style.WorldTransform(surface);
+                Scheduler.Geometry.Clear();
+                Scheduler.CollectGeometry(surface.World, Scheduler.Geometry, Scheduler.CreateGeometryContext(camera, world));
+                return world;
+            }
+
+            public CpuImage Render(Shot shot, Camera camera, SoftwareRasterizer rasterizer, int supersample = 1)
+            {
+                var world = Collect(shot, camera);
+
+                // The projection maps the camera's window pixels to clip space, so a rasterizer
+                // with more pixels than the window simply supersamples.
+                rasterizer.Clear(Style.Background);
+                rasterizer.Draw(Scheduler.Geometry, world, camera.GetViewMatrix(), camera.GetProjectionMatrix(), Style.Atlas.Image, Style.LinearSampling);
+                return rasterizer.Resolve(supersample);
+            }
+
+            public void Dispose() => Style.Dispose();
         }
     }
 }

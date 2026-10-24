@@ -6,17 +6,18 @@ using System;
 namespace Proto4X.Factory.Rendering.Software
 {
     /// <summary>
-    /// Draws a <see cref="GeometryBatch"/> on the CPU, with the same rules the GPU pass uses: opaque
-    /// layer alpha-tested at 50% with depth test and write, then translucent (premultiplied over)
-    /// and additive layers depth-tested only, in submission order.
+    /// Draws a <see cref="GeometryBatch"/> on the CPU, with the same rules the GPU pass uses: per
+    /// layer, retained meshes in submission order and then immediate geometry; opaque and emissive
+    /// layers depth-tested and written, translucent (premultiplied over) and additive layers
+    /// depth-tested only; lit layers lit per vertex by <see cref="SceneLighting.Intensity"/>, with
+    /// normals taken through the inverse-transpose of the world matrix as <c>BasicEffect</c> does.
     /// </summary>
     /// <remarks>
     /// Exists so rendering can be looked at without launching the game: headless snapshots run the
-    /// real draw systems into a batch and rasterize it here. Also used to bake sprites from 3D
-    /// models. Clip-space conventions follow the GPU (D3D-style depth, z in [0, w]); triangles are
-    /// clipped against the near and far planes, and x/y by the pixel loop. Coverage uses a strict
-    /// edge rule with an antisymmetric tie-break, so shared edges are drawn exactly once - which
-    /// matters for translucent quads.
+    /// real draw systems into a batch and rasterize it here. Clip-space conventions follow the GPU
+    /// (D3D-style depth, z in [0, w]); triangles are clipped against the near and far planes, and
+    /// x/y by the pixel loop. Coverage uses a strict edge rule with an antisymmetric tie-break, so
+    /// shared edges are drawn exactly once - which matters for translucent quads.
     /// </remarks>
     public sealed class SoftwareRasterizer
     {
@@ -42,23 +43,46 @@ namespace Proto4X.Factory.Rendering.Software
 
         public void ClearDepth() => Array.Fill(depth, 1f);
 
-        /// <summary>The same three layer passes as <see cref="GeometryBatch.Flush"/>, depth cleared first.</summary>
+        /// <summary>The same layer passes as <see cref="GeometryBatch.Flush"/>, depth cleared first.</summary>
         public void Draw(GeometryBatch batch, Matrix world, Matrix view, Matrix projection, CpuImage? texture, bool linear)
         {
             ClearDepth();
-            var transform = world * view * projection;
-            for (var layer = 0; layer < GeometryBatch.LayerCount; layer++)
+            var viewProjection = view * projection;
+            for (var layer = 0; layer < GeometryBuffer.LayerCount; layer++)
             {
                 var kind = (GeometryLayer)layer;
-                for (var page = 0; page < batch.PageCount(kind); page++)
+                var lighting = GeometryBatch.IsLit(kind) ? batch.Lighting : null;
+                foreach (var draw in batch.MeshDraws)
                 {
-                    var vertices = batch.PageVertices(kind, page);
-                    var indices = batch.PageIndices(kind, page);
-                    for (var i = 0; i + 2 < indices.Length; i += 3)
+                    var meshWorld = draw.Transform * world;
+                    var transform = new DrawTransform(meshWorld * viewProjection, meshWorld);
+                    for (var segment = 0; segment < draw.Mesh.SegmentCount(kind); segment++)
                     {
-                        DrawTriangle(vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]], transform, kind, texture, linear);
+                        DrawTriangles(draw.Mesh.SegmentVertices(kind, segment), draw.Mesh.SegmentIndices(kind, segment), transform, lighting, kind, texture, linear);
                     }
                 }
+
+                var immediate = new DrawTransform(world * viewProjection, world);
+                for (var page = 0; page < batch.Immediate.PageCount(kind); page++)
+                {
+                    DrawTriangles(batch.Immediate.PageVertices(kind, page), batch.Immediate.PageIndices(kind, page), immediate, lighting, kind, texture, linear);
+                }
+            }
+        }
+
+        /// <summary>Clip transform plus the normal transform (inverse-transpose of the world matrix, as BasicEffect computes it).</summary>
+        private readonly struct DrawTransform(Matrix clip, Matrix world)
+        {
+            public readonly Matrix Clip = clip;
+            public readonly Matrix Normal = Matrix.Transpose(Matrix.Invert(world));
+        }
+
+        private void DrawTriangles(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<short> indices, in DrawTransform transform, SceneLighting? lighting,
+            GeometryLayer layer, CpuImage? texture, bool linear)
+        {
+            for (var i = 0; i + 2 < indices.Length; i += 3)
+            {
+                DrawTriangle(vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]], transform, lighting, layer, texture, linear);
             }
         }
 
@@ -104,13 +128,13 @@ namespace Proto4X.Factory.Rendering.Software
             };
         }
 
-        private void DrawTriangle(in VertexPositionColorTexture a, in VertexPositionColorTexture b, in VertexPositionColorTexture c, in Matrix transform, GeometryLayer layer, CpuImage? texture, bool linear)
+        private void DrawTriangle(in MeshVertex a, in MeshVertex b, in MeshVertex c, in DrawTransform transform, SceneLighting? lighting, GeometryLayer layer, CpuImage? texture, bool linear)
         {
             Span<ClipVertex> polygon = stackalloc ClipVertex[8];
             Span<ClipVertex> scratch = stackalloc ClipVertex[8];
-            polygon[0] = ToClip(a, transform);
-            polygon[1] = ToClip(b, transform);
-            polygon[2] = ToClip(c, transform);
+            polygon[0] = ToClip(a, transform, lighting);
+            polygon[1] = ToClip(b, transform, lighting);
+            polygon[2] = ToClip(c, transform, lighting);
             var count = 3;
 
             // Near (z >= 0) then far (z <= w).
@@ -122,12 +146,26 @@ namespace Proto4X.Factory.Rendering.Software
             }
         }
 
-        private static ClipVertex ToClip(in VertexPositionColorTexture v, in Matrix transform) => new()
+        /// <summary>
+        /// Vertex stage: position to clip space, and for lit layers the colour times the light, as
+        /// BasicEffect's per-vertex lighting computes it (alpha untouched).
+        /// </summary>
+        private static ClipVertex ToClip(in MeshVertex v, in DrawTransform transform, SceneLighting? lighting)
         {
-            Position = Vector4.Transform(new Vector4(v.Position, 1f), transform),
-            Colour = v.Color.ToVector4(),
-            Uv = v.TextureCoordinate,
-        };
+            var colour = v.Color.ToVector4();
+            if (lighting is not null)
+            {
+                var light = lighting.Intensity(Vector3.Normalize(Vector3.TransformNormal(v.Normal, transform.Normal)));
+                colour = new Vector4(colour.X * light, colour.Y * light, colour.Z * light, colour.W);
+            }
+
+            return new ClipVertex
+            {
+                Position = Vector4.Transform(new Vector4(v.Position, 1f), transform.Clip),
+                Colour = colour,
+                Uv = v.TextureCoordinate,
+            };
+        }
 
         private static int ClipAgainst(Span<ClipVertex> input, int count, Span<ClipVertex> output, bool near)
         {
@@ -226,11 +264,7 @@ namespace Proto4X.Factory.Rendering.Software
                     switch (layer)
                     {
                         case GeometryLayer.Opaque:
-                            if (source.W <= 127f / 255f)
-                            {
-                                continue;
-                            }
-
+                        case GeometryLayer.Emissive:
                             colour[index] = source;
                             depth[index] = z;
                             break;

@@ -1,28 +1,27 @@
 using Microsoft.Xna.Framework;
 using MonoGameLibrary.Graphics;
 using Proto4X.Factory.Rendering.Models;
-using System;
 
 namespace Proto4X.Factory.Rendering.ThreeD
 {
-    /// <summary>Small 3D shapes in grid-local tiles (x east, y south, z up), lit like the models.</summary>
+    /// <summary>Small 3D shapes in grid-local tiles (x east, y south, z up), with normals so the GPU can light them.</summary>
     public static class Mesh3D
     {
-        /// <summary>An axis-aligned box, lit.</summary>
-        public static void Box(GeometryBatch batch, GeometryLayer layer, Vector3 min, Vector3 max, Color colour, bool emissive = false)
+        /// <summary>An axis-aligned box.</summary>
+        public static void Box(GeometryBuffer buffer, GeometryLayer layer, Vector3 min, Vector3 max, Color colour, bool emissive = false)
         {
-            ModelMesher.EmitBox(batch, layer, new ModelBox(min, max, colour, emissive), Matrix.Identity, Color.White);
+            ModelMesher.EmitBox(buffer, layer, new ModelBox(min, max, colour, emissive), Matrix.Identity, Color.White);
         }
 
         /// <summary>A cube centred on <paramref name="centre"/>'s ground point, sitting on <paramref name="baseZ"/>.</summary>
-        public static void Cube(GeometryBatch batch, GeometryLayer layer, Vector2 centre, float size, float baseZ, Color colour, bool emissive = false)
+        public static void Cube(GeometryBuffer buffer, GeometryLayer layer, Vector2 centre, float size, float baseZ, Color colour, bool emissive = false)
         {
             var half = size * 0.5f;
-            Box(batch, layer, new Vector3(centre.X - half, centre.Y - half, baseZ), new Vector3(centre.X + half, centre.Y + half, baseZ + size), colour, emissive);
+            Box(buffer, layer, new Vector3(centre.X - half, centre.Y - half, baseZ), new Vector3(centre.X + half, centre.Y + half, baseZ + size), colour, emissive);
         }
 
-        /// <summary>A square-section beam from <paramref name="from"/> to <paramref name="to"/>, lit per face.</summary>
-        public static void Beam(GeometryBatch batch, GeometryLayer layer, Vector3 from, Vector3 to, float thickness, Color colour)
+        /// <summary>A square-section beam from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        public static void Beam(GeometryBuffer buffer, GeometryLayer layer, Vector3 from, Vector3 to, float thickness, Color colour)
         {
             var axis = to - from;
             var length = axis.Length();
@@ -46,27 +45,22 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
 
             // Four long faces; the ends are too small to matter.
-            Quad(batch, layer, from + up - side, to + up - side, to + up + side, from + up + side, Vector3.Normalize(up), colour);
-            Quad(batch, layer, from - up - side, to - up - side, to - up + side, from - up + side, -Vector3.Normalize(up), colour);
-            Quad(batch, layer, from - up + side, to - up + side, to + up + side, from + up + side, Vector3.Normalize(side), colour);
-            Quad(batch, layer, from - up - side, to - up - side, to + up - side, from + up - side, -Vector3.Normalize(side), colour);
+            var upNormal = Vector3.Normalize(up);
+            var sideNormal = Vector3.Normalize(side);
+            buffer.AddQuad(layer, from + up - side, to + up - side, to + up + side, from + up + side, upNormal, colour);
+            buffer.AddQuad(layer, from - up - side, to - up - side, to - up + side, from - up + side, -upNormal, colour);
+            buffer.AddQuad(layer, from - up + side, to - up + side, to + up + side, from + up + side, sideNormal, colour);
+            buffer.AddQuad(layer, from - up - side, to - up - side, to + up - side, from + up - side, -sideNormal, colour);
         }
 
-        /// <summary>A flat quad lit as facing <paramref name="normal"/>.</summary>
-        public static void Quad(GeometryBatch batch, GeometryLayer layer, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal, Color colour)
+        /// <summary>A flat ground-parallel rectangle at height <paramref name="z"/>, facing up.</summary>
+        public static void Flat(GeometryBuffer buffer, GeometryLayer layer, float x, float y, float width, float height, float z, Color colour)
         {
-            batch.AddQuad(layer, a, b, c, d, ModelMesher.Lit(colour, ModelMesher.Light(normal)));
+            buffer.AddQuad(layer, new Vector3(x, y, z), new Vector3(x + width, y, z), new Vector3(x + width, y + height, z), new Vector3(x, y + height, z), Vector3.UnitZ, colour);
         }
 
-        /// <summary>A flat ground-parallel rectangle at height <paramref name="z"/>, lit as a top face.</summary>
-        public static void Flat(GeometryBatch batch, GeometryLayer layer, float x, float y, float width, float height, float z, Color colour, bool lit = true)
-        {
-            var c = lit ? ModelMesher.Lit(colour, ModelMesher.Light(Vector3.UnitZ)) : colour;
-            batch.AddQuad(layer, new Vector3(x, y, z), new Vector3(x + width, y, z), new Vector3(x + width, y + height, z), new Vector3(x, y + height, z), c);
-        }
-
-        /// <summary>A flat line on a plane of height <paramref name="z"/>.</summary>
-        public static void FlatLine(GeometryBatch batch, GeometryLayer layer, Vector2 from, Vector2 to, float thickness, float z, Color colour)
+        /// <summary>A flat line on a plane of height <paramref name="z"/>, facing up.</summary>
+        public static void FlatLine(GeometryBuffer buffer, GeometryLayer layer, Vector2 from, Vector2 to, float thickness, float z, Color colour)
         {
             var delta = to - from;
             var length = delta.Length();
@@ -76,8 +70,10 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
 
             var normal = new Vector2(-delta.Y, delta.X) / length * (thickness * 0.5f);
-            batch.AddQuad(layer, Shapes.At(from + normal, z), Shapes.At(to + normal, z), Shapes.At(to - normal, z), Shapes.At(from - normal, z), colour);
+            buffer.AddQuad(layer, At(from + normal, z), At(to + normal, z), At(to - normal, z), At(from - normal, z), Vector3.UnitZ, colour);
         }
+
+        private static Vector3 At(Vector2 point, float z) => new(point.X, point.Y, z);
 
         /// <summary>Cheap stable hash for per-tile decoration.</summary>
         public static uint Hash(int x, int y, int salt = 0)

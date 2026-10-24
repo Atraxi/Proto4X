@@ -7,25 +7,33 @@ using Proto4X.Factory.Rendering.Software;
 using Proto4X.Factory.Rendering.ThreeD;
 using Proto4X.Factory.Simulation;
 using System;
+using System.Collections.Generic;
 
 namespace Proto4X.Factory.Rendering
 {
     /// <summary>
-    /// Everything about how the factory looks, in one place: the atlas, which draw systems each
-    /// surface gets, each surface's draw transform, and how a camera is aimed. The game and the
-    /// headless snapshots both go through this, so a snapshot is the game's real rendering, minus
+    /// Everything about how the factory looks, in one place: the atlas, the sun, which draw systems
+    /// each surface gets, each surface's draw transform, and how a camera is aimed. The game and
+    /// the headless tools both go through this, so a snapshot is the game's real rendering, minus
     /// the HUD.
     /// </summary>
     /// <remarks>
-    /// <b>Blocky 3D</b> (the shapez 2 / Dyson Sphere Program family): the block models drawn
-    /// directly as lit geometry through an <see cref="OrbitCamera"/>, perspective or orthographic.
-    /// World units are tiles, z up; a surface's frame is a rotation about z plus a translation, so a
-    /// ship turns for free.
+    /// The block models drawn as lit geometry through an <see cref="OrbitCamera"/>, perspective or
+    /// orthographic. World units are tiles, z up; a surface's frame is a rotation about z plus a
+    /// translation, so a ship turns for free. Static content is cached per chunk
+    /// (<see cref="SurfaceMeshes"/>); moving parts are rebuilt every frame.
     /// </remarks>
-    public sealed class RenderStyle
+    public sealed class RenderStyle : IDisposable
     {
         /// <summary>2D zoom 1 shows 22.5 tiles vertically at 720 px; this is the distance that frames the same at 40 degrees.</summary>
         private const float DistanceAtZoom1 = 30.9f;
+
+        /// <summary>Towards the sun: high, from the north-west (screen top-left at yaw 0), so shadows fall south-east.</summary>
+        public static readonly Vector3 Sun = new(-0.45f, -0.6f, 1f);
+
+        private readonly List<StaticSurface3DRenderer> staticRenderers = [];
+        private SystemScheduler? scheduler;
+        private bool retained = true;
 
         public RenderStyle()
         {
@@ -42,17 +50,52 @@ namespace Proto4X.Factory.Rendering
 
         public Detail Detail { get; } = new();
 
+        /// <summary>Every surface's static renderer, for tools that inspect or reconfigure the chunk caches.</summary>
+        public IReadOnlyList<StaticSurface3DRenderer> StaticRenderers => staticRenderers;
+
+        /// <summary>
+        /// True: chunk meshes are cached and drawn from GPU buffers. False: every visible chunk is
+        /// rebuilt each frame and streamed from the CPU, the way the spike drew everything. The
+        /// false path exercises none of the vertex-buffer code, which is what makes it a useful
+        /// switch if the screen is ever blank.
+        /// </summary>
+        public bool Retained
+        {
+            get => retained;
+            set
+            {
+                retained = value;
+                foreach (var renderer in staticRenderers)
+                {
+                    renderer.Retained = value;
+                }
+
+                if (scheduler is not null)
+                {
+                    scheduler.Geometry.UseVertexBuffers = value;
+                }
+            }
+        }
+
         public Camera CreateCamera() => new OrbitCamera(minDistance: 5f, maxDistance: 320f);
 
         public void RegisterSurface(SystemScheduler scheduler, Surface surface, BuildController? controller)
         {
-            scheduler.Geometry.WhiteUv = Atlas.WhiteUv;
-            scheduler.Geometry.Sampler = SamplerState.PointClamp;
+            this.scheduler = scheduler;
+            var geometry = scheduler.Geometry;
+            geometry.Immediate.WhiteUv = Atlas.WhiteUv;
+            geometry.Sampler = SamplerState.PointClamp;
+            geometry.Lighting.Sun = Sun;
+            geometry.UseVertexBuffers = retained;
 
-            scheduler.Add(surface.World, new Terrain3DRenderer(surface, Detail));
-            scheduler.Add(surface.World, new Belt3DRenderer(surface, Detail));
+            // Static first: its chunks are the bulk of the opaque layer, and drawing them before the
+            // small moving parts keeps depth ties resolving the way the per-system passes did.
+            var statics = new StaticSurface3DRenderer(new SurfaceMeshes(surface, Atlas.WhiteUv), Detail) { Retained = retained };
+            staticRenderers.Add(statics);
+            scheduler.Add(surface.World, statics);
+            scheduler.Add(surface.World, new BeltChevron3DRenderer(surface, Detail));
             scheduler.Add(surface.World, new BeltItem3DRenderer(surface, Detail));
-            scheduler.Add(surface.World, new Building3DRenderer(surface, Detail));
+            scheduler.Add(surface.World, new BuildingStatus3DRenderer(surface, Detail));
             scheduler.Add(surface.World, new Progress3DRenderer(surface, Detail));
             scheduler.Add(surface.World, new Launcher3DRenderer(Detail));
             scheduler.Add(surface.World, new Inserter3DRenderer(surface, Detail));
@@ -61,8 +104,6 @@ namespace Proto4X.Factory.Rendering
                 scheduler.Add(surface.World, new Ghost3DRenderer(surface, controller));
             }
         }
-
-        public ViewState View { get; } = new();
 
         /// <summary>Grid-local tiles to world tiles: the frame's turn about z, then its position. No pixel scale in 3D.</summary>
         public Matrix WorldTransform(Surface surface) =>
@@ -123,6 +164,14 @@ namespace Proto4X.Factory.Rendering
                     orbit.Orthographic = false;
                     orbit.Pitch = 0.95f;
                     break;
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (var renderer in staticRenderers)
+            {
+                renderer.Meshes.Dispose();
             }
         }
     }

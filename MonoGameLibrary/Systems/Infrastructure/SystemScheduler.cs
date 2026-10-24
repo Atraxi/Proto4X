@@ -21,8 +21,11 @@ namespace MonoGameLibrary.Systems.Infrastructure
 
         private readonly Dictionary<ISystem, List<ArchetypeChunk>> _cachedComponentArrays = [];
 
-        /// <summary>The batch every world's geometry pass fills and flushes. Set its texture (atlas) and sampler once.</summary>
+        /// <summary>The batch every world's geometry pass fills and flushes. Set its texture (atlas), sampler and lighting once.</summary>
         public GeometryBatch Geometry { get; } = new();
+
+        // Reused every frame: BoundingFrustum is a class, and setting Matrix recomputes its planes in place.
+        private readonly BoundingFrustum _geometryFrustum = new(Matrix.Identity);
 
         public void Add(GameWorld gameLayer, IUpdateSystem system)
         {
@@ -87,7 +90,7 @@ namespace MonoGameLibrary.Systems.Infrastructure
             if (_geometrySystems.ContainsKey(gameLayer))
             {
                 Geometry.Clear();
-                CollectGeometry(gameLayer, Geometry, cullingBounds);
+                CollectGeometry(gameLayer, Geometry, CreateGeometryContext(camera, worldTransform, cullingBounds));
                 Geometry.Flush(spriteBatch.GraphicsDevice, worldTransform, camera.GetViewMatrix(), camera.GetProjectionMatrix());
             }
 
@@ -115,10 +118,20 @@ namespace MonoGameLibrary.Systems.Infrastructure
         }
 
         /// <summary>
+        /// This frame's view of a world drawn through <paramref name="worldTransform"/>. The frustum
+        /// is the scheduler's single reused instance, so a context is only valid until the next call.
+        /// </summary>
+        public GeometryDrawContext CreateGeometryContext(Camera camera, Matrix worldTransform, Rectangle? localCullingBounds = null)
+        {
+            _geometryFrustum.Matrix = worldTransform * camera.GetViewMatrix() * camera.GetProjectionMatrix();
+            return new GeometryDrawContext(localCullingBounds ?? camera.GetVisibleLocalBounds(worldTransform), _geometryFrustum, worldTransform);
+        }
+
+        /// <summary>
         /// Runs a world's geometry systems into <paramref name="batch"/> without touching the GPU -
         /// the half of the geometry pass a headless renderer or a test can call.
         /// </summary>
-        public void CollectGeometry(GameWorld gameLayer, GeometryBatch batch, Rectangle localCullingBounds)
+        public void CollectGeometry(GameWorld gameLayer, GeometryBatch batch, in GeometryDrawContext context)
         {
             if (!_geometrySystems.TryGetValue(gameLayer, out var geometrySystems))
             {
@@ -128,7 +141,7 @@ namespace MonoGameLibrary.Systems.Infrastructure
             foreach (var geometrySystem in geometrySystems)
             {
                 var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(geometrySystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. geometrySystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));
-                geometrySystem.Draw(batch, localCullingBounds, archetypeChunks);
+                geometrySystem.Draw(batch, context, archetypeChunks);
             }
         }
     }

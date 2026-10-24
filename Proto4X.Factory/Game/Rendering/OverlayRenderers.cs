@@ -12,35 +12,6 @@ using System.Collections.Generic;
 
 namespace Proto4X.Factory.Rendering
 {
-    /// <summary>The placement preview under the cursor: green if the build would succeed, red if not.</summary>
-    public sealed class GhostRenderer(Surface surface, BuildController controller) : IGeometryDrawSystem
-    {
-        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
-
-        public void Draw(GeometryBatch batch, Rectangle localCullingBounds, List<ArchetypeChunk> archetypeChunks)
-        {
-            if (controller.Surface != surface)
-            {
-                return;
-            }
-
-            var (x, y) = controller.Hovered;
-            var size = controller.Tool == BuildingKind.None ? 1 : Buildings.Size(controller.Tool);
-            var colour = controller.Tool == BuildingKind.None
-                ? Color.White * 0.25f
-                : surface.CanPlace(controller.Tool, x, y, controller.Recipe) == PlacementResult.Placed ? Palette.Valid : Palette.Invalid;
-
-            Shapes.FillRect(batch, GeometryLayer.Translucent, x, y, size, size, FlatDepth.Overlay, colour);
-
-            if (controller.Tool != BuildingKind.None)
-            {
-                var centre = new Vector2(x + size * 0.5f, y + size * 0.5f);
-                var tip = centre + SurfaceView.DirectionVector(controller.Direction) * (size * 0.5f);
-                Shapes.Line(batch, GeometryLayer.Translucent, centre, tip, 3f / SurfaceView.TileSize, FlatDepth.Overlay, Color.White);
-            }
-        }
-    }
-
     /// <summary>Per-surface screen overlay: the hovered building's power satisfaction as a bar.</summary>
     public sealed class SurfaceStatusRenderer(Surface surface, BuildController controller, Texture2D pixel) : IDrawSystem
     {
