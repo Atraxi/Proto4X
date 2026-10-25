@@ -1,14 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using MonoGameLibrary.Input;
-using MonoGameLibrary.Utils;
 
 namespace MonoGameLibrary.UI
 {
-    public class UserInterfaceManager(Camera camera)
+    /// <summary>What the scheduler needs from the UI layer, whatever the camera type. Games hold the typed <see cref="UserInterfaceManager{TCamera}"/>.</summary>
+    public abstract class UserInterfaceManager(CameraBase camera)
     {
         private Rectangle currentViewport = Rectangle.Empty;
 
-        public Camera Camera { get; internal set; } = camera;
+        public CameraBase Camera { get; } = camera;
 
         public void Update(Rectangle viewportBounds, GameTime gameTime)
         {
@@ -27,10 +27,16 @@ namespace MonoGameLibrary.UI
                 currentViewport.Height);
         }
 
-        /// <summary>See <see cref="Camera.GetVisibleLocalBounds"/>.</summary>
+        /// <summary>See <see cref="CameraBase.GetVisibleLocalBounds"/>.</summary>
         public Rectangle GetVisibleLocalBounds(Matrix worldTransform)
         {
             return Camera.GetVisibleLocalBounds(worldTransform);
         }
+    }
+
+    /// <summary>The same manager with its camera typed, so a game needs no casts.</summary>
+    public sealed class UserInterfaceManager<TCamera>(TCamera camera) : UserInterfaceManager(camera) where TCamera : CameraBase
+    {
+        public new TCamera Camera { get; } = camera;
     }
 }

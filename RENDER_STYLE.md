@@ -256,8 +256,8 @@ meaningless for it.
 **Recommended:** an abstract camera base, or `ICamera`, holding only:
 - `GetViewMatrix`
 - `GetProjectionMatrix`
-- `ScreenToWorld`
-- `WorldToScreen`
+- `ScreenToGround`
+- `GroundToScreen`
 - `Viewport`
 - `Resize`
 - `GetVisibleLocalBounds`

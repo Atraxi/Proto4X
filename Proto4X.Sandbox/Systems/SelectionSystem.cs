@@ -25,7 +25,7 @@ namespace Proto4X.Sandbox.Systems
     /// test runs in world space (the pick radius is a world radius). Doing each in its own space
     /// keeps both correct while the camera is zoomed or rotated.
     /// </remarks>
-    public class SelectionSystem(Camera camera) : ISystem, IUpdateSystem
+    public class SelectionSystem(Camera2D camera) : ISystem, IUpdateSystem
     {
         private const float DragThresholdPixels = 6f;
         private const float DoubleClickSeconds = 0.35f;

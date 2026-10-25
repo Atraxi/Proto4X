@@ -30,7 +30,7 @@ namespace Proto4X.Factory.Rendering
 
         public Detail Detail { get; } = new();
 
-        public Camera CreateCamera() => new OrbitCamera(minDistance: 5f, maxDistance: 320f);
+        public OrbitCamera CreateCamera() => new OrbitCamera(minDistance: 5f, maxDistance: 320f);
 
         public void RegisterSurface(SystemScheduler scheduler, Surface surface, BuildController controller)
         {
@@ -54,12 +54,9 @@ namespace Proto4X.Factory.Rendering
         public Matrix WorldTransform(Surface surface) =>
             Matrix.CreateRotationZ(surface.Frame.Rotation) * Matrix.CreateTranslation(surface.Frame.Position.X, surface.Frame.Position.Y, 0f);
 
-        public void PrepareFrame(Camera camera)
+        public void PrepareFrame(OrbitCamera camera)
         {
-            if (camera is OrbitCamera orbit)
-            {
-                Detail.Distance = orbit.Orthographic ? orbit.Distance * 1.15f : orbit.Distance;
-            }
+            Detail.Distance = camera.Orthographic ? camera.Distance * 1.15f : camera.Distance;
         }
 
         public void Dispose()

@@ -17,7 +17,7 @@ namespace Proto4X.Sandbox.Systems
     /// Everything is in screen terms: Up always moves the view towards the top of the screen, at the
     /// same on-screen speed whatever the rotation and zoom.
     /// </remarks>
-    public class CameraControlSystem(Camera camera) : ISystem, IUpdateSystem
+    public class CameraControlSystem(Camera2D camera) : ISystem, IUpdateSystem
     {
         private const float PanPixelsPerSecond = 600f;
         private const float RotationDegreesPerSecond = 100f;

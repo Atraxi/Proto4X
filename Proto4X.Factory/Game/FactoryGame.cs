@@ -24,7 +24,7 @@ namespace Proto4X.Factory
     /// <see cref="OnUpdate"/> and drawn from <see cref="OnDraw"/>, which runs just before Core's own
     /// draw of the meta world, so the HUD lands on top.
     /// </remarks>
-    public sealed class FactoryGame() : Core("Factory Slice", 1280, 720, false)
+    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, false)
     {
         private const int PlanetWidth = 240;
         private const int PlanetHeight = 180;
@@ -45,7 +45,7 @@ namespace Proto4X.Factory
 
         protected override GameWorld InitializeGameWorld() => new(0, 0, 1, 1);
 
-        protected override Camera InitializeCamera() => style.CreateCamera();
+        protected override OrbitCamera InitializeCamera() => style.CreateCamera();
 
         protected override void OnInitialize()
         {
@@ -54,7 +54,7 @@ namespace Proto4X.Factory
             var ship = universe.AddSurface("ship", SurfaceKind.Orbit, 24, 16);
             Layouts.BuildStarterScene(planet, ship);
             controller = new BuildController(universe, UserInterfaceManager.Camera);
-            cameraController = new CameraController((OrbitCamera)UserInterfaceManager.Camera, universe.Surfaces);
+            cameraController = new CameraController(UserInterfaceManager.Camera, universe.Surfaces);
             // Open looking at the starter scene.
             cameraController.SetView(0, new Vector2(15, 8.5f));
         }

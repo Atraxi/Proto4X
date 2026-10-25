@@ -245,10 +245,10 @@ public class Camera(float minZoom = 0.05f, float maxZoom = 20f)
 
     public virtual Matrix GetViewMatrix()       => GetCameraTransform();
     public virtual Matrix GetProjectionMatrix() => Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, -1, 1);
-    public virtual Vector2 WorldToScreen(Vector2 world);
-    public virtual Vector2 ScreenToWorld(Vector2 screen);
+    public virtual Vector2 GroundToScreen(Vector2 world);
+    public virtual Vector2 ScreenToGround(Vector2 screen);
 
-    public Rectangle GetVisibleLocalBounds(Matrix worldTransform) { /* 4 screen corners → ScreenToWorld → inverse world → AABB */ }
+    public Rectangle GetVisibleLocalBounds(Matrix worldTransform) { /* 4 screen corners → ScreenToGround → inverse world → AABB */ }
     public void Pan(Vector2 d); public void ZoomAt(Vector2 p, float f); public void RotateAround(Vector2 p, float r);
 
     internal void Update(Rectangle viewportBounds) { /* resize keeps the centre fixed; NO input handling any more */ }
@@ -294,7 +294,7 @@ public (Vector3 Origin, Vector3 Direction) ScreenRay(Vector2 screen)
     // un-project the point at depth 0 and depth 1, return the ray between them
 }
 
-public override Vector2 ScreenToWorld(Vector2 screen)    // intersect the ray with z = 0
+public override Vector2 ScreenToGround(Vector2 screen)    // intersect the ray with z = 0
 {
     // …
     var t = -origin.Z / direction.Z;
@@ -550,3 +550,12 @@ public Matrix WorldTransform(Surface surface) =>
 | `WEB_RUNTIME.md`, `game-jam-countdown-ideas.md` | Exploration notes, unrelated |
 | `.claude/settings.json` | Worktree isolation setting; probably leave it out |
 | `ENGINE_LAYERING.md`, `Proto4X.Factory/DESIGN.md`, `ENGINE_REQUESTS.md` | Design notes |
+
+---
+
+## Update: cameras split (uncommitted)
+
+§7 and §8 describe the earlier shape, where `OrbitCamera` extended the 2D `Camera`. That is now changed:
+`CameraBase` (abstract: viewport, view/projection, `GroundToScreen`, `ScreenToGround`, `GetVisibleLocalBounds`)
+with `Camera2D` (the old `Camera`, renamed) and `OrbitCamera` as siblings. A `DrawSpace.World` system under a
+non-`Camera2D` camera now throws in `SystemScheduler.Draw`, instead of drawing meaninglessly.

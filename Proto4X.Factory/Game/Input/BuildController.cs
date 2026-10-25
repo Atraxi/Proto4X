@@ -14,7 +14,7 @@ namespace Proto4X.Factory.Input
     /// Turns mouse and keyboard into simulation <see cref="Command"/>s. Never touches the simulation
     /// directly - it can only enqueue, which is what keeps input replayable.
     /// </summary>
-    public sealed class BuildController(Universe universe, Camera camera)
+    public sealed class BuildController(Universe universe, CameraBase camera)
     {
         public static readonly BuildingKind[] Toolbar =
         [
@@ -44,8 +44,8 @@ namespace Proto4X.Factory.Input
         /// The grid-local point under a screen point: the camera's ground pick, then into the
         /// surface's frame. The 3D camera's world is in tiles, so there's no pixel scale to undo.
         /// </summary>
-        public static Vector2 ScreenToLocal(Camera camera, Surface surface, Vector2 screen) =>
-            surface.Frame.WorldToLocal(camera.ScreenToWorld(screen));
+        public static Vector2 ScreenToLocal(CameraBase camera, Surface surface, Vector2 screen) =>
+            surface.Frame.WorldToLocal(camera.ScreenToGround(screen));
 
         public void Update(Point screenMouse)
         {

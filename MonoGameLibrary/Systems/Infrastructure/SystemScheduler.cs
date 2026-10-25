@@ -103,7 +103,13 @@ namespace MonoGameLibrary.Systems.Infrastructure
 
             if (_drawWorldSystems.TryGetValue(gameLayer, out var worldSystems))
             {
-                spriteBatch.Begin(transformMatrix: worldTransform * camera.GetCameraTransform());
+                // A perspective camera has no 2D transform, so sprites in world space mean nothing under it.
+                if (camera is not Camera2D camera2D)
+                {
+                    throw new InvalidOperationException("DrawSpace.World systems need a Camera2D; draw through the geometry pass, or project with GroundToScreen into DrawSpace.Screen.");
+                }
+
+                spriteBatch.Begin(transformMatrix: worldTransform * camera2D.GetCameraTransform());
                 foreach (var worldSystem in worldSystems)
                 {
                     var archetypeChunks = _cachedComponentArrays.GetValueOrDefault(worldSystem, gameLayer.QueryRelevantComponentArrays(ComponentTypeMask.FromTypes([.. worldSystem.RequiredComponentProviders.Select(componentProvider => componentProvider.Value)])));

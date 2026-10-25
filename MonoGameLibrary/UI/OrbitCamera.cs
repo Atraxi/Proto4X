@@ -5,7 +5,7 @@ namespace MonoGameLibrary.UI
 {
     /// <summary>
     /// A 3D camera orbiting a point on the ground: yaw around it, pitch above it, at a distance.
-    /// Perspective or orthographic. Picking and culling go through <see cref="ScreenToWorld"/>, which
+    /// Perspective or orthographic. Picking and culling go through <see cref="ScreenToGround"/>, which
     /// casts a ray from the screen point to the ground plane (z = 0).
     /// </summary>
     /// <remarks>
@@ -18,10 +18,9 @@ namespace MonoGameLibrary.UI
     /// ray on the ground, which is what lets culling stay a bounded box on the ground.
     /// </para>
     /// </remarks>
-    public class OrbitCamera : Camera
+    public class OrbitCamera : CameraBase
     {
         public OrbitCamera(float minDistance = 4f, float maxDistance = 400f, float minPitch = 0.45f, float maxPitch = 1.45f)
-            : base(minZoom: 1f, maxZoom: 1f)
         {
             MinDistance = minDistance;
             MaxDistance = maxDistance;
@@ -95,14 +94,14 @@ namespace MonoGameLibrary.UI
 
         private float OrthographicEyeDistance => MathF.Max(200f, Distance * 4f);
 
-        public override Vector2 WorldToScreen(Vector2 world)
+        public override Vector2 GroundToScreen(Vector2 world)
         {
             var clip = Vector4.Transform(new Vector4(world, 0f, 1f), GetViewMatrix() * GetProjectionMatrix());
             return new Vector2((clip.X / clip.W + 1f) * 0.5f * Viewport.Width, (1f - clip.Y / clip.W) * 0.5f * Viewport.Height);
         }
 
         /// <summary>The ground point (z = 0) under a screen point. A ray that misses the ground is clamped to the far plane's footprint.</summary>
-        public override Vector2 ScreenToWorld(Vector2 screen)
+        public override Vector2 ScreenToGround(Vector2 screen)
         {
             var (origin, direction) = ScreenRay(screen);
             if (direction.Z > -1e-4f)
