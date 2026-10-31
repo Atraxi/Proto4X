@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+﻿﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Systems;
 using MonoGameLibrary.Systems.Infrastructure;
@@ -7,12 +7,12 @@ using MonoGameLibrary.World;
 
 namespace MonoGameLibrary
 {
-    public abstract class Core : Game
+    public abstract class Core<TCamera> : Game where TCamera : CameraBase
     {
         protected GraphicsDeviceManager Graphics { get; private set; }
         protected SpriteBatch? SpriteBatch { get; private set; }
         protected GameWorld World { get; private set; }
-        protected UserInterfaceManager UserInterfaceManager { get; private set; }
+        protected UserInterfaceManager<TCamera> UserInterfaceManager { get; private set; }
         protected SystemScheduler SystemScheduler { get; private set; }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace MonoGameLibrary
         /// <param name="width">The initial width, in pixels, of the game window.</param>
         /// <param name="height">The initial height, in pixels, of the game window.</param>
         /// <param name="fullscreen">Indicates if the game should start in fullscreen mode.</param>
-        public Core(string title, int width, int height, bool fullscreen)
+        protected Core(string title, int width, int height, bool fullscreen)
         {
             Graphics = new GraphicsDeviceManager(this)
             {
@@ -30,6 +30,8 @@ namespace MonoGameLibrary
                 PreferredBackBufferHeight = height,
                 IsFullScreen = fullscreen,
                 HardwareModeSwitch = false,
+                // The geometry pass depth-tests; asked for explicitly rather than trusting the platform default.
+                PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8,
             };
             Graphics.ApplyChanges();
 
@@ -38,10 +40,11 @@ namespace MonoGameLibrary
             IsMouseVisible = true;
 
             World = InitializeGameWorld();
-            UserInterfaceManager = new UserInterfaceManager();
+            UserInterfaceManager = new UserInterfaceManager<TCamera>(InitializeCamera());
             SystemScheduler = new SystemScheduler();
         }
         protected abstract GameWorld InitializeGameWorld();
+        protected abstract TCamera InitializeCamera();
 
         protected sealed override void Initialize()
         {
@@ -74,5 +77,11 @@ namespace MonoGameLibrary
             base.Draw(gameTime);
         }
         protected abstract void OnDraw(GameTime gameTime);
+    }
+
+    /// <summary>A <see cref="Core{TCamera}"/> with the flat <see cref="Camera2D"/>, for 2D games.</summary>
+    public abstract class Core(string title, int width, int height, bool fullscreen) : Core<Camera2D>(title, width, height, fullscreen)
+    {
+        protected override Camera2D InitializeCamera() => new();
     }
 }

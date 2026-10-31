@@ -1,21 +1,21 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using MonoGameLibrary.Input;
-using MonoGameLibrary.Utils;
 
 namespace MonoGameLibrary.UI
 {
-    public class UserInterfaceManager()
+    /// <summary>What the scheduler needs from the UI layer, whatever the camera type. Games hold the typed <see cref="UserInterfaceManager{TCamera}"/>.</summary>
+    public abstract class UserInterfaceManager(CameraBase camera)
     {
         private Rectangle currentViewport = Rectangle.Empty;
 
-        public Camera Camera { get; internal set; } = new();
+        public CameraBase Camera { get; } = camera;
 
         public void Update(Rectangle viewportBounds, GameTime gameTime)
         {
             InputManager.Instance.Update();
             currentViewport = viewportBounds;
 
-            Camera.Update(viewportBounds, gameTime);
+            Camera.Update(viewportBounds);
         }
 
         public Rectangle GetViewport()
@@ -27,16 +27,16 @@ namespace MonoGameLibrary.UI
                 currentViewport.Height);
         }
 
-        public Rectangle GetVisibleScreenBoundsAABB()
+        /// <summary>See <see cref="CameraBase.GetVisibleLocalBounds"/>.</summary>
+        public Rectangle GetVisibleLocalBounds(Matrix worldTransform)
         {
-            var viewportPoints = new Vector2[] {
-                currentViewport.Location.ToVector2(),
-                new(currentViewport.Right, currentViewport.Top),
-                new(currentViewport.Right, currentViewport.Bottom),
-                new(currentViewport.Left, currentViewport.Bottom)
-            }.Transform(Matrix.Invert(Camera.GetCameraTransform()));
-
-            return viewportPoints.ToAABB();
+            return Camera.GetVisibleLocalBounds(worldTransform);
         }
+    }
+
+    /// <summary>The same manager with its camera typed, so a game needs no casts.</summary>
+    public sealed class UserInterfaceManager<TCamera>(TCamera camera) : UserInterfaceManager(camera) where TCamera : CameraBase
+    {
+        public new TCamera Camera { get; } = camera;
     }
 }
