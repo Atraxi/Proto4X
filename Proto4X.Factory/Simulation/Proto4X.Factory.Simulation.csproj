@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The deterministic simulation: grid, stores, components and update systems. No rendering and no
+    input, so it runs headless (see ../Headless). Keeping that split as an assembly boundary is
+    deliberate - lockstep multiplayer, headless servers and replays all need the sim to be a pure
+    function of (state, commands), and an assembly boundary is the cheapest way to keep it honest.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Proto4X.Factory.Simulation</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- MonoGameLibrary marks this PrivateAssets=All, so GameTime/Vector2 don't flow through it. -->
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MonoGameLibrary\MonoGameLibrary.csproj" />
+    <ProjectReference Include="..\..\Analyzers\Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

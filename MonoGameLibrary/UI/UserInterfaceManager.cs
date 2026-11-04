@@ -4,18 +4,18 @@ using MonoGameLibrary.Utils;
 
 namespace MonoGameLibrary.UI
 {
-    public class UserInterfaceManager()
+    public class UserInterfaceManager(Camera camera)
     {
         private Rectangle currentViewport = Rectangle.Empty;
 
-        public Camera Camera { get; internal set; } = new();
+        public Camera Camera { get; internal set; } = camera;
 
         public void Update(Rectangle viewportBounds, GameTime gameTime)
         {
             InputManager.Instance.Update();
             currentViewport = viewportBounds;
 
-            Camera.Update(viewportBounds, gameTime);
+            Camera.Update(viewportBounds);
         }
 
         public Rectangle GetViewport()

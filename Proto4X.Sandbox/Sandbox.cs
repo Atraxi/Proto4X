@@ -79,6 +79,8 @@ namespace Proto4X.Sandbox
             SystemScheduler.Add(World, selectionSummary);
             SystemScheduler.Add(World, new MoveOrderSystem(UserInterfaceManager.Camera));
             SystemScheduler.Add(World, new RallyPointSystem(UserInterfaceManager.Camera));
+            // After everything that picks with the mouse, so clicks resolve against the frame on screen.
+            SystemScheduler.Add(World, new CameraControlSystem(UserInterfaceManager.Camera));
             SystemScheduler.Add(World, new StationCommandSystem(economy));
             SystemScheduler.Add(World, new MinerConstructionSystem(economy, spawnQueue));
 
@@ -167,6 +169,11 @@ namespace Proto4X.Sandbox
             {
                 var home = new Vector2(WorldWidth * homeFraction.X, WorldHeight * homeFraction.Y);
                 World.AddEntity(ShipBlueprints.CreateStation(home, faction, sprites.StationSpriteFor(faction)));
+                if (faction == FactionId.Player)
+                {
+                    var camera = UserInterfaceManager.Camera;
+                    camera.Pan(camera.WorldToScreen(home) - GraphicsDevice.Viewport.Bounds.Center.ToVector2());
+                }
                 SpawnStartingMiners(home, faction);
 
                 // A guaranteed field next to each home, so nobody starves on an unlucky seed.
