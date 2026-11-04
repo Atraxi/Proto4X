@@ -392,7 +392,7 @@ a grid-local-to-screen matrix and rebuilds `ScreenTransform` from it against the
 gives ship follow and per-surface views. **Proto4X has no camera controls since this change**: its
 bindings were the engine's, and nothing replaced them.
 
-**Not handled:** a perspective matrix in `WorldProjection` draws, but `ScreenToWorld` and culling use
+**Not handled:** a perspective matrix in `WorldProjection` draws, but `ScreenToGround` and culling use
 `Vector2.Transform`, which skips the perspective divide. Isometric with upright sprites would also
 need the scheduler to draw sprites without the projection, which it can't choose per renderer yet.
 

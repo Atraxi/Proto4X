@@ -22,7 +22,7 @@ namespace Proto4X.Sandbox.Systems
     /// is most likely to be reaching for the next key, and without the pause a miner claims a rock
     /// and leaves before they get there.
     /// </remarks>
-    public class MoveOrderSystem(Camera camera) : ISystem, IUpdateSystem
+    public class MoveOrderSystem(Camera2D camera) : ISystem, IUpdateSystem
     {
         private const float RingSpacing = 34f;
 

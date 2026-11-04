@@ -172,7 +172,7 @@ namespace Proto4X.Sandbox
                 if (faction == FactionId.Player)
                 {
                     var camera = UserInterfaceManager.Camera;
-                    camera.Pan(camera.WorldToScreen(home) - GraphicsDevice.Viewport.Bounds.Center.ToVector2());
+                    camera.Pan(camera.GroundToScreen(home) - GraphicsDevice.Viewport.Bounds.Center.ToVector2());
                 }
                 SpawnStartingMiners(home, faction);
 

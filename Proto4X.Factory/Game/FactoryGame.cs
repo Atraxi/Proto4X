@@ -24,13 +24,14 @@ namespace Proto4X.Factory
     /// <see cref="OnUpdate"/> and drawn from <see cref="OnDraw"/>, which runs just before Core's own
     /// draw of the meta world, so the HUD lands on top.
     /// </remarks>
-    public sealed class FactoryGame() : Core("Factory Slice", 1280, 720, false)
+    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, false)
     {
         private const int PlanetWidth = 240;
         private const int PlanetHeight = 180;
         private const int StressColumns = 10;
         private const int StressRows = 10;
 
+        private readonly RenderStyle style = new();
         private Universe universe = null!;
         private Surface planet = null!;
         private BuildController controller = null!;
@@ -44,8 +45,7 @@ namespace Proto4X.Factory
 
         protected override GameWorld InitializeGameWorld() => new(0, 0, 1, 1);
 
-        // 32 px tiles: 0.1 fits the whole 240-tile planet on screen, 4 is 128 px per tile.
-        protected override Camera InitializeCamera() => new(minZoom: 0.1f, maxZoom: 4f);
+        protected override OrbitCamera InitializeCamera() => style.CreateCamera();
 
         protected override void OnInitialize()
         {
@@ -55,8 +55,8 @@ namespace Proto4X.Factory
             Layouts.BuildStarterScene(planet, ship);
             controller = new BuildController(universe, UserInterfaceManager.Camera);
             cameraController = new CameraController(UserInterfaceManager.Camera, universe.Surfaces);
-            // Open on the starter scene, roughly where the old top-left-origin view sat at 1280x720.
-            cameraController.SetView(0, new Vector2(20, 11));
+            // Open looking at the starter scene.
+            cameraController.SetView(0, new Vector2(15, 8.5f));
         }
 
         protected override void LoadContent()
@@ -66,19 +66,19 @@ namespace Proto4X.Factory
 
             foreach (var surface in universe.Surfaces)
             {
-                // Registration order is draw order: floor, belts, items, bodies, arms, overlays.
-                SystemScheduler.Add(surface.World, new TerrainRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new BeltRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new BeltItemRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new BuildingRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new CrafterProgressRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new LauncherProgressRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new InserterRenderer(surface, pixel));
-                SystemScheduler.Add(surface.World, new GhostRenderer(surface, controller, pixel));
+                // World drawing is the style's; the per-surface screen overlay stays SpriteBatch.
+                style.RegisterSurface(SystemScheduler, surface, controller);
                 SystemScheduler.Add(surface.World, new SurfaceStatusRenderer(surface, controller, pixel));
             }
 
             SystemScheduler.Add(World, new HudRenderer(controller, pixel, universe.Surfaces));
+        }
+
+        /// <summary>Releases the chunk meshes' GPU buffers. The device would on exit anyway; this keeps ownership honest.</summary>
+        protected override void UnloadContent()
+        {
+            style.Dispose();
+            base.UnloadContent();
         }
 
         protected override void OnUpdate(GameTime gameTime)
@@ -117,10 +117,12 @@ namespace Proto4X.Factory
 
         protected override void OnDraw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Palette.Background);
+            GraphicsDevice.Clear(style.Background);
             if (SpriteBatch is not null)
             {
-                SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, controller.Surface.World);
+                var surface = controller.Surface;
+                style.PrepareFrame(UserInterfaceManager.Camera);
+                SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
             }
         }
 
@@ -164,7 +166,7 @@ namespace Proto4X.Factory
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
                 + $" | in flight {universe.InTransit.Count}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause";
+                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
         }
     }
 }

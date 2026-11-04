@@ -30,6 +30,13 @@ namespace Proto4X.Factory.Simulation.Grid
     /// inserter or drill compares its cached version against its own chunk once per tick, a single
     /// load, and re-resolves its targets only on a mismatch.
     /// </para>
+    /// <para>
+    /// Content versions are the same idea for anyone mirroring what the grid <em>shows</em> - a
+    /// renderer's cached chunk meshes. They move whenever a tile, an ore patch's presence, or
+    /// occupancy changes, including the neighbours one tile out (a belt's curve and a deck's hull
+    /// edge depend on them). They are separate from chunk versions so that a viewer's needs never
+    /// make the simulation re-resolve anything; nothing in the simulation reads them.
+    /// </para>
     /// </remarks>
     public sealed class SurfaceGrid
     {
@@ -46,6 +53,7 @@ namespace Proto4X.Factory.Simulation.Grid
         private readonly int[] oreAmount;
         private readonly int[] occupant;
         private readonly int[] chunkVersions;
+        private readonly int[] contentVersions;
 
         public SurfaceGrid(int width, int height)
         {
@@ -60,13 +68,18 @@ namespace Proto4X.Factory.Simulation.Grid
             occupant = new int[width * height];
             Array.Fill(occupant, -1);
             chunkVersions = new int[ChunksWide * ChunksHigh];
+            contentVersions = new int[ChunksWide * ChunksHigh];
         }
 
         public bool InBounds(int x, int y) => (uint)x < (uint)Width && (uint)y < (uint)Height;
 
         public TileKind TileAt(int x, int y) => InBounds(x, y) ? tiles[y * Width + x] : TileKind.Void;
 
-        public void SetTile(int x, int y, TileKind kind) => tiles[y * Width + x] = kind;
+        public void SetTile(int x, int y, TileKind kind)
+        {
+            tiles[y * Width + x] = kind;
+            BumpContentAround(x, y, 1);
+        }
 
         public ItemId OreAt(int x, int y) => InBounds(x, y) && oreAmount[y * Width + x] > 0 ? ore[y * Width + x] : ItemId.None;
 
@@ -76,6 +89,7 @@ namespace Proto4X.Factory.Simulation.Grid
         {
             ore[y * Width + x] = item;
             oreAmount[y * Width + x] = amount;
+            BumpContentAround(x, y, 1);
         }
 
         /// <summary>Takes one unit of ore from the tile. Returns the item, or <see cref="ItemId.None"/> if it was empty.</summary>
@@ -87,7 +101,12 @@ namespace Proto4X.Factory.Simulation.Grid
                 return ItemId.None;
             }
 
-            oreAmount[index]--;
+            // Only the last unit changes what the tile shows; every other unit is invisible.
+            if (--oreAmount[index] == 0)
+            {
+                BumpContentAround(x, y, 1);
+            }
+
             return ore[index];
         }
 
@@ -103,11 +122,33 @@ namespace Proto4X.Factory.Simulation.Grid
                     occupant[(y + dy) * Width + x + dx] = slot;
                 }
             }
+
+            BumpContentAround(x, y, size);
         }
 
         public int ChunkIndexOf(int x, int y) => (y >> ChunkShift) * ChunksWide + (x >> ChunkShift);
 
         public int ChunkVersion(int chunkIndex) => chunkVersions[chunkIndex];
+
+        /// <summary>Moves whenever anything visible in the chunk may have changed. See the remarks on the class.</summary>
+        public int ChunkContentVersion(int chunkIndex) => contentVersions[chunkIndex];
+
+        /// <summary>Bumps the content version of every chunk within one tile of the footprint.</summary>
+        private void BumpContentAround(int x, int y, int size)
+        {
+            var minChunkX = Math.Max(0, (x - 1) >> ChunkShift);
+            var maxChunkX = Math.Min(ChunksWide - 1, (x + size) >> ChunkShift);
+            var minChunkY = Math.Max(0, (y - 1) >> ChunkShift);
+            var maxChunkY = Math.Min(ChunksHigh - 1, (y + size) >> ChunkShift);
+
+            for (var chunkY = minChunkY; chunkY <= maxChunkY; chunkY++)
+            {
+                for (var chunkX = minChunkX; chunkX <= maxChunkX; chunkX++)
+                {
+                    contentVersions[chunkY * ChunksWide + chunkX]++;
+                }
+            }
+        }
 
         /// <summary>
         /// Invalidates every cached reference that could point into the footprint. A building reaches

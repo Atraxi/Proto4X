@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 
 namespace MonoGameLibrary.UI
 {
     /// <summary>World to screen: <see cref="WorldProjection"/> lays the world flat, then <see cref="ScreenTransform"/> pans, zooms and rotates it.</summary>
-    public class Camera(float minZoom = 0.05f, float maxZoom = 20f)
+    public class Camera2D(float minZoom = 0.05f, float maxZoom = 20f) : CameraBase
     {
         public float MinZoom { get; } = minZoom;
         public float MaxZoom { get; } = maxZoom;
@@ -17,19 +17,32 @@ namespace MonoGameLibrary.UI
         /// <summary>Current scale of <see cref="ScreenTransform"/>.</summary>
         public float Zoom => new Vector2(ScreenTransform.M11, ScreenTransform.M12).Length();
 
-        public Rectangle Viewport { get; private set; }
-
         public Matrix GetCameraTransform()
         {
             return WorldProjection * ScreenTransform;
         }
 
-        public Vector2 WorldToScreen(Vector2 world)
+        /// <summary>View matrix for the geometry pass. A flat camera's view is its 2D transform: world to screen pixels.</summary>
+        public override Matrix GetViewMatrix()
+        {
+            return GetCameraTransform();
+        }
+
+        /// <summary>
+        /// Projection for the geometry pass: screen pixels to clip space, top-left origin. View-space
+        /// z in [-1, 1] is depth, larger z nearer the viewer, so a flat game sorts by writing z.
+        /// </summary>
+        public override Matrix GetProjectionMatrix()
+        {
+            return Matrix.CreateOrthographicOffCenter(0, Viewport.Width, Viewport.Height, 0, -1, 1);
+        }
+
+        public override Vector2 GroundToScreen(Vector2 world)
         {
             return Vector2.Transform(world, GetCameraTransform());
         }
 
-        public Vector2 ScreenToWorld(Vector2 screen)
+        public override Vector2 ScreenToGround(Vector2 screen)
         {
             return Vector2.Transform(screen, Matrix.Invert(GetCameraTransform()));
         }
@@ -58,15 +71,10 @@ namespace MonoGameLibrary.UI
                 Matrix.CreateTranslation(screenPoint.X, screenPoint.Y, 0);
         }
 
-        internal void Update(Rectangle viewportBounds)
+        protected override void OnResized(Point previous, Point current)
         {
-            // On resize, shift by half the size change so the centre stays put rather than the top-left.
-            if (!Viewport.IsEmpty && viewportBounds.Size != Viewport.Size)
-            {
-                ScreenTransform *= Matrix.CreateTranslation((viewportBounds.Width - Viewport.Width) / 2f, (viewportBounds.Height - Viewport.Height) / 2f, 0);
-            }
-
-            Viewport = viewportBounds;
+            // Shift by half the size change so the centre stays put rather than the top-left.
+            ScreenTransform *= Matrix.CreateTranslation((current.X - previous.X) / 2f, (current.Y - previous.Y) / 2f, 0);
         }
     }
 }

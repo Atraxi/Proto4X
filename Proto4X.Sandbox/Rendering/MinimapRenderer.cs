@@ -26,7 +26,7 @@ namespace Proto4X.Sandbox.Rendering
     /// because the query has to match ships and stations at once and only one AND-mask is available.
     /// It reads as "bigger things draw bigger", which is true enough to be worth the trick.
     /// </remarks>
-    public class MinimapRenderer(Texture2D pixel, GraphicsDevice graphicsDevice, Camera camera, Rectangle worldBounds) : ISystem, IDrawSystem
+    public class MinimapRenderer(Texture2D pixel, GraphicsDevice graphicsDevice, Camera2D camera, Rectangle worldBounds) : ISystem, IDrawSystem
     {
         private const float PanelWidth = 220f;
         private const float Margin = 12f;

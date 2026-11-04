@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Factory.Input;
 using Proto4X.Factory.Simulation;
@@ -11,42 +12,7 @@ using System.Collections.Generic;
 
 namespace Proto4X.Factory.Rendering
 {
-    /// <summary>The placement preview under the cursor: green if the build would succeed, red if not.</summary>
-    public sealed class GhostRenderer(Surface surface, BuildController controller, Texture2D pixel) : IDrawSystem
-    {
-        public DrawSpace DrawSpace => DrawSpace.World;
-        public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
-        {
-            if (controller.Surface != surface)
-            {
-                return;
-            }
-
-            var frame = surface.Frame;
-            var (x, y) = controller.Hovered;
-            var size = controller.Tool == BuildingKind.None ? 1 : Buildings.Size(controller.Tool);
-            var colour = controller.Tool == BuildingKind.None
-                ? Color.White * 0.25f
-                : surface.CanPlace(controller.Tool, x, y, controller.Recipe) == PlacementResult.Placed ? Palette.Valid : Palette.Invalid;
-
-            Primitives.FillRectangle(spriteBatch, pixel, SurfaceView.TileToWorld(frame, new Vector2(x, y)), new Vector2(size * SurfaceView.TileSize), frame.Rotation, colour);
-
-            if (controller.Tool != BuildingKind.None)
-            {
-                var centre = new Vector2(x + size * 0.5f, y + size * 0.5f);
-                var tip = centre + SurfaceView.DirectionVector(controller.Direction) * (size * 0.5f);
-                Primitives.DrawLine(spriteBatch, pixel, SurfaceView.TileToWorld(frame, centre), SurfaceView.TileToWorld(frame, tip), Color.White, 3f);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Per-surface screen overlay: the hovered building's power satisfaction as a bar. Every world
-    /// needs at least one screen-space system or <c>SystemScheduler.Draw</c> throws, so this is
-    /// also what keeps each surface drawable (ENGINE_REQUESTS.md, "Scheduler throws").
-    /// </summary>
+    /// <summary>Per-surface screen overlay: the hovered building's power satisfaction as a bar.</summary>
     public sealed class SurfaceStatusRenderer(Surface surface, BuildController controller, Texture2D pixel) : IDrawSystem
     {
         public DrawSpace DrawSpace => DrawSpace.Screen;

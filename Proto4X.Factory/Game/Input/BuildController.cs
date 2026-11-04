@@ -14,7 +14,7 @@ namespace Proto4X.Factory.Input
     /// Turns mouse and keyboard into simulation <see cref="Command"/>s. Never touches the simulation
     /// directly - it can only enqueue, which is what keeps input replayable.
     /// </summary>
-    public sealed class BuildController(Universe universe, Camera camera)
+    public sealed class BuildController(Universe universe, CameraBase camera)
     {
         public static readonly BuildingKind[] Toolbar =
         [
@@ -39,6 +39,13 @@ namespace Proto4X.Factory.Input
         public (int X, int Y) Hovered { get; private set; }
 
         public Surface Surface => universe.Surfaces[ActiveSurface];
+
+        /// <summary>
+        /// The grid-local point under a screen point: the camera's ground pick, then into the
+        /// surface's frame. The 3D camera's world is in tiles, so there's no pixel scale to undo.
+        /// </summary>
+        public static Vector2 ScreenToLocal(CameraBase camera, Surface surface, Vector2 screen) =>
+            surface.Frame.WorldToLocal(camera.ScreenToGround(screen));
 
         public void Update(Point screenMouse)
         {
@@ -68,8 +75,7 @@ namespace Proto4X.Factory.Input
                 ActiveSurface = (ActiveSurface + 1) % universe.Surfaces.Count;
             }
 
-            var world = Vector2.Transform(screenMouse.ToVector2(), Matrix.Invert(camera.GetCameraTransform()));
-            var local = SurfaceView.WorldToTile(Surface.Frame, world);
+            var local = ScreenToLocal(camera, Surface, screenMouse.ToVector2());
             var size = Tool == BuildingKind.None ? 1 : Buildings.Size(Tool);
             // Multi-tile footprints centre on the cursor rather than hanging off its corner.
             Hovered = ((int)MathF.Floor(local.X - (size - 1) * 0.5f), (int)MathF.Floor(local.Y - (size - 1) * 0.5f));
