@@ -31,6 +31,10 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
 
             axis /= length;
+
+            // Build two perpendicular half-width offsets, `side` and `up`, around the beam's axis.
+            // Cross with world up gives a horizontal side; a vertical beam has no such direction, so
+            // fall back to x.
             var side = Vector3.Cross(axis, Vector3.UnitZ);
             if (side.LengthSquared() < 1e-6f)
             {
@@ -39,6 +43,7 @@ namespace Proto4X.Factory.Rendering.ThreeD
 
             side = Vector3.Normalize(side) * (thickness * 0.5f);
             var up = Vector3.Normalize(Vector3.Cross(side, axis)) * (thickness * 0.5f);
+            // Cross products can come out either way; make `up` point up so the "top" face is the top.
             if (up.Z < 0)
             {
                 up = -up;
@@ -69,17 +74,19 @@ namespace Proto4X.Factory.Rendering.ThreeD
                 return;
             }
 
+            // Half-thickness step perpendicular to the line (rotate delta 90 degrees), for both long edges.
             var normal = new Vector2(-delta.Y, delta.X) / length * (thickness * 0.5f);
             buffer.AddQuad(layer, At(from + normal, z), At(to + normal, z), At(to - normal, z), At(from - normal, z), Vector3.UnitZ, colour);
         }
 
         private static Vector3 At(Vector2 point, float z) => new(point.X, point.Y, z);
 
-        /// <summary>Cheap stable hash for per-tile decoration.</summary>
+        /// <summary>Cheap, stable hash of a tile (and a salt) for decoration that must not flicker between rebuilds.</summary>
         public static uint Hash(int x, int y, int salt = 0)
         {
             unchecked
             {
+                // Multiply by large primes, XOR the inputs together, then mix the bits.
                 var h = (uint)(x * 73856093) ^ (uint)(y * 19349663) ^ (uint)(salt * 83492791);
                 h ^= h >> 13;
                 h *= 0x5bd1e995;
@@ -88,6 +95,7 @@ namespace Proto4X.Factory.Rendering.ThreeD
             }
         }
 
+        /// <summary>The low 16 bits of <see cref="Hash"/> as a float in [0, 1].</summary>
         public static float Hash01(int x, int y, int salt = 0) => (Hash(x, y, salt) & 0xFFFF) / 65535f;
     }
 }

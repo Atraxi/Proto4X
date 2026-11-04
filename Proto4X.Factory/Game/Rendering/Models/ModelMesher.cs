@@ -5,12 +5,13 @@ using System;
 namespace Proto4X.Factory.Rendering.Models
 {
     /// <summary>
-    /// Turns model boxes into triangles with face normals. The sun is applied on the GPU (see
-    /// <see cref="SceneLighting"/>); the only shading baked in here is a darker foot on side faces,
-    /// a cheap stand-in for ambient occlusion that doesn't depend on where the sun is.
+    /// Turns model boxes into triangles with face normals. The sun is applied on the GPU
+    /// (<see cref="SceneLighting"/>). The only baked shading is a darker foot on side faces, a cheap
+    /// stand-in for ambient occlusion that doesn't depend on the sun.
     /// </summary>
     public static class ModelMesher
     {
+        // Brightness of a side face's bottom edge; the GPU interpolates up to full at the top.
         private const float FootShade = 0.78f;
 
         public static void EmitModel(GeometryBuffer buffer, GeometryLayer layer, BlockModel model, in Matrix transform, Color tint)
@@ -23,8 +24,8 @@ namespace Proto4X.Factory.Rendering.Models
 
         /// <summary>
         /// Five faces (no bottom) of one box through <paramref name="transform"/> (model to buffer
-        /// space; rotation, translation, uniform scale). An emissive box drawn into the opaque layer
-        /// moves to <see cref="GeometryLayer.Emissive"/>, so the sun doesn't darken it.
+        /// space: rotation, translation, uniform scale). An emissive box aimed at the opaque layer goes
+        /// to <see cref="GeometryLayer.Emissive"/> instead, so the sun doesn't darken it.
         /// </summary>
         public static void EmitBox(GeometryBuffer buffer, GeometryLayer layer, in ModelBox box, in Matrix transform, Color tint)
         {
@@ -35,9 +36,13 @@ namespace Proto4X.Factory.Rendering.Models
                 layer = GeometryLayer.Emissive;
             }
 
+            // The 8 corners, transformed once and shared by the five faces.
             Span<Vector3> c = stackalloc Vector3[8];
             Corners(box, transform, c);
             var foot = emissive ? colour : Scale(colour, FootShade);
+
+            // Corner order per face matches the winding of the others; the first colour is the bottom
+            // edge, the second the top. The top face is uniform. Bottom faces are never seen.
             Face(buffer, layer, c[4], c[5], c[6], c[7], Vector3.UnitZ, transform, colour, colour);
             Face(buffer, layer, c[0], c[1], c[5], c[4], -Vector3.UnitY, transform, foot, colour);
             Face(buffer, layer, c[1], c[2], c[6], c[5], Vector3.UnitX, transform, foot, colour);
@@ -46,14 +51,16 @@ namespace Proto4X.Factory.Rendering.Models
         }
 
         /// <summary>
-        /// A model's shadow caster: every box's five faces in one flat colour, every normal straight
-        /// up. Positions are left where the model is; the flattening along the sun is a matrix the
-        /// caller applies at draw time (<see cref="SceneLighting.PlanarShadow"/>), so the same mesh
-        /// stays right however the surface turns under the sun.
+        /// A model's shadow caster: each box's five faces in one flat colour, every normal straight
+        /// up. Positions stay where the model is. The flattening along the sun is a matrix applied at
+        /// draw time (<see cref="SceneLighting.PlanarShadow"/>), so one mesh stays right as the
+        /// surface turns.
         /// </summary>
         public static void EmitShadow(GeometryBuffer buffer, BlockModel model, in Matrix transform, Color shade)
         {
             Span<Vector3> c = stackalloc Vector3[8];
+            // Normal +z on every face on purpose: once flattened these lie on the ground, so they
+            // should light like the ground, whatever direction the box face originally pointed.
             var up = Vector3.UnitZ;
             foreach (var box in model.Boxes)
             {
@@ -72,7 +79,7 @@ namespace Proto4X.Factory.Rendering.Models
 
         public static Color Multiply(Color a, Color b) => new(a.R * b.R / 255, a.G * b.G / 255, a.B * b.B / 255, a.A * b.A / 255);
 
-        /// <summary>Corners: bottom ring 0-3, top ring 4-7, both clockwise from (min.x, min.y) seen from above.</summary>
+        /// <summary>Corners of a box through <paramref name="transform"/>: bottom ring 0-3, top ring 4-7, both clockwise from (min.x, min.y) seen from above.</summary>
         private static void Corners(in ModelBox box, in Matrix transform, Span<Vector3> c)
         {
             var min = box.Min;
@@ -91,6 +98,8 @@ namespace Proto4X.Factory.Rendering.Models
         private static void Face(GeometryBuffer buffer, GeometryLayer layer, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 modelNormal,
             in Matrix transform, Color bottom, Color top)
         {
+            // Normals rotate with the model (TransformNormal ignores translation). Fine for rotation
+            // and uniform scale; a non-uniform scale would need the inverse-transpose.
             var normal = Vector3.Normalize(Vector3.TransformNormal(modelNormal, transform));
             var uv = buffer.WhiteUv;
             buffer.AddQuad(layer, a, b, c, d, normal, bottom, bottom, top, top, uv, uv, uv, uv);

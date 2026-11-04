@@ -6,32 +6,26 @@ namespace MonoGameLibrary.Graphics
 {
     /// <summary>
     /// Geometry built once and drawn many frames: a compact copy of a <see cref="GeometryBuffer"/>,
-    /// uploaded to GPU vertex and index buffers the first time it is drawn.
+    /// uploaded to GPU vertex and index buffers on first draw.
     /// </summary>
     /// <remarks>
-    /// <b>Why it exists.</b> <see cref="GeometryBatch.Immediate"/> geometry is rebuilt on the CPU
-    /// and re-sent to the GPU every frame. Anything that doesn't change between frames - terrain,
-    /// buildings, their shadows - should be built once, live in GPU memory, and cost one draw call
-    /// per frame. That's this.
+    /// Immediate geometry is rebuilt and re-sent to the GPU every frame. Unchanging geometry
+    /// (terrain, buildings, shadows) lives in GPU memory instead and costs one draw call per frame.
     /// <para>
-    /// <b>CPU copy.</b> The vertices and indices stay in managed arrays after upload, which doubles
-    /// the memory (36 bytes a vertex, twice). They let the upload wait for the first draw, where a
-    /// device is at hand, and let a refill reuse them.
-    /// </para>
-    /// <para>
-    /// <b>Reuse.</b> <see cref="CopyFrom"/> refills an existing mesh, keeping its arrays and GPU
-    /// buffers when the new content fits, so a chunk that is rebuilt often doesn't churn memory.
+    /// The CPU arrays are kept after upload (double the memory). That lets the upload wait for a
+    /// device, and lets <see cref="CopyFrom"/> refill without reallocating.
     /// </para>
     /// </remarks>
     public sealed class StaticMesh : IDisposable
     {
+        // One segment list per GeometryLayer; a segment is one page's worth, so one draw call.
         private readonly List<Segment>[] layers = [[], [], [], []];
         private bool disposed;
 
         public int VertexCount { get; private set; }
         public bool IsEmpty => VertexCount == 0;
 
-        /// <summary>Replaces the contents with a copy of <paramref name="source"/>. The source can be cleared and reused straight after.</summary>
+        /// <summary>Replaces the contents with a copy of <paramref name="source"/>, which can be cleared and reused straight after.</summary>
         public void CopyFrom(GeometryBuffer source)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
@@ -53,8 +47,8 @@ namespace MonoGameLibrary.Graphics
                     vertexCount += vCount;
                 }
 
-                // Segments past the new page count are emptied, not freed, so a mesh that shrinks
-                // and grows back reuses them.
+                // Segments beyond the new page count are emptied, not freed, so a mesh that shrinks
+                // then grows back reuses them.
                 for (var unused = pages; unused < segments.Count; unused++)
                 {
                     segments[unused].Empty();
@@ -77,8 +71,8 @@ namespace MonoGameLibrary.Graphics
         }
 
         /// <summary>
-        /// Issues the draw calls for one layer, uploading any segment whose GPU copy is stale. The
-        /// caller has already applied the effect pass.
+        /// Draws one layer, uploading any segment whose GPU copy is stale first. The caller has
+        /// already set the effect's parameters and applied its pass.
         /// </summary>
         internal void DrawLayer(GraphicsDevice device, GeometryLayer layer)
         {
@@ -90,8 +84,10 @@ namespace MonoGameLibrary.Graphics
                 }
 
                 segment.Upload(device);
+                // Bind the buffers, then draw by index. Nothing crosses the bus here.
                 device.SetVertexBuffer(segment.VertexBuffer);
                 device.Indices = segment.IndexBuffer;
+                // (primitive type, base vertex, start index, triangle count)
                 device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, segment.IndexCount / 3);
             }
         }
@@ -104,6 +100,7 @@ namespace MonoGameLibrary.Graphics
             }
 
             disposed = true;
+            // GPU buffers are unmanaged; the garbage collector can't see their size, so free them explicitly.
             foreach (var layer in layers)
             {
                 foreach (var segment in layer)
@@ -114,7 +111,7 @@ namespace MonoGameLibrary.Graphics
             }
         }
 
-        /// <summary>One page's worth of a layer: at most 32,764 vertices, so 16-bit indices.</summary>
+        /// <summary>One page's worth of one layer: at most 32,764 vertices, so 16-bit indices.</summary>
         private sealed class Segment
         {
             public MeshVertex[] Vertices = [];
@@ -123,10 +120,12 @@ namespace MonoGameLibrary.Graphics
             public int IndexCount;
             public VertexBuffer? VertexBuffer;
             public IndexBuffer? IndexBuffer;
+            // True when the CPU arrays hold newer data than the GPU buffers.
             private bool gpuStale = true;
 
             public void Fill(MeshVertex[] vertices, int vertexCount, short[] indices, int indexCount)
             {
+                // Grow-only: arrays are reused whenever the new content fits.
                 if (Vertices.Length < vertexCount)
                 {
                     Vertices = new MeshVertex[vertexCount];
@@ -152,10 +151,8 @@ namespace MonoGameLibrary.Graphics
             }
 
             /// <summary>
-            /// Copies the CPU arrays into GPU buffers. A buffer is recreated only when the content
-            /// outgrew it; otherwise <c>SetData</c> overwrites it in place. <c>WriteOnly</c> tells
-            /// the driver the CPU will never read it back, which lets it place the buffer in
-            /// memory the GPU reads fastest.
+            /// Copies the CPU arrays to the GPU. Buffers are recreated only when the content has
+            /// outgrown them; otherwise <c>SetData</c> overwrites in place.
             /// </summary>
             public void Upload(GraphicsDevice device)
             {
@@ -164,6 +161,8 @@ namespace MonoGameLibrary.Graphics
                     return;
                 }
 
+                // WriteOnly promises the CPU never reads the buffer back, so the driver can put it
+                // in the memory the GPU reads fastest.
                 if (VertexBuffer is null || VertexBuffer.VertexCount < VertexCount)
                 {
                     VertexBuffer?.Dispose();
@@ -176,6 +175,7 @@ namespace MonoGameLibrary.Graphics
                     IndexBuffer = new IndexBuffer(device, IndexElementSize.SixteenBits, Indices.Length, BufferUsage.WriteOnly);
                 }
 
+                // Only the used part: the arrays may be longer than the content.
                 VertexBuffer.SetData(Vertices, 0, VertexCount);
                 IndexBuffer.SetData(Indices, 0, IndexCount);
                 gpuStale = false;
