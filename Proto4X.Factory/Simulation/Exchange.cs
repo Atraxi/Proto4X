@@ -61,7 +61,8 @@ namespace Proto4X.Factory.Simulation
 
             var buildings = surface.Buildings;
             var start = buildings.InventoryStart(slot);
-            var length = buildings.KindOf(slot) is BuildingKind.Furnace or BuildingKind.Assembler or BuildingKind.Generator
+            var kind = buildings.KindOf(slot);
+            var length = kind is BuildingKind.Furnace or BuildingKind.Assembler or BuildingKind.Generator
                 or BuildingKind.Warehouse or BuildingKind.Shipyard
                 ? buildings.InputStacks(slot)
                 : buildings.InventoryLength(slot);
@@ -94,7 +95,31 @@ namespace Proto4X.Factory.Simulation
         /// Takes one item from <paramref name="fromSlot"/>'s outputs that <paramref name="toSlot"/> will
         /// accept. A belt target accepts anything; whether there's room on it is the drop's problem.
         /// </summary>
+        /// <summary>
+        /// Whether an inserter feeding <paramref name="toSlot"/> should pick <paramref name="item"/> up:
+        /// it fits, and for a silo, the station still wants it (Space Age requests). Checked at pickup,
+        /// not at the drop, so a request that closes mid-swing can't strand an item in a hand.
+        /// </summary>
+        public static bool Wants(Surface surface, int toSlot, ItemId item) =>
+            CanInsert(surface, toSlot, item)
+            && (surface.Buildings.KindOf(toSlot) != BuildingKind.LaunchSilo || surface.Universe.Requests[(int)item] > 0);
+
         public static bool TryTakeFor(Surface surface, int fromSlot, int toSlot, out ItemId item)
+        {
+            if (!TryTakeForCore(surface, fromSlot, toSlot, out item))
+            {
+                return false;
+            }
+
+            if (surface.Buildings.KindOf(toSlot) == BuildingKind.LaunchSilo)
+            {
+                surface.Universe.Requests[(int)item]--; // claimed, so this tick's other inserters don't overfill it
+            }
+
+            return true;
+        }
+
+        private static bool TryTakeForCore(Surface surface, int fromSlot, int toSlot, out ItemId item)
         {
             var filter = new TargetFilter(surface, toSlot);
             var buildings = surface.Buildings;
@@ -140,7 +165,7 @@ namespace Proto4X.Factory.Simulation
         private readonly struct TargetFilter(Surface surface, int toSlot) : IItemFilter
         {
             public bool Accepts(ItemId item) =>
-                surface.Buildings.KindOf(toSlot) == BuildingKind.Belt || CanInsert(surface, toSlot, item);
+                surface.Buildings.KindOf(toSlot) == BuildingKind.Belt || Wants(surface, toSlot, item);
         }
     }
 }

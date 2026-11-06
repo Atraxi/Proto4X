@@ -53,6 +53,9 @@ namespace Proto4X.Factory.Simulation.Data
         public const int LaunchPayload = 20;
         public const int LaunchTicks = 300;
 
+        /// <summary>A silo with a part load launches it after loading has stalled this long (Space Age: rockets go when the request is met).</summary>
+        public const int PartialLaunchTicks = 300;
+
         public const int InserterSwingTicks = 26;
         public const int DrillTicksPerOre = 120;
         public const int GeneratorMaxOutput = 15_000;

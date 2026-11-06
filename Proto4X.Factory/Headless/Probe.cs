@@ -151,15 +151,20 @@ namespace Proto4X.Factory.Headless
                 {
                     foreach (ref var warehouse in chunk.GetSpan<Warehouse>())
                     {
-                        if (!warehouse.IsCrafting || (uint)warehouse.Blueprint >= (uint)blueprints.Count)
+                        if ((uint)warehouse.Blueprint >= (uint)blueprints.Count)
                         {
                             continue;
                         }
 
                         var rating = blueprints[warehouse.Blueprint].Rating;
-                        foreach (var (item, amount) in rating.Inputs)
+                        for (var k = 0; k < rating.Islands.Length; k++)
                         {
-                            probe.HeldByWarehousesOf[(int)item] += Simulation.Warehouses.BlueprintRating.Share(amount, warehouse.Slice, rating.Slices);
+                            var island = rating.Islands[k];
+                            var state = warehouse.Islands[k];
+                            for (var n = 0; state.IsCrafting && n < island.InputStacks.Length; n++)
+                            {
+                                probe.HeldByWarehousesOf[(int)rating.Inputs[island.InputStacks[n]].Item] += Simulation.Warehouses.BlueprintRating.Share(island.InputAmounts[n], state.Slice, island.Slices);
+                            }
                         }
                     }
                 }

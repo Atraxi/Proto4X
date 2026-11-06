@@ -506,7 +506,9 @@ namespace Proto4X.Factory.Simulation
             for (var i = 0; i < outputs; i++)
             {
                 var (item, amount) = rating.Outputs[i];
-                Inventories.ConfigureFixed(start + inputs + i, item, System.Math.Max(amount * 2, Items.StackSize(item)));
+                // Two minutes of output, then the island backs up: small, so a line nobody is taking
+                // from stops soon and leaves its shared inputs to the lines that are wanted.
+                Inventories.ConfigureFixed(start + inputs + i, item, System.Math.Max(amount * 2, 10));
             }
 
             if (inputs + outputs == 0)

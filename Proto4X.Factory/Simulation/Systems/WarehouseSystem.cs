@@ -11,14 +11,15 @@ using System.Collections.Generic;
 namespace Proto4X.Factory.Simulation.Systems
 {
     /// <summary>
-    /// Warehouse exteriors. Abstract (nobody inside): run the blueprint's rated cycle - start when
-    /// every input holds a cycle's worth and every output has room, progress by power, deliver - the
-    /// crafter's rules with a composite recipe. Live (the player is inside): don't craft at all, the
-    /// interior is doing the real work; just draw what it drew last tick.
+    /// Warehouse exteriors. Abstract (nobody inside): each island of the blueprint runs its rated
+    /// cycle independently, a slice at a time - start when the slice's share of every input is in
+    /// stock and every output has room for its share, progress by power, deliver. Live (the player
+    /// is inside): don't craft at all, the interior is doing the real work; just draw what it drew
+    /// last tick.
     /// </summary>
     /// <remarks>
     /// Abstract mode never touches the interior and live mode never runs the cycle, so the two can't
-    /// double-count. A cycle in progress when the warehouse goes live is frozen, not lost, and resumes
+    /// double-count. A slice in progress when the warehouse goes live is frozen, not lost, and resumes
     /// when it goes abstract again.
     /// </remarks>
     public sealed class WarehouseSystem(Surface surface) : IUpdateSystem
@@ -61,9 +62,7 @@ namespace Proto4X.Factory.Simulation.Systems
                         {
                             warehouse.Blueprint = wanted;
                             warehouse.RatingVersion = -1;
-                            warehouse.IsCrafting = false;
-                            warehouse.Progress = 0;
-                            warehouse.Slice = 0;
+                            warehouse.Islands = default;
                         }
 
                         warehouse.ConfigVersion = configVersion;
@@ -80,9 +79,7 @@ namespace Proto4X.Factory.Simulation.Systems
                     {
                         surface.LayOutWarehouse(slot, rating);
                         warehouse.RatingVersion = rating.Version;
-                        warehouse.IsCrafting = false;
-                        warehouse.Progress = 0;
-                        warehouse.Slice = 0;
+                        warehouse.Islands = default;
                     }
 
                     var interior = universe.LiveInteriorOf(surface.Index, slot);
@@ -93,72 +90,80 @@ namespace Proto4X.Factory.Simulation.Systems
                     }
 
                     var start = buildings.InventoryStart(slot);
-                    if (!warehouse.IsCrafting && !TryStart(ref warehouse, rating, inventories, start))
+                    var outputStart = start + rating.Inputs.Length;
+                    var draw = (long)Buildings.WarehouseIdleDraw;
+                    var islands = rating.Islands;
+                    for (var k = 0; k < islands.Length; k++)
                     {
-                        demand[warehouse.PowerIndex] += Buildings.WarehouseIdleDraw;
-                        continue;
-                    }
-
-                    demand[warehouse.PowerIndex] += Buildings.WarehouseIdleDraw + rating.ActiveDraw;
-                    warehouse.Progress += satisfaction[warehouse.PowerIndex];
-                    var slices = rating.Slices;
-                    if (warehouse.Progress >= BlueprintRating.Share(rating.CycleTicks, warehouse.Slice, slices) * PowerGrid.Full)
-                    {
-                        // Room was checked at start, and only inserters take from outputs.
-                        var outputStart = start + rating.Inputs.Length;
-                        for (var k = 0; k < rating.Outputs.Length; k++)
+                        ref var state = ref warehouse.Islands[k];
+                        var island = islands[k];
+                        if (!state.IsCrafting && !TryStart(ref state, island, inventories, start, outputStart))
                         {
-                            inventories.AddToStack(outputStart + k, BlueprintRating.Share(rating.Outputs[k].Amount, warehouse.Slice, slices));
+                            continue;
                         }
 
-                        warehouse.IsCrafting = false;
-                        warehouse.Progress = 0;
-                        warehouse.Slice = (warehouse.Slice + 1) % slices;
+                        draw += island.ActiveDraw;
+                        state.Progress += satisfaction[warehouse.PowerIndex];
+                        var slices = island.Slices;
+                        if (state.Progress < BlueprintRating.Share(island.CycleTicks, state.Slice, slices) * PowerGrid.Full)
+                        {
+                            continue;
+                        }
+
+                        // Room was checked at start, and only inserters take from outputs.
+                        for (var o = 0; o < island.OutputStacks.Length; o++)
+                        {
+                            var share = BlueprintRating.Share(island.OutputAmounts[o], state.Slice, slices);
+                            if (share > 0)
+                            {
+                                inventories.AddToStack(outputStart + island.OutputStacks[o], share);
+                            }
+                        }
+
+                        state.IsCrafting = false;
+                        state.Progress = 0;
+                        state.Slice = (state.Slice + 1) % slices;
                     }
+
+                    demand[warehouse.PowerIndex] += draw;
                 }
             }
         }
 
-        /// <summary>Starts the next slice of the cycle: its share of every input in stock, room for its share of every output.</summary>
-        private static bool TryStart(ref Warehouse warehouse, BlueprintRating rating, Stores.InventoryStore inventories, int start)
+        /// <summary>Starts an island's next slice: its share of every input in stock, room for its share of every output.</summary>
+        private static bool TryStart(ref IslandProgress state, IslandRating island, Stores.InventoryStore inventories, int start, int outputStart)
         {
-            if (!rating.CanRun)
+            var slices = island.Slices;
+            var slice = state.Slice;
+            for (var k = 0; k < island.InputStacks.Length; k++)
             {
-                return false;
-            }
-
-            var slices = rating.Slices;
-            var slice = warehouse.Slice;
-            var inputs = rating.Inputs;
-            for (var k = 0; k < inputs.Length; k++)
-            {
-                if (inventories.CountAt(start + k) < BlueprintRating.Share(inputs[k].Amount, slice, slices))
+                if (inventories.CountAt(start + island.InputStacks[k]) < BlueprintRating.Share(island.InputAmounts[k], slice, slices))
                 {
                     return false;
                 }
             }
 
-            var outputStart = start + inputs.Length;
-            for (var k = 0; k < rating.Outputs.Length; k++)
+            for (var o = 0; o < island.OutputStacks.Length; o++)
             {
-                var share = BlueprintRating.Share(rating.Outputs[k].Amount, slice, slices);
-                if (share > 0 && !inventories.StackAccepts(outputStart + k, rating.Outputs[k].Item, share))
+                var stack = outputStart + island.OutputStacks[o];
+                var share = BlueprintRating.Share(island.OutputAmounts[o], slice, slices);
+                if (share > 0 && !inventories.StackAccepts(stack, inventories.ItemAt(stack), share))
                 {
                     return false;
                 }
             }
 
-            for (var k = 0; k < inputs.Length; k++)
+            for (var k = 0; k < island.InputStacks.Length; k++)
             {
-                var share = BlueprintRating.Share(inputs[k].Amount, slice, slices);
+                var share = BlueprintRating.Share(island.InputAmounts[k], slice, slices);
                 if (share > 0)
                 {
-                    inventories.RemoveFromStack(start + k, share);
+                    inventories.RemoveFromStack(start + island.InputStacks[k], share);
                 }
             }
 
-            warehouse.IsCrafting = true;
-            warehouse.Progress = 0;
+            state.IsCrafting = true;
+            state.Progress = 0;
             return true;
         }
     }

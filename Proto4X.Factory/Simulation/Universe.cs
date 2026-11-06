@@ -84,6 +84,17 @@ namespace Proto4X.Factory.Simulation
 
         public SpaceLayer Space { get; } = new();
 
+        /// <summary>Bills of the station's current shipyard orders kept in stock ahead: two ships' worth.</summary>
+        public const int RequestedBills = 2;
+
+        /// <summary>
+        /// What the station still wants, per item (Factorio Space Age platform requests): its shipyards'
+        /// ordered bills times <see cref="RequestedBills"/>, less what's already in the yards, in its
+        /// receivers, in flight, and waiting in silos. Recomputed between ticks; silos only take wanted
+        /// items, and taking one claims it.
+        /// </summary>
+        public int[] Requests { get; } = new int[Items.Count];
+
         /// <summary>The surface ships launch beside and payloads land on: the first orbit surface.</summary>
         public Surface? Station { get; private set; }
 
@@ -156,6 +167,7 @@ namespace Proto4X.Factory.Simulation
             ApplyCommands();
             RerateLiveIfSettled();
             SyncLiveInterior();
+            UpdateRequests();
 
             foreach (var surface in surfaces)
             {
@@ -521,6 +533,66 @@ namespace Proto4X.Factory.Simulation
 
         internal long CurrentTick => Tick;
 
+        private void UpdateRequests()
+        {
+            Array.Clear(Requests);
+            if (Station is not { } station)
+            {
+                return;
+            }
+
+            var buildings = station.Buildings;
+            var store = station.Inventories;
+            for (var slot = 0; slot < buildings.HighWater; slot++)
+            {
+                if (!buildings.IsUsable(slot) || buildings.KindOf(slot) != BuildingKind.Shipyard)
+                {
+                    continue;
+                }
+
+                var order = buildings.ConfigOf(slot);
+                var design = ShipyardOrder.DesignOf(order);
+                if (ShipyardOrder.ModeOf(order) == ShipyardMode.Off || design >= DesignSlots || Designs[design] is not { Stats.IsValid: true } wanted)
+                {
+                    continue;
+                }
+
+                var start = buildings.InventoryStart(slot);
+                foreach (var (item, count) in wanted.Stats.Cost)
+                {
+                    var stack = start + Array.IndexOf(Buildings.ShipyardStacks, item);
+                    Requests[(int)item] += Math.Min(count * RequestedBills, store.LimitAt(stack)) - store.CountAt(stack);
+                }
+            }
+
+            foreach (var shipment in inTransit)
+            {
+                foreach (var (item, count) in shipment.Cargo)
+                {
+                    Requests[(int)item] -= count;
+                }
+            }
+
+            foreach (var surface in surfaces)
+            {
+                var kind = surface == station ? BuildingKind.Receiver : BuildingKind.LaunchSilo;
+                var table = surface.Buildings;
+                for (var slot = 0; slot < table.HighWater; slot++)
+                {
+                    if (!table.IsUsable(slot) || table.KindOf(slot) != kind)
+                    {
+                        continue;
+                    }
+
+                    var start = table.InventoryStart(slot);
+                    for (var stack = start; stack < start + table.InventoryLength(slot); stack++)
+                    {
+                        Requests[(int)surface.Inventories.ItemAt(stack)] -= surface.Inventories.CountAt(stack);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Lands arrived cargo in the lowest-slot receiver with room for all of it. Cargo that can't
         /// land waits in orbit, which is the backpressure that keeps a silo from launching forever.
@@ -651,7 +723,7 @@ namespace Proto4X.Factory.Simulation
 
             foreach (var blueprint in Blueprints)
             {
-                hash = StateHash.Mix(hash, ((ulong)blueprint.Version << 32) | (uint)blueprint.Rating.CycleTicks);
+                hash = StateHash.Mix(hash, ((ulong)blueprint.Version << 32) | (uint)blueprint.Rating.Islands.Length);
             }
 
             Space.HashInto(ref hash);

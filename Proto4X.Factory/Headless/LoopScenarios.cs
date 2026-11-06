@@ -77,13 +77,17 @@ namespace Proto4X.Factory.Headless
             gears.SetEntries(Layouts.GearsAndCircuits.Take(5));
             var gearRating = gears.Rating;
             Console.WriteLine($"   gears only: {Describe(gearRating)}");
+            var gearIsland = gearRating.Islands.Single();
             Check(gearRating.Inputs.Single().Item == ItemId.IronPlate && gearRating.Outputs.Single().Item == ItemId.Gear
-                && gearRating.Inputs[0].Amount == 2 * gearRating.Outputs[0].Amount, "a lone gear assembler rates to exactly 2 plates per gear");
+                && gearIsland.InputAmounts[0] == 2 * gearIsland.OutputAmounts[0], "a lone gear assembler rates to exactly 2 plates per gear");
+            var both = new Blueprint(0, "gears and circuits");
+            both.SetEntries(Layouts.GearsAndCircuits);
+            Check(both.Rating.Islands.Length == 2, $"gears and circuits are two independent islands (got {both.Rating.Islands.Length})");
             Check(gears.SetEntries(Layouts.GearsAndCircuits.Take(5).Reverse()) == false, "the same entries in another order are the same blueprint (no re-rate)");
         }
 
         private static string Describe(BlueprintRating rating) =>
-            $"{string.Join(" + ", rating.Inputs.Select(p => $"{p.Amount} {p.Item}"))} -> {string.Join(" + ", rating.Outputs.Select(p => $"{p.Amount} {p.Item}"))} every {rating.CycleTicks} ticks ({rating.Slices} slices), draw {rating.ActiveDraw}";
+            $"{string.Join(" + ", rating.Inputs.Select(p => $"{p.Amount} {p.Item}"))} -> {string.Join(" + ", rating.Outputs.Select(p => $"{p.Amount} {p.Item}"))} per minute, {rating.Islands.Length} islands, draw {rating.ActiveDraw}";
 
         /// <summary>A warehouse fed from two big chests and emptied into a third, powered, on a fresh planet.</summary>
         private static (Universe Universe, Surface Planet) WarehouseBench(bool hashing = false)
@@ -312,7 +316,7 @@ namespace Proto4X.Factory.Headless
             RunTicks(universe, 2); // spawns land in the snapshot on the second tick
             var starters = Ships();
             var firstPicketMinute = -1;
-            for (var minute = 1; minute <= 20; minute++)
+            for (var minute = 1; minute <= 40; minute++)
             {
                 RunTicks(universe, Minute);
                 if (firstPicketMinute < 0 && Ships() > starters)
@@ -320,7 +324,7 @@ namespace Proto4X.Factory.Headless
                     firstPicketMinute = minute;
                 }
 
-                if (minute % 4 == 0)
+                if (minute % 8 == 0)
                 {
                     Console.WriteLine($"   {minute,2} min: iron {Sum(planet, ItemId.IronPlate)}, copper {Sum(planet, ItemId.CopperPlate)}, steel {Sum(planet, ItemId.Steel)}, gears {Sum(planet, ItemId.Gear)}, circuits {Sum(planet, ItemId.Circuit)}"
                         + $" | parts on planet {Sum(planet, ItemId.Frame, ItemId.Engine, ItemId.Processor, ItemId.PowerCell, ItemId.Emitter)}, in flight {universe.InTransit.Count}"
@@ -328,10 +332,10 @@ namespace Proto4X.Factory.Headless
                 }
             }
 
-            Console.WriteLine($"   first Picket at minute {firstPicketMinute}; {Ships() - starters} built in 20 min");
+            Console.WriteLine($"   first Picket at minute {firstPicketMinute}; {Ships() - starters} built in 40 min");
             Check(planet.Buildings.AliveCount > 100 && station.Buildings.AliveCount > 10, "the starting scene placed");
             Check(firstPicketMinute > 0 && firstPicketMinute <= 15, "the shipyard launches a Picket within 15 minutes (the loop closes)");
-            Check(Ships() - starters >= 2, "and keeps launching them");
+            Check(Ships() - starters >= 10, "and keeps launching them: at least 10 in 40 minutes, no deadlock");
         }
 
         private static void LoopDeterminism()

@@ -287,15 +287,21 @@ namespace Proto4X.Factory.Simulation
         /// <summary>The second starter warehouse: <see cref="FramesAndEngines"/> on top, <see cref="Electronics"/> 12 tiles below it.</summary>
         public static Warehouses.BlueprintEntry[] ShipParts => [.. FramesAndEngines, .. Array.ConvertAll(Electronics, e => e with { Y = e.Y + 12 })];
 
-        /// <summary>Circuits, copper and steel in; processors, power cells and emitters out.</summary>
+        /// <summary>
+        /// Circuits, copper and steel in; processors, power cells and emitters out, as three separate
+        /// lines. Emitters get their own power-cell assembler: fed from the output line instead, a
+        /// backed-up emitter would stop power cells too (one island, oil-refinery rule).
+        /// </summary>
         public static Warehouses.BlueprintEntry[] Electronics =>
         [
             In(0, 1, ItemId.CopperPlate), Ins(1, 1, Direction.East), Asm(2, 0, RecipeId.Wire), Ins(5, 1, Direction.East),
             Asm(6, 0, RecipeId.Processor), In(7, 4, ItemId.Circuit), Ins(7, 3, Direction.North), Ins(9, 1, Direction.East), Out(10, 1),
             In(0, 6, ItemId.Circuit), Ins(1, 6, Direction.East), In(0, 8, ItemId.CopperPlate), Ins(1, 8, Direction.East),
-            Asm(2, 6, RecipeId.PowerCell), Ins(3, 9, Direction.South), Out(3, 10), Ins(5, 7, Direction.East),
-            Asm(6, 6, RecipeId.Emitter), In(6, 4, ItemId.Steel), Ins(6, 5, Direction.South), In(7, 10, ItemId.Circuit), Ins(7, 9, Direction.North),
-            Ins(9, 7, Direction.East), Out(10, 7),
+            Asm(2, 6, RecipeId.PowerCell), Ins(5, 7, Direction.East), Out(6, 7),
+            In(10, 6, ItemId.Circuit), Ins(11, 6, Direction.East), In(10, 8, ItemId.CopperPlate), Ins(11, 8, Direction.East),
+            Asm(12, 6, RecipeId.PowerCell), Ins(15, 7, Direction.East),
+            Asm(16, 6, RecipeId.Emitter), In(16, 4, ItemId.Steel), Ins(16, 5, Direction.South), In(17, 10, ItemId.Circuit), Ins(17, 9, Direction.North),
+            Ins(19, 7, Direction.East), Out(20, 7),
         ];
     }
 }
