@@ -52,7 +52,7 @@ namespace Proto4X.Factory.UI
                     Banner(viewport);
                     break;
                 case InputMode.Fleet:
-                    FleetPanel(new Rectangle(8, viewport.Bottom - 116, 340, 108));
+                    FleetPanel(new Rectangle(8, viewport.Bottom - 148, 340, 140));
                     break;
                 case InputMode.Designer:
                     Designer(new Rectangle(8, 8, Math.Min(900, viewport.Width - SideWidth - 32), Math.Min(640, viewport.Height - 16)));
@@ -70,7 +70,9 @@ namespace Proto4X.Factory.UI
         private void Hud(Rectangle rect)
         {
             var space = universe.Space;
-            gui.BeginPanel(rect, $"T+{universe.Tick / Universe.TicksPerSecond / 60}:{universe.Tick / Universe.TicksPerSecond % 60:00}   {Describe(space.Outcome)}");
+            // Widget ids are scoped by panel title, so titles stay constant: a ticking clock in one would drop clicks.
+            gui.BeginPanel(rect, "Status");
+            gui.Value($"T+{universe.Tick / Universe.TicksPerSecond / 60}:{universe.Tick / Universe.TicksPerSecond % 60:00}", Describe(space.Outcome), space.Outcome == Outcome.Lost ? gui.Style.Bad : gui.Style.Good);
             HealthBar("Station", space.Snapshot.FirstOrDefault(v => v.Role == BodyRole.Station), gui.Style.Accent);
             HealthBar("Bastion", space.Snapshot.FirstOrDefault(v => v.Role == BodyRole.Bastion), gui.Style.Bad);
             var ships = space.Snapshot.Count(v => v.Faction == Faction.Player && v.Role == BodyRole.Ship);
@@ -436,7 +438,8 @@ namespace Proto4X.Factory.UI
         private void FleetPanel(Rectangle rect)
         {
             var ships = universe.Space.Snapshot.Count(v => v.Faction == Faction.Player && v.Role == BodyRole.Ship);
-            gui.BeginPanel(rect, $"Fleet: {fleet.Selected.Count} of {ships} selected");
+            gui.BeginPanel(rect, "Fleet");
+            gui.Value("Selected", $"{fleet.Selected.Count} of {ships}");
             gui.Label("Drag to select, right-click to move.", gui.Style.TextDim);
             gui.BeginColumns(2);
             if (gui.ButtonAt(gui.NextRow(), "Select all (A)"))

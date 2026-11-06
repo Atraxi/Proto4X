@@ -321,7 +321,7 @@ references never cross worlds, and here they don't), and freeze the component re
 </details>
 
 ## Every world needs a system of every kind, or the scheduler throws
-**Status:** Open — hit again
+**Status:** Resolved (58d79c5): `SystemScheduler.Draw` now skips a pass with no systems (the space world draws with only a geometry system)
 **Priority:** Low
 
 <details>
