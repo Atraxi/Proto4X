@@ -223,6 +223,7 @@ namespace Proto4X.Factory.Simulation.Space
             }
 
             hash = StateHash.Mix(hash, ((ulong)WavesSpawned << 32) | (uint)Outcome);
+            hash = StateHash.Mix(hash, (ulong)NextWaveTick);
         }
     }
 }

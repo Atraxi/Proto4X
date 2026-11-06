@@ -26,6 +26,10 @@ namespace Proto4X.Factory.Simulation
         MoveShips,
         /// <summary>Payload: a <see cref="ShipDesign"/>; <see cref="Command.Config"/> is the slot.</summary>
         SaveDesign,
+        /// <summary>A new blueprint for the warehouse at (X, Y): a copy of blueprint <see cref="Command.Config"/>, or empty if that's -1.</summary>
+        NewBlueprint,
+        /// <summary>Peaceful mode on (<see cref="Command.Config"/> 1) or off: holds the wave timer.</summary>
+        SetPeaceful,
     }
 
     /// <summary>
@@ -221,7 +225,7 @@ namespace Proto4X.Factory.Simulation
             while (commands.Count > 0)
             {
                 var command = commands.Dequeue();
-                if ((uint)command.Surface >= (uint)surfaces.Count && command.Kind is not (CommandKind.MoveShips or CommandKind.SaveDesign or CommandKind.ExitInterior))
+                if ((uint)command.Surface >= (uint)surfaces.Count && command.Kind is not (CommandKind.MoveShips or CommandKind.SaveDesign or CommandKind.ExitInterior or CommandKind.SetPeaceful))
                 {
                     continue;
                 }
@@ -235,6 +239,8 @@ namespace Proto4X.Factory.Simulation
                     CommandKind.EnterInterior => EnterInterior(command.Surface, command.X, command.Y) ? PlacementResult.Placed : PlacementResult.WrongSurface,
                     CommandKind.ExitInterior => ExitInterior() ? PlacementResult.Placed : PlacementResult.WrongSurface,
                     CommandKind.MoveShips => OrderShips(command),
+                    CommandKind.NewBlueprint => NewBlueprint(command),
+                    CommandKind.SetPeaceful => SetPeaceful(command.Config != 0),
                     _ => SaveDesign(command),
                 };
 
@@ -277,6 +283,32 @@ namespace Proto4X.Factory.Simulation
             }
 
             Space.Order(serials, new Vector2(command.X + 0.5f, command.Y + 0.5f));
+            return PlacementResult.Placed;
+        }
+
+        private PlacementResult NewBlueprint(in Command command)
+        {
+            var surface = surfaces[command.Surface];
+            var slot = surface.Grid.OccupantAt(command.X, command.Y);
+            if (slot < 0 || surface.Buildings.KindOf(slot) != BuildingKind.Warehouse)
+            {
+                return PlacementResult.WrongSurface;
+            }
+
+            // Leave first: exiting saves the live floor into the current blueprint, so the copy includes it.
+            if (live is { } l && l.Surface == command.Surface && l.Slot == slot)
+            {
+                ExitInterior();
+            }
+
+            var source = (uint)command.Config < (uint)Blueprints.Count ? Blueprints[command.Config] : null;
+            var blueprint = AddBlueprint(source is null ? $"Blueprint {Blueprints.Count + 1}" : $"{source.Name} ({Blueprints.Count + 1})", source?.Entries ?? []);
+            return surface.TrySetConfigAt(command.X, command.Y, blueprint.Id) ? PlacementResult.Placed : PlacementResult.WrongSurface;
+        }
+
+        private PlacementResult SetPeaceful(bool peaceful)
+        {
+            Space.Peaceful = peaceful;
             return PlacementResult.Placed;
         }
 

@@ -24,6 +24,7 @@ namespace Proto4X.Factory.Headless
             Run("starter blueprints rate to a runnable cycle", StarterBlueprintRatings);
             Run("abstract warehouse output matches live", AbstractMatchesLive);
             Run("entering and leaving a warehouse conserves items", EnterExitConserves);
+            Run("copying a live warehouse's blueprint keeps its unsaved edits", CopyLiveBlueprint);
             Run("ship design stats", ShipDesignStats);
             Run("shipyard builds exactly one ship from one bill", ShipyardBuildsOne);
             Run("combat: lancers beat a skiff, the station beats a skiff", Combat);
@@ -154,6 +155,37 @@ namespace Proto4X.Factory.Headless
             Check(liveMade.Gears > 0 && liveMade.Circuits > 0, "live produces both");
             Check(Math.Abs(abstractMade.Gears - liveMade.Gears) <= 0.05 * liveMade.Gears, "abstract gears within 5% of live");
             Check(Math.Abs(abstractMade.Circuits - liveMade.Circuits) <= 0.05 * liveMade.Circuits, "abstract circuits within 5% of live");
+        }
+
+        private static void CopyLiveBlueprint()
+        {
+            var universe = new Universe(new SystemScheduler());
+            var planet = universe.AddSurface("planet", SurfaceKind.Planet, 30, 30);
+            planet.FillTiles(0, 0, 30, 30, TileKind.Ground);
+            var original = universe.AddBlueprint("Gears and circuits", Layouts.GearsAndCircuits);
+            planet.TryPlace(BuildingKind.Warehouse, 10, 10, Direction.North, config: original.Id);
+            var before = original.Entries.Count;
+            var removed = original.Entries[^1];
+            universe.Enqueue(new Command(CommandKind.EnterInterior, planet.Index, 12, 12));
+            RunTicks(universe, 2);
+            universe.Enqueue(new Command(CommandKind.Remove, universe.Live!.Value.Interior.Index, removed.X, removed.Y));
+            RunTicks(universe, 2);
+            universe.Enqueue(new Command(CommandKind.NewBlueprint, planet.Index, 10, 10, Config: original.Id));
+            RunTicks(universe, 2);
+
+            var copy = universe.Blueprints[^1];
+            var slot = planet.Grid.OccupantAt(10, 10);
+            Console.WriteLine($"   original {before} -> {original.Entries.Count} entries, copy {copy.Name} has {copy.Entries.Count}");
+            Check(universe.Live is null, "making a new blueprint leaves the interior");
+            Check(original.Entries.Count == before - 1, "leaving saved the edit into the original");
+            Check(copy.Entries.SequenceEqual(original.Entries), "the copy has the edit too");
+            Check(planet.Buildings.ConfigOf(slot) == copy.Id, "the warehouse now uses the copy");
+
+            universe.Enqueue(new Command(CommandKind.NewBlueprint, planet.Index, 10, 10, Config: -1));
+            universe.Enqueue(new Command(CommandKind.SetPeaceful, -1, 0, 0, Config: 1));
+            RunTicks(universe, 1);
+            Check(universe.Blueprints[^1].Entries.Count == 0 && planet.Buildings.ConfigOf(slot) == universe.Blueprints[^1].Id, "New empty gives an empty blueprint");
+            Check(universe.Space.Peaceful, "SetPeaceful applies");
         }
 
         private static void EnterExitConserves()
