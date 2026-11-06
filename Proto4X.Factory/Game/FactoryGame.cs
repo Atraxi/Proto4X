@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary;
@@ -37,6 +37,7 @@ namespace Proto4X.Factory
         private BuildController controller = null!;
         private CameraController cameraController = null!;
         private Texture2D pixel = null!;
+        private Shaders? shaders;
 
         private bool paused;
         private int stressBlocksStamped;
@@ -64,6 +65,9 @@ namespace Proto4X.Factory
             pixel = new Texture2D(GraphicsDevice, 1, 1);
             pixel.SetData([Color.White]);
 
+            shaders = new Shaders(Content, GraphicsDevice);
+            style.Hologram = shaders.Hologram;
+
             foreach (var surface in universe.Surfaces)
             {
                 // World drawing is the style's; the per-surface screen overlay stays SpriteBatch.
@@ -78,6 +82,7 @@ namespace Proto4X.Factory
         protected override void UnloadContent()
         {
             style.Dispose();
+            shaders?.Dispose();
             base.UnloadContent();
         }
 
@@ -99,6 +104,11 @@ namespace Proto4X.Factory
                 StampStressBlock();
             }
 
+            if (keyboard.WasKeyJustPressed(Keys.F4) && shaders is not null)
+            {
+                shaders.GradeEnabled = !shaders.GradeEnabled;
+            }
+
             controller.Update(InputManager.Instance.MouseInfo.Position);
 
             if (!paused)
@@ -117,13 +127,19 @@ namespace Proto4X.Factory
 
         protected override void OnDraw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(style.Background);
-            if (SpriteBatch is not null)
+            if (SpriteBatch is null || shaders is null)
             {
-                var surface = controller.Surface;
-                style.PrepareFrame(UserInterfaceManager.Camera);
-                SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
+                GraphicsDevice.Clear(style.Background);
+                return;
             }
+
+            var surface = controller.Surface;
+            var time = (float)gameTime.TotalGameTime.TotalSeconds;
+            SystemScheduler.Geometry.Time = time;
+            shaders.BeginFrame(SpriteBatch, GraphicsDevice, surface.Kind == SurfaceKind.Orbit, style.Background, UserInterfaceManager.Camera, time);
+            style.PrepareFrame(UserInterfaceManager.Camera);
+            SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
+            shaders.EndFrame(SpriteBatch, time);
         }
 
         /// <summary>
@@ -166,7 +182,7 @@ namespace Proto4X.Factory
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
                 + $" | in flight {universe.InTransit.Count}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
+                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  F4 grade  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
         }
     }
 }

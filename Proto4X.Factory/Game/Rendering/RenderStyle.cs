@@ -30,6 +30,9 @@ namespace Proto4X.Factory.Rendering
 
         public Detail Detail { get; } = new();
 
+        /// <summary>The hologram material for ghosts, when the shader loaded. Set before registering surfaces.</summary>
+        public MonoGameLibrary.Graphics.Material? Hologram { get; set; }
+
         public OrbitCamera CreateCamera() => new OrbitCamera(minDistance: 5f, maxDistance: 320f);
 
         public void RegisterSurface(SystemScheduler scheduler, Surface surface, BuildController controller)
@@ -47,7 +50,7 @@ namespace Proto4X.Factory.Rendering
             scheduler.Add(surface.World, new Progress3DRenderer(surface, Detail));
             scheduler.Add(surface.World, new Launcher3DRenderer(Detail));
             scheduler.Add(surface.World, new Inserter3DRenderer(surface, Detail));
-            scheduler.Add(surface.World, new Ghost3DRenderer(surface, controller));
+            scheduler.Add(surface.World, new Ghost3DRenderer(surface, controller, Hologram));
         }
 
         /// <summary>Grid-local tiles to world tiles: the frame's turn about z, then its position. No pixel scale in 3D.</summary>

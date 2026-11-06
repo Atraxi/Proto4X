@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    The playable shell: input, camera use, rendering. No content pipeline - every texture is the
-    1x1 white pixel made at load, so the project needs no MGCB tool restore and ships no art.
+    The playable shell: input, camera use, rendering. Textures are still generated at runtime (no
+    art ships). The content pipeline is used for one thing only: compiling shaders (Content/Shaders),
+    which have no runtime compiler. Content.Builder and the mgcb tool are pinned to the resolved
+    MonoGame runtime (3.8.6) - an effect compiled by another MGFX version fails at Content.Load,
+    which a build never sees. See plans/02-shaders.md.
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -12,11 +15,15 @@
     <AssemblyName>Proto4X.Factory</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.6" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Simulation\Proto4X.Factory.Simulation.csproj" />
     <ProjectReference Include="..\..\MonoGameLibrary\MonoGameLibrary.csproj" />
     <ProjectReference Include="..\..\Analyzers\Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <Target Name="RestoreDotnetTools" BeforeTargets="CollectPackageReferences">
+    <Exec Command="dotnet tool restore" />
+  </Target>
 </Project>
