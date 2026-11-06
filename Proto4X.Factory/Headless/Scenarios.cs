@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Proto4X.Factory.Headless
 {
     /// <summary>Behavioural checks of the simulation. Each builds a small layout, runs it, and asserts on the outcome.</summary>
-    public static class Scenarios
+    public static partial class Scenarios
     {
         private static int failures;
         private static int passes;
@@ -28,6 +28,7 @@ namespace Proto4X.Factory.Headless
             Run("surface conditions gate placement and recipes", SurfaceConditions);
             Run("launch reaches the ship's receiver", LaunchToShip);
             Run("same commands, same state hash", Determinism);
+            RunLoopScenarios();
 
             Console.WriteLine();
             Console.WriteLine($"{passes} checks passed, {failures} failed");

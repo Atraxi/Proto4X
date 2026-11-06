@@ -71,10 +71,10 @@ GuiRenderer (engine, IDrawSystem, DrawSpace.Screen)
   draws the command list with SpriteBatch + a 1×1 pixel + the font
 ```
 
-**Mouse capture** uses the standard immediate-mode trick: panel rects recorded *last* frame decide
-`WantsMouse` *this* frame, so game input can test it before the UI code for this frame has run.
-That's one frame of latency on a panel appearing under a stationary cursor, which is invisible in
-practice. Clicks fire on **release** inside the same widget the press started on (ImGui's "active
+**Mouse capture**: the UI code runs *before* the game's world input every update, so `End()` sets
+`WantsMouse` from this frame's own panel rects, and world input that runs afterwards just tests it.
+(ImGui's last-frame-rects trick is only needed when the UI runs after input, which it doesn't here.)
+A press that began on the UI keeps the mouse captured until release. Clicks fire on **release** inside the same widget the press started on (ImGui's "active
 id"), so dragging off a button cancels it.
 
 **Ids**: a widget's id is a hash of its label plus the panel it sits in, with `##suffix` to
