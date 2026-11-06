@@ -17,8 +17,8 @@ namespace MonoGameLibrary.Graphics
     /// A draw call needs vertices, an <see cref="Effect"/> (shaders plus parameters), and device state:
     /// <see cref="BlendState"/> (how a pixel mixes with what's there), <see cref="DepthStencilState"/>
     /// (depth test and write), <see cref="RasterizerState"/> (culling), <see cref="SamplerState"/>
-    /// (texture filtering). Two stock <see cref="BasicEffect"/>s cover every layer, so there is no
-    /// content pipeline step.
+    /// (texture filtering). Two stock <see cref="BasicEffect"/>s cover every layer with no content
+    /// pipeline step; a game with compiled effects opts in per draw with a <see cref="Material"/>.
     /// </remarks>
     public sealed class GeometryBatch
     {
@@ -33,6 +33,9 @@ namespace MonoGameLibrary.Graphics
         };
 
         private readonly List<MeshDraw> meshDraws = [];
+        private readonly List<(StaticMesh Mesh, Matrix Transform, Material Material)> materialMeshDraws = [];
+        // One immediate buffer per material, kept across frames so its pages are reused.
+        private readonly Dictionary<Material, GeometryBuffer> materialBuffers = [];
 
         // Created on first Flush, when a device is available.
         private BasicEffect? litEffect;
@@ -50,10 +53,42 @@ namespace MonoGameLibrary.Graphics
         // Point sampling keeps the white texel exact.
         public SamplerState Sampler { get; set; } = SamplerState.PointClamp;
 
+        /// <summary>Seconds, for materials that declare <c>Time</c>. The game sets it each frame.</summary>
+        public float Time { get; set; }
+
         public void Clear()
         {
             Immediate.Clear();
             meshDraws.Clear();
+            materialMeshDraws.Clear();
+            foreach (var buffer in materialBuffers.Values)
+            {
+                buffer.Clear();
+            }
+        }
+
+        /// <summary>
+        /// This frame's immediate triangles for <paramref name="material"/>. Every layer of the returned
+        /// buffer draws through the material; the layer only orders triangles within it.
+        /// </summary>
+        public GeometryBuffer Custom(Material material)
+        {
+            if (!materialBuffers.TryGetValue(material, out var buffer))
+            {
+                buffer = new GeometryBuffer { WhiteUv = Immediate.WhiteUv };
+                materialBuffers[material] = buffer;
+            }
+
+            return buffer;
+        }
+
+        /// <summary>Queues <paramref name="mesh"/> through a custom material instead of the stock effects.</summary>
+        public void Draw(StaticMesh mesh, in Matrix transform, Material material)
+        {
+            if (!mesh.IsEmpty)
+            {
+                materialMeshDraws.Add((mesh, transform, material));
+            }
         }
 
         /// <summary>Queues <paramref name="mesh"/> for this frame, through <paramref name="transform"/> into the world's local space.</summary>
@@ -77,7 +112,7 @@ namespace MonoGameLibrary.Graphics
         /// </remarks>
         public void Flush(GraphicsDevice device, Matrix world, Matrix view, Matrix projection)
         {
-            if (Immediate.IsEmpty && meshDraws.Count == 0)
+            if (Immediate.IsEmpty && meshDraws.Count == 0 && materialMeshDraws.Count == 0 && !AnyMaterialGeometry())
             {
                 return;
             }
@@ -108,8 +143,98 @@ namespace MonoGameLibrary.Graphics
             // depth test needs the solids' depth. Translucent and additive read depth but don't write it.
             DrawLayer(device, GeometryLayer.Opaque, world, BlendState.Opaque, DepthStencilState.Default);
             DrawLayer(device, GeometryLayer.Emissive, world, BlendState.Opaque, DepthStencilState.Default);
+            DrawMaterials(device, blended: false, world, view, projection);
             DrawLayer(device, GeometryLayer.Translucent, world, BlendState.AlphaBlend, DepthStencilState.DepthRead);
+            DrawMaterials(device, blended: true, world, view, projection);
             DrawLayer(device, GeometryLayer.Additive, world, premultipliedAdditive, DepthStencilState.DepthRead);
+            device.RasterizerState = RasterizerState.CullNone;
+        }
+
+        private bool AnyMaterialGeometry()
+        {
+            foreach (var buffer in materialBuffers.Values)
+            {
+                if (!buffer.IsEmpty)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Custom materials: retained meshes first, then each material's immediate buffer, every layer through the material.</summary>
+        private void DrawMaterials(GraphicsDevice device, bool blended, in Matrix world, in Matrix view, in Matrix projection)
+        {
+            if (materialMeshDraws.Count == 0 && !AnyMaterialGeometry())
+            {
+                return;
+            }
+
+            var inverseView = Matrix.Invert(view);
+            var camera = inverseView.Translation;
+            var sun = Lighting.Sun;
+
+            foreach (var (mesh, transform, material) in materialMeshDraws)
+            {
+                if (material.IsBlended != blended)
+                {
+                    continue;
+                }
+
+                Apply(device, material);
+                material.Bind(transform * world, view, projection, Time, sun, camera);
+                for (var layer = 0; layer < GeometryBuffer.LayerCount; layer++)
+                {
+                    if (!mesh.HasLayer((GeometryLayer)layer))
+                    {
+                        continue;
+                    }
+
+                    foreach (var pass in material.Effect.CurrentTechnique.Passes)
+                    {
+                        pass.Apply();
+                        mesh.DrawLayer(device, (GeometryLayer)layer);
+                    }
+                }
+            }
+
+            foreach (var (material, buffer) in materialBuffers)
+            {
+                if (material.IsBlended != blended || buffer.IsEmpty)
+                {
+                    continue;
+                }
+
+                Apply(device, material);
+                material.Bind(world, view, projection, Time, sun, camera);
+                for (var layer = 0; layer < GeometryBuffer.LayerCount; layer++)
+                {
+                    var pages = buffer.PageCount((GeometryLayer)layer);
+                    for (var i = 0; i < pages; i++)
+                    {
+                        var (vertices, vertexCount, indices, indexCount) = buffer.RawPage((GeometryLayer)layer, i);
+                        if (indexCount == 0)
+                        {
+                            continue;
+                        }
+
+                        foreach (var pass in material.Effect.CurrentTechnique.Passes)
+                        {
+                            pass.Apply();
+                            device.DrawUserIndexedPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount, indices, 0, indexCount / 3);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void Apply(GraphicsDevice device, Material material)
+        {
+            device.BlendState = material.Blend;
+            device.DepthStencilState = material.Depth;
+            device.RasterizerState = material.Rasterizer;
+            device.SamplerStates[0] = Sampler;
         }
 
         private void DrawLayer(GraphicsDevice device, GeometryLayer layer, in Matrix world, BlendState blend, DepthStencilState depth)
