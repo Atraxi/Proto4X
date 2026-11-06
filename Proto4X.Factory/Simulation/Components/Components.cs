@@ -114,8 +114,46 @@ namespace Proto4X.Factory.Simulation.Components
     public struct Generator(int inventory)
     {
         public int Inventory = inventory;
+
+        /// <summary>A solar panel: constant output, no fuel, no inventory.</summary>
+        public bool Solar;
         public long FuelEnergy;
         public int LastOffered;
+        public int PowerIndex;
+        public int PowerVersion = -1;
+    }
+
+    /// <summary>
+    /// A warehouse's exterior (plans/03). Abstract: runs its blueprint's rated cycle like an assembler
+    /// with a composite recipe. Live: does nothing but draw what its interior drew.
+    /// </summary>
+    public struct Warehouse
+    {
+        /// <summary>Blueprint id, pulled from the building table's config.</summary>
+        public int Blueprint;
+
+        /// <summary>The rating version the buffer is laid out for; a new rating relays it out.</summary>
+        public int RatingVersion;
+        public int ConfigVersion;
+        public bool IsCrafting;
+        public int Progress;
+
+        /// <summary>Which slice of the rated cycle runs next (see <see cref="Warehouses.BlueprintRating.Share"/>).</summary>
+        public int Slice;
+        public int PowerIndex;
+        public int PowerVersion;
+    }
+
+    /// <summary>Orbit: builds the ordered design from components. The order lives in the building table's config.</summary>
+    public struct Shipyard(int inventory)
+    {
+        public int Inventory = inventory;
+        public bool IsBuilding;
+
+        /// <summary>The design being built, captured when its bill was consumed.</summary>
+        public int Design;
+        public int BuildTicks;
+        public int Progress;
         public int PowerIndex;
         public int PowerVersion = -1;
     }

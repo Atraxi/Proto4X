@@ -37,11 +37,14 @@ namespace Proto4X.Factory.Simulation
 
                 case BuildingKind.Assembler:
                 case BuildingKind.Generator:
-                    return inventories.FindStackFor(start, buildings.InputStacks(slot), item, 1) >= 0;
+                case BuildingKind.Warehouse:
+                case BuildingKind.Shipyard:
+                    return start >= 0 && inventories.FindStackFor(start, buildings.InputStacks(slot), item, 1) >= 0;
 
                 case BuildingKind.Chest:
                 case BuildingKind.Receiver:
                 case BuildingKind.LaunchSilo:
+                case BuildingKind.OutputDock:
                     return inventories.FindStackFor(start, buildings.InventoryLength(slot), item, 1) >= 0;
 
                 default:
@@ -59,6 +62,7 @@ namespace Proto4X.Factory.Simulation
             var buildings = surface.Buildings;
             var start = buildings.InventoryStart(slot);
             var length = buildings.KindOf(slot) is BuildingKind.Furnace or BuildingKind.Assembler or BuildingKind.Generator
+                or BuildingKind.Warehouse or BuildingKind.Shipyard
                 ? buildings.InputStacks(slot)
                 : buildings.InventoryLength(slot);
             return surface.Inventories.TryInsert(start, length, item, 1);
@@ -78,11 +82,13 @@ namespace Proto4X.Factory.Simulation
 
         /// <summary>Whether a building has a pickup side at all - an inserter facing away from one has nothing to do.</summary>
         public static bool HasOutputs(BuildingKind kind) =>
-            kind is BuildingKind.Belt or BuildingKind.Chest or BuildingKind.Receiver or BuildingKind.Furnace or BuildingKind.Assembler;
+            kind is BuildingKind.Belt or BuildingKind.Chest or BuildingKind.Receiver or BuildingKind.Furnace or BuildingKind.Assembler
+                or BuildingKind.InputDock or BuildingKind.Warehouse;
 
         public static bool HasInputs(BuildingKind kind) =>
             kind is BuildingKind.Belt or BuildingKind.Chest or BuildingKind.Receiver or BuildingKind.Furnace
-                or BuildingKind.Assembler or BuildingKind.Generator or BuildingKind.LaunchSilo;
+                or BuildingKind.Assembler or BuildingKind.Generator or BuildingKind.LaunchSilo
+                or BuildingKind.OutputDock or BuildingKind.Warehouse or BuildingKind.Shipyard;
 
         /// <summary>
         /// Takes one item from <paramref name="fromSlot"/>'s outputs that <paramref name="toSlot"/> will
@@ -100,8 +106,14 @@ namespace Proto4X.Factory.Simulation
 
             var inventories = surface.Inventories;
             var start = buildings.InventoryStart(fromSlot);
+            if (start < 0)
+            {
+                item = ItemId.None;
+                return false;
+            }
+
             var length = buildings.InventoryLength(fromSlot);
-            var first = buildings.KindOf(fromSlot) is BuildingKind.Furnace or BuildingKind.Assembler
+            var first = buildings.KindOf(fromSlot) is BuildingKind.Furnace or BuildingKind.Assembler or BuildingKind.Warehouse
                 ? start + buildings.InputStacks(fromSlot)
                 : start;
 

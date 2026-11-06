@@ -24,6 +24,9 @@ namespace Proto4X.Factory.Headless
         public int[] HeldByInsertersOf { get; } = new int[Items.Count];
         public int HeldByDrills;
         public int CraftsInProgress;
+
+        /// <summary>Inputs consumed by warehouse slices that haven't finished: held, not lost.</summary>
+        public int[] HeldByWarehousesOf { get; } = new int[Items.Count];
         public int EntitiesSeen;
         public int IntegrityErrors;
         public Dictionary<BuildingKind, int> EntitiesByKind { get; } = [];
@@ -36,6 +39,7 @@ namespace Proto4X.Factory.Headless
             scheduler.Add(surface.World, new InserterPass(this));
             scheduler.Add(surface.World, new DrillPass(this));
             scheduler.Add(surface.World, new CrafterPass(this));
+            scheduler.Add(surface.World, new WarehousePass(this, surface));
         }
 
         private void Reset()
@@ -44,6 +48,7 @@ namespace Proto4X.Factory.Headless
             System.Array.Clear(HeldByInsertersOf);
             HeldByDrills = 0;
             CraftsInProgress = 0;
+            System.Array.Clear(HeldByWarehousesOf);
             EntitiesSeen = 0;
             IntegrityErrors = 0;
             EntitiesByKind.Clear();
@@ -129,6 +134,32 @@ namespace Proto4X.Factory.Headless
                         if (crafter.IsCrafting)
                         {
                             probe.CraftsInProgress++;
+                        }
+                    }
+                }
+            }
+        }
+
+        private sealed class WarehousePass(Probe probe, Surface surface) : IUpdateSystem
+        {
+            public IReadOnlyList<ComponentRef> RequiredComponentProviders => [ComponentRef.Of<Warehouse>()];
+
+            public void Update(GameTime gameTime, List<ArchetypeChunk> archetypeChunks)
+            {
+                var blueprints = surface.Universe.Blueprints;
+                foreach (var chunk in archetypeChunks)
+                {
+                    foreach (ref var warehouse in chunk.GetSpan<Warehouse>())
+                    {
+                        if (!warehouse.IsCrafting || (uint)warehouse.Blueprint >= (uint)blueprints.Count)
+                        {
+                            continue;
+                        }
+
+                        var rating = blueprints[warehouse.Blueprint].Rating;
+                        foreach (var (item, amount) in rating.Inputs)
+                        {
+                            probe.HeldByWarehousesOf[(int)item] += Simulation.Warehouses.BlueprintRating.Share(amount, warehouse.Slice, rating.Slices);
                         }
                     }
                 }

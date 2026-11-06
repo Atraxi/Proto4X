@@ -36,15 +36,28 @@ namespace Proto4X.Factory.Simulation.Power
 
         public int NetworkCount { get; private set; }
 
+        /// <summary>
+        /// Interior floors have no poles: every building is on network 1, whose satisfaction is set
+        /// from outside (the warehouse's own satisfaction), and whose demand is reported back.
+        /// </summary>
+        public bool Ambient { get; }
+
+        /// <summary>Ambient only: this tick's satisfaction for every building, written between ticks.</summary>
+        public int AmbientSatisfaction { get; set; } = Full;
+
+        /// <summary>Ambient only: what the floor asked for last tick, in J/tick.</summary>
+        public long LastDemand { get; private set; }
+
         /// <summary>Bumped on every rebuild; buildings cache their network index against it.</summary>
         public int Version { get; private set; }
 
         public bool IsDirty { get; private set; }
 
-        public PowerGrid(SurfaceGrid grid, BuildingTable buildings)
+        public PowerGrid(SurfaceGrid grid, BuildingTable buildings, bool ambient = false)
         {
             this.grid = grid;
             this.buildings = buildings;
+            Ambient = ambient;
         }
 
         public void MarkDirty() => IsDirty = true;
@@ -61,7 +74,16 @@ namespace Proto4X.Factory.Simulation.Power
 
         public void Solve()
         {
-            for (var n = 1; n <= NetworkCount; n++)
+            if (Ambient && NetworkCount == 1)
+            {
+                LastDemand = demand[1];
+                satisfaction[1] = AmbientSatisfaction;
+                load[1] = Full;
+                demand[1] = 0;
+                capacity[1] = 0;
+            }
+
+            for (var n = Ambient ? NetworkCount + 1 : 1; n <= NetworkCount; n++)
             {
                 var wanted = demand[n];
                 var offered = capacity[n];
@@ -86,6 +108,12 @@ namespace Proto4X.Factory.Simulation.Power
         {
             IsDirty = false;
             Version++;
+
+            if (Ambient)
+            {
+                RebuildAmbient();
+                return;
+            }
 
             var poles = new List<int>();
             for (var slot = 0; slot < buildings.HighWater; slot++)
@@ -224,6 +252,32 @@ namespace Proto4X.Factory.Simulation.Power
                 }
 
                 buildings.SetPowerNetwork(slot, network);
+            }
+        }
+
+        private void RebuildAmbient()
+        {
+            NetworkCount = 1;
+            if (satisfaction.Length != 2)
+            {
+                satisfaction = new int[2];
+                load = new int[2];
+                demand = new long[2];
+                capacity = new long[2];
+            }
+
+            if (tileNetwork.Length != grid.Width * grid.Height)
+            {
+                tileNetwork = new int[grid.Width * grid.Height];
+            }
+
+            Array.Fill(tileNetwork, 0);
+            for (var slot = 0; slot < buildings.HighWater; slot++)
+            {
+                if (buildings.IsAlive(slot))
+                {
+                    buildings.SetPowerNetwork(slot, 0);
+                }
             }
         }
 

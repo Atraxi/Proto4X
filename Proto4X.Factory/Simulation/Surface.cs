@@ -70,11 +70,24 @@ namespace Proto4X.Factory.Simulation
         /// <summary>Launches completed this tick, collected by the universe after the tick.</summary>
         internal List<Shipment> Outbound { get; } = [];
 
+        /// <summary>Ships finished by shipyards this tick, launched into space by the universe after the tick.</summary>
+        internal List<ShipLaunch> ShipsLaunched { get; } = [];
+
+        /// <summary>
+        /// Whether the universe ticks this surface. Planets and orbits always; a warehouse interior only
+        /// while it's live (viewed or edited). An inactive surface is frozen, not discarded.
+        /// </summary>
+        public bool IsActive { get; internal set; } = true;
+
+        /// <summary>Interior only: the blueprint and version this floor was last built from.</summary>
+        public int BlueprintId { get; internal set; } = -1;
+        public int BlueprintVersion { get; internal set; } = -1;
+
         /// <summary>Set by the universe for a tick when component state should be folded into <see cref="ComponentHash"/>.</summary>
         internal bool HashRequested;
         internal ulong ComponentHash;
 
-        internal Universe Universe { get; }
+        public Universe Universe { get; }
 
         public long CurrentTick => Universe.Tick;
 
@@ -87,7 +100,7 @@ namespace Proto4X.Factory.Simulation
             World = new GameWorld(0, 0, width, height);
             Grid = new SurfaceGrid(width, height);
             Belts = new BeltNetwork(Grid, Buildings);
-            Power = new PowerGrid(Grid, Buildings);
+            Power = new PowerGrid(Grid, Buildings, ambient: kind == SurfaceKind.Interior);
         }
 
         internal void RegisterSystems(SystemScheduler scheduler, bool includeStateHashing, System.Func<IUpdateSystem, IUpdateSystem>? decorate)
@@ -104,6 +117,8 @@ namespace Proto4X.Factory.Simulation
             Add(new InserterSystem(this));
             Add(new CrafterSystem(this));
             Add(new LauncherSystem(this));
+            Add(new WarehouseSystem(this));
+            Add(new ShipyardSystem(this));
 
             if (includeStateHashing)
             {
@@ -114,6 +129,8 @@ namespace Proto4X.Factory.Simulation
                 Add(new ComponentHashSystem<Crafter>(this));
                 Add(new ComponentHashSystem<Generator>(this));
                 Add(new ComponentHashSystem<Launcher>(this));
+                Add(new ComponentHashSystem<Warehouse>(this));
+                Add(new ComponentHashSystem<Shipyard>(this));
             }
         }
 
@@ -151,6 +168,11 @@ namespace Proto4X.Factory.Simulation
 
         public PlacementResult CanPlace(BuildingKind kind, int x, int y, RecipeId recipe = RecipeId.None)
         {
+            if (kind == BuildingKind.None || (int)kind >= Data.Buildings.Count)
+            {
+                return PlacementResult.WrongSurface;
+            }
+
             var spec = Data.Buildings.Spec(kind);
             var size = spec.Size;
             var requiredTile = Kind == SurfaceKind.Planet ? TileKind.Ground : TileKind.Foundation;
@@ -197,10 +219,16 @@ namespace Proto4X.Factory.Simulation
             return PlacementResult.Placed;
         }
 
-        public static SurfaceCondition ConditionOf(SurfaceKind kind) => kind == SurfaceKind.Planet ? SurfaceCondition.Planet : SurfaceCondition.Orbit;
+        public static SurfaceCondition ConditionOf(SurfaceKind kind) => kind switch
+        {
+            SurfaceKind.Planet => SurfaceCondition.Planet,
+            SurfaceKind.Orbit => SurfaceCondition.Orbit,
+            _ => SurfaceCondition.Interior,
+        };
 
         /// <summary>Places a building. Between ticks only - see <see cref="Universe.Enqueue"/> for the in-game path.</summary>
-        public PlacementResult TryPlace(BuildingKind kind, int x, int y, Direction direction, RecipeId recipe = RecipeId.None)
+        /// <param name="config">The kind's setting (see <see cref="BuildingTable.ConfigOf"/>): dock filter, warehouse blueprint, shipyard order.</param>
+        public PlacementResult TryPlace(BuildingKind kind, int x, int y, Direction direction, RecipeId recipe = RecipeId.None, int config = 0)
         {
             if (kind == BuildingKind.Assembler && recipe == RecipeId.None)
             {
@@ -215,6 +243,7 @@ namespace Proto4X.Factory.Simulation
 
             var size = Data.Buildings.Size(kind);
             var slot = Buildings.Allocate(kind, x, y, direction);
+            Buildings.SetConfig(slot, config);
             Grid.SetOccupant(x, y, size, slot);
             Grid.BumpChunksAround(x, y, size);
             Power.MarkDirty();
@@ -249,7 +278,8 @@ namespace Proto4X.Factory.Simulation
                 case BuildingKind.Furnace:
                 {
                     var inventory = Inventories.Allocate(2);
-                    Inventories.ConfigureFree(inventory, 4);
+                    // Room for two of the hungriest smelt (steel: 5 plates), as with assemblers.
+                    Inventories.ConfigureFree(inventory, 10);
                     Inventories.ConfigureFree(inventory + 1, 0);
                     Buildings.SetInventory(slot, inventory, 2, 1);
                     entity.With(new Crafter(inventory, RecipeId.None, picksRecipeFromInput: true) { ConfigVersion = ConfigVersion });
@@ -289,6 +319,44 @@ namespace Proto4X.Factory.Simulation
                     // power, so without it a fresh build can never start. (The original solves this
                     // with burner-fuelled inserters; one free coal is the cheap version.)
                     entity.With(new Generator(inventory) { FuelEnergy = Items.CoalFuelValue });
+                    break;
+                }
+
+                case BuildingKind.SolarPanel:
+                    entity.With(new Generator(-1) { Solar = true });
+                    break;
+
+                case BuildingKind.InputDock:
+                {
+                    var inventory = Inventories.Allocate(1);
+                    Inventories.ConfigureFixed(inventory, (ItemId)config, Data.Buildings.DockStackLimit);
+                    Buildings.SetInventory(slot, inventory, 1, 0);
+                    break;
+                }
+
+                case BuildingKind.OutputDock:
+                {
+                    var inventory = Inventories.Allocate(Data.Buildings.OutputDockStacks);
+                    Buildings.SetInventory(slot, inventory, Data.Buildings.OutputDockStacks, Data.Buildings.OutputDockStacks);
+                    break;
+                }
+
+                case BuildingKind.Warehouse:
+                    // The buffer is laid out from the blueprint's rating by WarehouseSystem on its first tick.
+                    entity.With(new Warehouse { Blueprint = config, RatingVersion = -1, ConfigVersion = -1, PowerVersion = -1 });
+                    break;
+
+                case BuildingKind.Shipyard:
+                {
+                    var stacks = Data.Buildings.ShipyardStacks;
+                    var inventory = Inventories.Allocate(stacks.Length);
+                    for (var i = 0; i < stacks.Length; i++)
+                    {
+                        Inventories.ConfigureFixed(inventory + i, stacks[i], Data.Buildings.ShipyardStackLimit);
+                    }
+
+                    Buildings.SetInventory(slot, inventory, stacks.Length, stacks.Length);
+                    entity.With(new Shipyard(inventory));
                     break;
                 }
 
@@ -368,6 +436,113 @@ namespace Proto4X.Factory.Simulation
             Buildings.SetRecipe(slot, recipe);
             ConfigVersion++;
             return true;
+        }
+
+        /// <summary>
+        /// Changes a building's player setting. A dock's filter re-types its stack (contents are
+        /// dropped - shortcut: they should go back to the warehouse buffer); a warehouse's blueprint and
+        /// a shipyard's order are pulled in by their systems.
+        /// </summary>
+        public bool TrySetConfigAt(int x, int y, int config)
+        {
+            var slot = Grid.OccupantAt(x, y);
+            if (slot < 0 || !Buildings.IsUsable(slot))
+            {
+                return false;
+            }
+
+            switch (Buildings.KindOf(slot))
+            {
+                case BuildingKind.InputDock:
+                    if ((uint)config >= Items.Count)
+                    {
+                        return false;
+                    }
+
+                    Inventories.SetStack(Buildings.InventoryStart(slot), ItemId.None, 0);
+                    Inventories.ConfigureFixed(Buildings.InventoryStart(slot), (ItemId)config, Data.Buildings.DockStackLimit);
+                    break;
+
+                case BuildingKind.Warehouse:
+                    if ((uint)config >= (uint)Universe.Blueprints.Count)
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                case BuildingKind.Shipyard:
+                    break;
+
+                default:
+                    return false;
+            }
+
+            Buildings.SetConfig(slot, config);
+            ConfigVersion++;
+            return true;
+        }
+
+        /// <summary>
+        /// (Re)lays out a warehouse's buffer for a rating: one fixed stack per rated input, then one per
+        /// rated output, each big enough for two cycles. Items whose stack survives the relayout are
+        /// carried over (clamped to the new limit); the rest are dropped - shortcut: refund them.
+        /// </summary>
+        internal int LayOutWarehouse(int slot, Warehouses.BlueprintRating rating)
+        {
+            var oldStart = Buildings.InventoryStart(slot);
+            var oldLength = Buildings.InventoryLength(slot);
+            var oldInputs = Buildings.InputStacks(slot);
+            var inputs = rating.Inputs.Length;
+            var outputs = rating.Outputs.Length;
+            var length = System.Math.Max(1, inputs + outputs);
+            var start = Inventories.Allocate(length);
+            for (var i = 0; i < inputs; i++)
+            {
+                var (item, amount) = rating.Inputs[i];
+                Inventories.ConfigureFixed(start + i, item, System.Math.Max(amount * 2, Items.StackSize(item)));
+            }
+
+            for (var i = 0; i < outputs; i++)
+            {
+                var (item, amount) = rating.Outputs[i];
+                Inventories.ConfigureFixed(start + inputs + i, item, System.Math.Max(amount * 2, Items.StackSize(item)));
+            }
+
+            if (inputs + outputs == 0)
+            {
+                Inventories.ConfigureFixed(start, ItemId.None, 0);
+            }
+
+            if (oldStart >= 0)
+            {
+                for (var stack = oldStart; stack < oldStart + oldLength; stack++)
+                {
+                    var count = Inventories.CountAt(stack);
+                    if (count == 0)
+                    {
+                        continue;
+                    }
+
+                    var item = Inventories.ItemAt(stack);
+                    var wasInput = stack - oldStart < oldInputs;
+                    var first = wasInput ? start : start + inputs;
+                    var run = wasInput ? inputs : outputs;
+                    for (var target = first; target < first + run; target++)
+                    {
+                        if (Inventories.ItemAt(target) == item)
+                        {
+                            Inventories.SetStack(target, item, System.Math.Min(count, Inventories.LimitAt(target)));
+                            break;
+                        }
+                    }
+                }
+
+                Inventories.Free(oldStart, oldLength);
+            }
+
+            Buildings.SetInventory(slot, start, length, inputs);
+            return start;
         }
 
         // ---------------------------------------------------------------- tick boundary

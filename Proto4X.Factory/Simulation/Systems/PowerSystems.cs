@@ -41,6 +41,13 @@ namespace Proto4X.Factory.Simulation.Systems
                         generator.PowerVersion = powerVersion;
                     }
 
+                    if (generator.Solar)
+                    {
+                        capacity[generator.PowerIndex] += Buildings.SolarOutput;
+                        generator.LastOffered = Buildings.SolarOutput;
+                        continue;
+                    }
+
                     generator.FuelEnergy -= (long)generator.LastOffered * load[generator.PowerIndex] / PowerGrid.Full;
 
                     if (generator.FuelEnergy < Buildings.GeneratorMaxOutput && inventories.CountAt(generator.Inventory) > 0)
