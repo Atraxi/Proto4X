@@ -24,7 +24,7 @@ namespace Proto4X.Factory
     /// <see cref="OnUpdate"/> and drawn from <see cref="OnDraw"/>, which runs just before Core's own
     /// draw of the meta world, so the HUD lands on top.
     /// </remarks>
-    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, false)
+    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, true)
     {
         private const int PlanetWidth = 240;
         private const int PlanetHeight = 180;

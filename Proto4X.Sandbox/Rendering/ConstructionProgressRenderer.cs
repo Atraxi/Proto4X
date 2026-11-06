@@ -4,6 +4,7 @@ using MonoGameLibrary;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -21,7 +22,7 @@ namespace Proto4X.Sandbox.Rendering
     /// AND-mask and miners and stations are different archetypes. The visual language is shared even
     /// though the query can't be.
     /// </remarks>
-    public class ConstructionProgressRenderer(Texture2D pixel, SpriteSet sprites) : ISystem, IDrawSystem
+    public class ConstructionProgressRenderer(ModelSet models) : ISystem, IGeometryDrawSystem
     {
         private const float RingRadius = 40f;
         private const float GhostSize = 52f;
@@ -37,10 +38,7 @@ namespace Proto4X.Sandbox.Rendering
         ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
-
-        public DrawSpace DrawSpace => DrawSpace.World;
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
+        public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -58,28 +56,14 @@ namespace Proto4X.Sandbox.Rendering
 
                     var faction = factionSpan[i].Id;
                     var location = positionSpan[i].Location;
-                    var texture = SpriteLibrary.GetTexture(ShipBlueprints.SpriteIdFor(UnitKind.Station, faction, sprites));
+                    GroundShapes.Model(batch.Immediate, models.StationModel, location, GhostSize, GhostTint);
 
-                    spriteBatch.Draw(
-                        texture,
-                        location,
-                        null,
-                        GhostTint,
-                        0f,
-                        new Vector2(texture.Width / 2f, texture.Height / 2f),
-                        GhostSize / texture.Width,
-                        SpriteEffects.None,
-                        0f);
-
-                    Primitives.DrawCircleOutline(spriteBatch, pixel, location, RingRadius, TrackColour, thickness: 3f);
-                    Primitives.DrawArc(
-                        spriteBatch,
-                        pixel,
-                        location,
+                    GroundShapes.CircleOutline(batch.Immediate, location, RingRadius, TrackColour, thickness: 3f);
+                    GroundShapes.Arc(batch.Immediate, location,
                         RingRadius,
                         RingStartAngle,
                         MathHelper.TwoPi * ProgressOf(timerSpan[i]),
-                        SpriteSet.FactionColour(faction),
+                        ModelSet.FactionColour(faction),
                         thickness: 3f);
                 }
             }

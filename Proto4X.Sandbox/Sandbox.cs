@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary;
 using MonoGameLibrary.Input;
+using MonoGameLibrary.UI;
 using MonoGameLibrary.World;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -38,7 +39,7 @@ namespace Proto4X.Sandbox
         private readonly Economy economy = new(StartingMinerals);
         private readonly SpawnQueue spawnQueue = new();
 
-        private SpriteSet sprites = null!;
+        private ModelSet models = null!;
         private StationIndexSystem stationIndex = null!;
         private FleetCensusSystem fleetCensus = null!;
         private SelectionSystem selectionSystem = null!;
@@ -58,6 +59,10 @@ namespace Proto4X.Sandbox
         {
             return new GameWorld(0, 0, WorldWidth, WorldHeight);
         }
+
+        // One world unit is one sprite pixel, so the camera works at that scale: ~1000 units back
+        // frames about a screenful at 1:1, and the far limit takes in the whole 6400-wide map.
+        protected override OrbitCamera InitializeCamera() => new(minDistance: 150f, maxDistance: 9000f) { Pitch = 1.2f, Distance = 1000f };
 
         protected override void OnInitialize()
         {
@@ -111,19 +116,19 @@ namespace Proto4X.Sandbox
 
         protected override void LoadContent()
         {
-            sprites = new SpriteSet(Content, GraphicsDevice);
-            performanceGraph = new PerformanceGraphRenderer(sprites.Pixel, GraphicsDevice);
+            models = new ModelSet(GraphicsDevice);
+            performanceGraph = new PerformanceGraphRenderer(models.Pixel, GraphicsDevice);
 
-            SystemScheduler.Add(World, new WeaponBeamRenderer(sprites.Pixel));
-            SystemScheduler.Add(World, new SelectionRingRenderer(sprites.Pixel));
-            SystemScheduler.Add(World, new RallyPointRenderer(sprites.Pixel));
-            SystemScheduler.Add(World, new HealthBarRenderer(sprites.Pixel));
-            SystemScheduler.Add(World, new BuildProgressRenderer(sprites.Pixel, sprites));
-            SystemScheduler.Add(World, new ConstructionProgressRenderer(sprites.Pixel, sprites));
+            SystemScheduler.Add(World, new WeaponBeamRenderer());
+            SystemScheduler.Add(World, new SelectionRingRenderer());
+            SystemScheduler.Add(World, new RallyPointRenderer());
+            SystemScheduler.Add(World, new HealthBarRenderer());
+            SystemScheduler.Add(World, new BuildProgressRenderer(models));
+            SystemScheduler.Add(World, new ConstructionProgressRenderer(models));
 
-            SystemScheduler.Add(World, new MinimapRenderer(sprites.Pixel, GraphicsDevice, UserInterfaceManager.Camera, World.Bounds));
-            SystemScheduler.Add(World, new BuildMenuRenderer(sprites.Pixel, GraphicsDevice, sprites, economy, selectionSummary));
-            SystemScheduler.Add(World, new SelectionBoxRenderer(sprites.Pixel, selectionSystem));
+            SystemScheduler.Add(World, new MinimapRenderer(models.Pixel, GraphicsDevice, UserInterfaceManager.Camera, World.Bounds));
+            SystemScheduler.Add(World, new BuildMenuRenderer(models.Pixel, GraphicsDevice, models, economy, selectionSummary));
+            SystemScheduler.Add(World, new SelectionBoxRenderer(models.Pixel, selectionSystem));
             SystemScheduler.Add(World, performanceGraph);
 
             GenerateMap();
@@ -148,7 +153,7 @@ namespace Proto4X.Sandbox
             // allowed to actually create entities. See SpawnQueue.
             foreach (var spawn in spawnQueue.Pending)
             {
-                World.AddEntity(ShipBlueprints.CreateUnit(spawn.Kind, spawn.Location, spawn.Faction, sprites, spawn.InitialDestination));
+                World.AddEntity(ShipBlueprints.CreateUnit(spawn.Kind, spawn.Location, spawn.Faction, models, spawn.InitialDestination));
             }
             spawnQueue.Clear();
 
@@ -168,11 +173,11 @@ namespace Proto4X.Sandbox
             foreach (var (faction, homeFraction) in Homelands)
             {
                 var home = new Vector2(WorldWidth * homeFraction.X, WorldHeight * homeFraction.Y);
-                World.AddEntity(ShipBlueprints.CreateStation(home, faction, sprites.StationSpriteFor(faction)));
+                World.AddEntity(ShipBlueprints.CreateStation(home, faction, models.StationModel));
                 if (faction == FactionId.Player)
                 {
                     var camera = UserInterfaceManager.Camera;
-                    camera.Pan(camera.GroundToScreen(home) - GraphicsDevice.Viewport.Bounds.Center.ToVector2());
+                    camera.Target = new Vector3(home, 0f);
                 }
                 SpawnStartingMiners(home, faction);
 
@@ -197,7 +202,7 @@ namespace Proto4X.Sandbox
             {
                 var angle = MathHelper.TwoPi * i / StartingMiners;
                 var location = stationLocation + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 80f;
-                World.AddEntity(ShipBlueprints.CreateMiner(location, faction, sprites.MinerSpriteFor(faction)));
+                World.AddEntity(ShipBlueprints.CreateMiner(location, faction, models.MinerModel));
             }
         }
 
@@ -208,8 +213,8 @@ namespace Proto4X.Sandbox
                 var angle = (float)(random.NextDouble() * MathHelper.TwoPi);
                 var distance = 30f + (float)random.NextDouble() * 120f;
                 var location = centre + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * distance;
-                var spriteId = sprites.AsteroidSpriteIds[random.Next(sprites.AsteroidSpriteIds.Length)];
-                World.AddEntity(ShipBlueprints.CreateAsteroid(location, spriteId));
+                var modelId = models.AsteroidModelIds[random.Next(models.AsteroidModelIds.Length)];
+                World.AddEntity(ShipBlueprints.CreateAsteroid(location, modelId));
             }
         }
 
@@ -228,7 +233,7 @@ namespace Proto4X.Sandbox
                 {
                     var angle = MathHelper.TwoPi * i / FleetSize;
                     var location = home + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (140f + i * 3f);
-                    World.AddEntity(ShipBlueprints.CreateFighter(location, faction, sprites.FighterSpriteFor(faction)));
+                    World.AddEntity(ShipBlueprints.CreateFighter(location, faction, models.FighterModel));
                 }
             }
         }

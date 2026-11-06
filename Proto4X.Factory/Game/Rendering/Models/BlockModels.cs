@@ -1,33 +1,15 @@
 using Microsoft.Xna.Framework;
+using MonoGameLibrary.Graphics;
 using Proto4X.Factory.Simulation.Data;
 using Proto4X.Factory.Simulation.Grid;
 using System;
 
 namespace Proto4X.Factory.Rendering.Models
 {
-    /// <summary>One axis-aligned box of a model, in footprint-local tiles: x east, y south, z up.</summary>
-    /// <param name="Emissive">Drawn at full brightness, unlit - glow panels, screens.</param>
-    public readonly record struct ModelBox(Vector3 Min, Vector3 Max, Color Colour, bool Emissive = false);
-
-    /// <summary>A building as a handful of coloured boxes, modelled facing east.</summary>
-    public sealed class BlockModel(int size, ModelBox[] boxes)
+    /// <summary>A building as a handful of coloured boxes, modelled facing east, in footprint-local tiles.</summary>
+    public sealed class BlockModel(int size, ModelBox[] boxes) : Model3D(boxes)
     {
         public int Size { get; } = size;
-        public ModelBox[] Boxes { get; } = boxes;
-
-        public float Height
-        {
-            get
-            {
-                var height = 0f;
-                foreach (var box in Boxes)
-                {
-                    height = MathF.Max(height, box.Max.Z);
-                }
-
-                return height;
-            }
-        }
     }
 
     /// <summary>

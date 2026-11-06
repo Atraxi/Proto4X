@@ -1,8 +1,7 @@
 using Microsoft.Xna.Framework;
-using MonoGameLibrary.Graphics;
 using System;
 
-namespace Proto4X.Factory.Rendering.Models
+namespace MonoGameLibrary.Graphics
 {
     /// <summary>
     /// Turns model boxes into triangles with face normals. The sun is applied on the GPU
@@ -14,7 +13,7 @@ namespace Proto4X.Factory.Rendering.Models
         // Brightness of a side face's bottom edge; the GPU interpolates up to full at the top.
         private const float FootShade = 0.78f;
 
-        public static void EmitModel(GeometryBuffer buffer, GeometryLayer layer, BlockModel model, in Matrix transform, Color tint)
+        public static void EmitModel(GeometryBuffer buffer, GeometryLayer layer, Model3D model, in Matrix transform, Color tint)
         {
             foreach (var box in model.Boxes)
             {
@@ -29,7 +28,7 @@ namespace Proto4X.Factory.Rendering.Models
         /// </summary>
         public static void EmitBox(GeometryBuffer buffer, GeometryLayer layer, in ModelBox box, in Matrix transform, Color tint)
         {
-            var colour = Multiply(box.Colour, tint);
+            var colour = box.Tinted ? Multiply(box.Colour, tint) : box.Colour;
             var emissive = box.Emissive;
             if (emissive && layer == GeometryLayer.Opaque)
             {
@@ -56,7 +55,7 @@ namespace Proto4X.Factory.Rendering.Models
         /// draw time (<see cref="SceneLighting.PlanarShadow"/>), so one mesh stays right as the
         /// surface turns.
         /// </summary>
-        public static void EmitShadow(GeometryBuffer buffer, BlockModel model, in Matrix transform, Color shade)
+        public static void EmitShadow(GeometryBuffer buffer, Model3D model, in Matrix transform, Color shade)
         {
             Span<Vector3> c = stackalloc Vector3[8];
             // Normal +z on every face on purpose: once flattened these lie on the ground, so they

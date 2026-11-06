@@ -26,9 +26,6 @@ namespace Proto4X.Sandbox.Systems
         private const float ArriveRadius = 8f;
         private const float SlowRadius = 80f;
 
-        /// <summary>Ship art points up the screen; sprite rotation is measured from +X.</summary>
-        private const float SpriteFacingOffset = MathHelper.PiOver2;
-
         private static readonly ComponentRef[] requiredComponentProviders =
             [ComponentRef.Of<Position>(), ComponentRef.Of<Motion>(), ComponentRef.Of<MoveOrder>()];
 
@@ -83,7 +80,7 @@ namespace Proto4X.Sandbox.Systems
                     var heading = toTarget / distance;
                     var speedScale = distance < SlowRadius ? distance / SlowRadius : 1f;
                     motion.Acceleration = heading * Acceleration * speedScale;
-                    position.Rotation = MathF.Atan2(heading.Y, heading.X) + SpriteFacingOffset;
+                    position.Rotation = MathF.Atan2(heading.Y, heading.X);
                 }
             }
         }

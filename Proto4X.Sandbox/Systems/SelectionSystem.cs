@@ -25,7 +25,7 @@ namespace Proto4X.Sandbox.Systems
     /// test runs in world space (the pick radius is a world radius). Doing each in its own space
     /// keeps both correct while the camera is zoomed or rotated.
     /// </remarks>
-    public class SelectionSystem(Camera2D camera) : ISystem, IUpdateSystem
+    public class SelectionSystem(OrbitCamera camera) : ISystem, IUpdateSystem
     {
         private const float DragThresholdPixels = 6f;
         private const float DoubleClickSeconds = 0.35f;
@@ -99,7 +99,7 @@ namespace Proto4X.Sandbox.Systems
 
         private void SelectAtPoint(List<ArchetypeChunk> archetypeChunks, Vector2 clickScreen, bool isAdditive, bool isDoubleClick)
         {
-            var clickWorld = Vector2.Transform(clickScreen, Matrix.Invert(camera.GetCameraTransform()));
+            var clickWorld = camera.ScreenToGround(clickScreen);
 
             var closestDistanceSquared = float.MaxValue;
             var pickedChunk = -1;
@@ -181,7 +181,6 @@ namespace Proto4X.Sandbox.Systems
 
             var minimum = Vector2.Min(dragStart, dragEnd);
             var maximum = Vector2.Max(dragStart, dragEnd);
-            var worldToScreen = camera.GetCameraTransform();
 
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -196,7 +195,7 @@ namespace Proto4X.Sandbox.Systems
                         continue;
                     }
 
-                    var screenLocation = Vector2.Transform(positionSpan[i].Location, worldToScreen);
+                    var screenLocation = camera.GroundToScreen(positionSpan[i].Location);
                     if (screenLocation.X >= minimum.X && screenLocation.X <= maximum.X &&
                         screenLocation.Y >= minimum.Y && screenLocation.Y <= maximum.Y)
                     {

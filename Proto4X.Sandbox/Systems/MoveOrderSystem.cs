@@ -22,7 +22,7 @@ namespace Proto4X.Sandbox.Systems
     /// is most likely to be reaching for the next key, and without the pause a miner claims a rock
     /// and leaves before they get there.
     /// </remarks>
-    public class MoveOrderSystem(Camera2D camera) : ISystem, IUpdateSystem
+    public class MoveOrderSystem(OrbitCamera camera) : ISystem, IUpdateSystem
     {
         private const float RingSpacing = 34f;
 
@@ -46,7 +46,7 @@ namespace Proto4X.Sandbox.Systems
                 return;
             }
 
-            var destination = Vector2.Transform(mouse.Position.ToVector2(), Matrix.Invert(camera.GetCameraTransform()));
+            var destination = camera.ScreenToGround(mouse.Position.ToVector2());
             var orderedCount = 0;
 
             foreach (var archetypeChunk in archetypeChunks)

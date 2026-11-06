@@ -4,6 +4,7 @@ using MonoGameLibrary;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -25,10 +26,10 @@ namespace Proto4X.Sandbox.Rendering
     /// ship it keeps making, inside a broken ring. The gaps are the whole point - a solid ring is
     /// already spoken for as "progress", and a dashed one reads as a cycle rather than a measurement.
     /// </remarks>
-    public class BuildProgressRenderer(Texture2D pixel, SpriteSet sprites) : ISystem, IDrawSystem
+    public class BuildProgressRenderer(ModelSet models) : ISystem, IGeometryDrawSystem
     {
         private const float RingRadius = 46f;
-        private const float IconScreenSize = 18f;
+        private const float IconSize = 18f;
         private const float IconOffsetY = -62f;
         private const float PipSize = 4f;
         private const float PipSpacing = 7f;
@@ -51,10 +52,7 @@ namespace Proto4X.Sandbox.Rendering
         ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
-
-        public DrawSpace DrawSpace => DrawSpace.World;
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
+        public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -74,14 +72,14 @@ namespace Proto4X.Sandbox.Rendering
 
                     var faction = factionSpan[i].Id;
                     var location = positionSpan[i].Location;
-                    var colour = SpriteSet.FactionColour(faction);
+                    var colour = ModelSet.FactionColour(faction);
 
                     // The standing-order badge is drawn for an idle station too - "this one keeps
                     // making fighters" is exactly the thing you want to see while it is waiting for
                     // the minerals to do so.
                     if (station.AutoQueue != UnitKind.None)
                     {
-                        DrawStandingOrderBadge(spriteBatch, station.AutoQueue, faction, colour, location + new Vector2(0f, StandingOrderOffsetY));
+                        DrawStandingOrderBadge(batch.Immediate, station.AutoQueue, faction, colour, location + new Vector2(0f, StandingOrderOffsetY));
                     }
 
                     if (station.InProgress == UnitKind.None)
@@ -89,19 +87,16 @@ namespace Proto4X.Sandbox.Rendering
                         continue;
                     }
 
-                    Primitives.DrawCircleOutline(spriteBatch, pixel, location, RingRadius, TrackColour, thickness: 3f);
-                    Primitives.DrawArc(
-                        spriteBatch,
-                        pixel,
-                        location,
+                    GroundShapes.CircleOutline(batch.Immediate, location, RingRadius, TrackColour, thickness: 3f);
+                    GroundShapes.Arc(batch.Immediate, location,
                         RingRadius,
                         RingStartAngle,
                         MathHelper.TwoPi * ProgressOf(timerSpan[i]),
                         colour,
                         thickness: 3f);
 
-                    DrawShipIcon(spriteBatch, station.InProgress, faction, location + new Vector2(0f, IconOffsetY), IconScreenSize);
-                    DrawQueuePips(spriteBatch, station, colour, location + new Vector2(0f, PipOffsetY));
+                    DrawShipIcon(batch.Immediate, station.InProgress, faction, location + new Vector2(0f, IconOffsetY), IconSize);
+                    DrawQueuePips(batch.Immediate, station, colour, location + new Vector2(0f, PipOffsetY));
                 }
             }
         }
@@ -121,15 +116,12 @@ namespace Proto4X.Sandbox.Rendering
         /// The ship a station keeps re-ordering, ringed by evenly spaced ticks. Deliberately not a
         /// solid circle: that shape already means "progress" a few pixels further up.
         /// </summary>
-        private void DrawStandingOrderBadge(SpriteBatch spriteBatch, UnitKind kind, FactionId faction, Color colour, Vector2 centre)
+        private void DrawStandingOrderBadge(GeometryBuffer buffer, UnitKind kind, FactionId faction, Color colour, Vector2 centre)
         {
             var tickSweep = MathHelper.TwoPi / (StandingOrderTicks * 2f);
             for (var tick = 0; tick < StandingOrderTicks; tick++)
             {
-                Primitives.DrawArc(
-                    spriteBatch,
-                    pixel,
-                    centre,
+                GroundShapes.Arc(buffer, centre,
                     StandingOrderRadius,
                     RingStartAngle + tick * tickSweep * 2f,
                     tickSweep,
@@ -138,28 +130,16 @@ namespace Proto4X.Sandbox.Rendering
                     segments: 3);
             }
 
-            DrawShipIcon(spriteBatch, kind, faction, centre, StandingOrderIconSize);
+            DrawShipIcon(buffer, kind, faction, centre, StandingOrderIconSize);
         }
 
-        private void DrawShipIcon(SpriteBatch spriteBatch, UnitKind kind, FactionId faction, Vector2 centre, float screenSize)
+        private void DrawShipIcon(GeometryBuffer buffer, UnitKind kind, FactionId faction, Vector2 centre, float size)
         {
-            var texture = SpriteLibrary.GetTexture(ShipBlueprints.SpriteIdFor(kind, faction, sprites));
-            var scale = screenSize / texture.Width;
-
-            spriteBatch.Draw(
-                texture,
-                centre,
-                null,
-                Color.White,
-                0f,
-                new Vector2(texture.Width / 2f, texture.Height / 2f),
-                scale,
-                SpriteEffects.None,
-                0f);
+            GroundShapes.Model(buffer, models.ModelFor(kind), centre, size, ModelSet.FactionColour(faction));
         }
 
         /// <summary>One pip per item still waiting, so a deep queue reads as a longer row.</summary>
-        private void DrawQueuePips(SpriteBatch spriteBatch, Station station, Color colour, Vector2 centre)
+        private void DrawQueuePips(GeometryBuffer buffer, Station station, Color colour, Vector2 centre)
         {
             var queued = station.QueuedMiners + station.QueuedFighters;
             if (queued <= 0)
@@ -171,7 +151,7 @@ namespace Proto4X.Sandbox.Rendering
             for (var pip = 0; pip < queued; pip++)
             {
                 var topLeft = centre + new Vector2(pip * PipSpacing - rowWidth / 2f - PipSize / 2f, 0f);
-                Primitives.FillRectangle(spriteBatch, pixel, topLeft, new Vector2(PipSize), colour);
+                GroundShapes.FillRectangle(buffer, topLeft, new Vector2(PipSize), colour);
             }
         }
     }

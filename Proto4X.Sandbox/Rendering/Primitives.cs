@@ -6,7 +6,7 @@ namespace Proto4X.Sandbox.Rendering
 {
     /// <summary>
     /// Lines, circles and filled bars built out of a stretched 1x1 texture - the engine draws
-    /// sprites and nothing else, so every overlay in the game is made of rectangles.
+    /// models and nothing else, so every overlay in the game is made of rectangles.
     /// </summary>
     public static class Primitives
     {
