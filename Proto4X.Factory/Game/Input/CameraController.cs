@@ -24,7 +24,8 @@ namespace Proto4X.Factory.Input
         private const float TiltDegreesPerSecond = 50f;
         private const float ZoomStep = 1.12f;
 
-        private readonly View?[] savedViews = new View?[surfaces.Count];
+        // Keyed by surface index: interiors appear at runtime.
+        private readonly Dictionary<int, View> savedViews = [];
         private int shownSurface = -1;
         private View current;
 
@@ -37,9 +38,9 @@ namespace Proto4X.Factory.Input
             public bool Orthographic;
         }
 
-        public void SetView(int surface, Vector2 localTile)
+        public void SetView(int surface, Vector2 localTile, float distance = 26f)
         {
-            savedViews[surface] = new View { LocalTarget = localTile, LocalYaw = 0f, Pitch = 0.95f, Distance = 26f };
+            savedViews[surface] = new View { LocalTarget = localTile, LocalYaw = 0f, Pitch = 0.95f, Distance = distance };
         }
 
         public void Update(int activeSurface, GameTime gameTime)
@@ -51,13 +52,13 @@ namespace Proto4X.Factory.Input
                     savedViews[shownSurface] = current;
                 }
 
-                if (savedViews[activeSurface] is null)
+                if (!savedViews.ContainsKey(activeSurface))
                 {
                     var grid = surfaces[activeSurface].Grid;
                     SetView(activeSurface, new Vector2(grid.Width / 2f, grid.Height / 2f));
                 }
 
-                current = savedViews[activeSurface]!.Value;
+                current = savedViews[activeSurface];
                 shownSurface = activeSurface;
             }
 
