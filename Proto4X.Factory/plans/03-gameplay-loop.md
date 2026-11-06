@@ -241,8 +241,11 @@ adds). `F6` toggles peaceful mode so the factory can be played without pressure.
 | Planet / interior / station (build) | as before: `1`–`0`,`-`,`=` tools · `R` rotate · `T` recipe / blueprint / filter · `Q` no tool · drag to build/remove |
 | Any building, no tool | left-click opens its panel (warehouse, shipyard, dock, assembler) |
 | Warehouse | `E` over it, or its panel's button: enter. `E` / `Esc` inside: leave |
-| Orbit | `F` toggles **fleet mode**: left-click/drag selects ships, right-click moves, `Ctrl+A` selects all |
-| Anywhere | `B` ship designer · `Tab` planet ↔ orbit · `Space` pause · `F4` grade shader · `F6` peaceful |
+| Orbit | `F` toggles **fleet mode** (and shows the station): left-click/drag selects ships, right-click moves, `A` selects all |
+| Anywhere | `B` ship designer (`R` rotates the part brush there) · `Tab` planet ↔ orbit (skips interiors) · `Space` pause · `F4` grade shader · `F6` peaceful |
+
+As built: `Esc` still quits the game, so leaving a warehouse is `E` or the panel button only, and
+the warehouse's blueprint is picked in its panel rather than with `T`.
 
 ## Starting scene
 
@@ -252,6 +255,64 @@ adds). `F6` toggles peaceful mode so the factory can be played without pressure.
 - **Orbit:** the station has solar panels, a receiver → inserter → shipyard line, and the shipyard
   set to *Picket, Repeat*.
 - **Space:** 2 Pickets guarding the station, and the Bastion far east.
+
+## What the first cut changed, and what it measured (2026-11-07)
+
+The plan held, apart from three mechanics the headless whole-loop run forced. Each one is again
+borrowed rather than invented.
+
+**1. Islands: a blueprint is rated as independent lines, not one recipe.** A single composite cycle
+couples every output. One full output stack (say, gears nobody downstream wants yet) then stalls
+circuit production in the same warehouse, and the loop deadlocked within minutes. The fix: split the
+entries into islands with union-find, where an inserter joins the tile behind it to the tile in
+front, a belt joins its front tile, and a drill joins its output tile. Each island is calibrated
+separately and runs its own cycle (`IslandProgress`). There are at most 6 per blueprint (`MaxIslands`),
+and extras merge into the last. Inside one island, outputs stay coupled, which is Factorio's oil
+refinery rule: a by-product with nowhere to go stops the line. That's a real design lesson for the
+player, not a bug. *Shortcut:* re-rating runs N calibrations synchronously on exit; it should go to
+a background task once blueprints get large.
+
+**2. Slices: abstract cycles are spread over 60-tick slices.** A 3,600-tick cycle that consumes 120
+plates up front needs a 120-plate buffer, and it delivers in bursts that starve the next warehouse.
+Each island's cycle is split into 60-tick slices, and every input and output is shared across them
+with Bresenham rounding (`BlueprintRating.Share`), so totals are exact. Output buffers are
+`max(2 × per-minute amount, 10)`; bigger buffers just soaked up circuits that a sibling island needed.
+
+**3. Station requests: the silo ships what orbit asks for, as in Factorio: Space Age.** Without them
+the silo launched whatever reached it first, and orbit filled with frames while starving for
+emitters. Now `Universe.Requests[item]` = the active shipyard bills × 2 (capped at a stack), minus
+what's already in the shipyard, receivers, in transit and silos. A silo inserter only picks up an
+item that's still requested (checked at pickup, not at drop, so it never holds an unwanted item),
+and a part-loaded silo launches after 300 ticks without loading progress. *Shortcut:* an item held
+by an inserter mid-swing isn't counted, so requests can overshoot by about one item per silo
+inserter.
+
+**Starting scene as built:** the warehouses are *Gears & circuits* (2 islands) and *Ship parts* (5
+islands: frames, engines, processors, power cells, and emitters with their own power-cell
+assembler), fed by an iron row (6 drills, 5 furnaces), a copper row (4 drills, 3 furnaces) and two
+steel furnaces.
+
+**Results** (`Headless`, 85 checks pass):
+
+| Check | Result |
+|---|---|
+| Abstract vs live, same inputs | 330 / 220 abstract vs 333 / 222 live (gears / circuits), within 1% |
+| Enter/exit round trips | item total exact, counting items held in abstract buffers |
+| The whole loop, no player input, peaceful | first new Picket at minute 10; 17 built in 40 minutes |
+| Determinism with interiors and a fleet | same commands give the same hash, and an exit one tick later changes it |
+
+The bottleneck after 40 minutes is steel, as intended: the next thing a player would build is a
+third steel furnace and a second *Ship parts* warehouse.
+
+**Not done from the plan:**
+
+- **The shipyard progress bar.** The UI can't read component data outside a system (ENGINE_REQUESTS).
+  The panel shows stock against the bill instead.
+- **Dropped items.** The frozen interior still drops its items when it's rebuilt for a newer
+  blueprint version. `LayOutWarehouse` likewise drops buffered items that have no stack in a new
+  layout.
+- **Playtesting.** Everything on screen (panels, designer, fleet control, space rendering) is
+  build-verified only and has never been run.
 
 ## Out of scope (named so it isn't mistaken for forgotten)
 

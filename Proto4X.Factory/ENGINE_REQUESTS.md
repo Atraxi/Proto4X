@@ -67,6 +67,28 @@ the join and the handle are the same feature.
 
 </details>
 
+## Component data can't be read outside a system, so the UI can't show in-progress state
+**Status:** Open (worked around by showing less)
+**Priority:** Low now, rising with UI
+
+<details>
+<summary>Details</summary>
+
+**What:** the inspector wants a shipyard's build progress, an assembler's craft progress and a
+warehouse island's slice. That state lives in components (`Shipyard`, `Crafter`, `IslandProgress`),
+and nothing outside a system can read a component. That's the read-side twin of the "store +
+version + pull" entry below.
+
+**Tried instead:** the panels show what the stores already hold: stock against the bill, power, and
+rated rates. The other workaround would be a system that copies progress into a store every tick for
+every building. That's hot-loop cost paid for a panel that shows one building, so it wasn't done.
+
+**Possible approaches:** a declared, frame-bound read of one entity's components. The "inspect"
+query is exactly the access the entity-access direction plans for (a system-declared handle used
+inside a frame), so it should fall out of that work rather than need its own path.
+
+</details>
+
 ## Deferred removal applies the removal set in insertion order — corrupts archetypes
 **Status:** Open — reproduced, worked around
 **Priority:** High
