@@ -8,11 +8,12 @@ namespace MonoGameLibrary.Graphics
     /// Draws one screen-space quad through a pixel shader: backgrounds, post-processing, transitions.
     /// </summary>
     /// <remarks>
-    /// Rides on <see cref="SpriteBatch"/>: its vertex shader runs, and the effect supplies only a pixel
-    /// shader whose input matches SpriteBatch's output - <c>(float4 position : SV_POSITION, float4
-    /// colour : COLOR0, float2 uv : TEXCOORD0)</c>, with the source texture in sampler register 0.
-    /// That's MonoGame's standard pattern and saves owning a quad and a vertex shader.
-    /// Declares <c>Resolution</c> (float2, pixels) and <c>Time</c> for the effect if it wants them.
+    /// Rides on <see cref="SpriteBatch"/> for the quad, with the source texture in sampler register 0.
+    /// The effect should bring its own vertex shader taking SpriteBatch's vertex
+    /// <c>(POSITION0, COLOR0, TEXCOORD0)</c> through <c>MatrixTransform</c>: a pixel-only effect relying
+    /// on SpriteBatch's vertex shader got a constant uv on DesktopGL (a flat-colour frame).
+    /// Sets <c>MatrixTransform</c> (pixels to clip space), <c>Resolution</c> (float2, pixels) and
+    /// <c>Time</c> when the effect declares them.
     /// </remarks>
     public sealed class FullscreenPass(GraphicsDevice device) : IDisposable
     {
@@ -27,6 +28,9 @@ namespace MonoGameLibrary.Graphics
                 white.SetData([Color.White]);
             }
 
+            var viewport = device.Viewport;
+            // SpriteBatch's own projection: pixel coordinates, y down.
+            effect?.Parameters["MatrixTransform"]?.SetValue(Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, -1));
             effect?.Parameters["Resolution"]?.SetValue(new Vector2(destination.Width, destination.Height));
             effect?.Parameters["Time"]?.SetValue(time);
             spriteBatch.Begin(SpriteSortMode.Immediate, blend ?? BlendState.Opaque, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullNone, effect);
