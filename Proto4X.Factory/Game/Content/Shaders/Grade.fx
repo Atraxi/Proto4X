@@ -1,13 +1,18 @@
 // Post-process: a light saturation and contrast curve plus a vignette, applied to the
-// rendered scene through PostProcessor. Pixel shader only; the scene texture arrives
-// in sampler register 0 from SpriteBatch.
+// rendered scene through PostProcessor. The scene texture arrives in sampler register 0
+// from SpriteBatch; the vertex shader is our own (see MainVS).
 
 #if OPENGL
     #define SV_POSITION POSITION
+    #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
+    #define VS_SHADERMODEL vs_4_0_level_9_1
     #define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
+
+// Pixels to clip space, set by FullscreenPass.
+float4x4 MatrixTransform;
 
 Texture2D SpriteTexture;
 sampler2D SpriteTextureSampler = sampler_state
@@ -19,12 +24,30 @@ float Saturation = 1.12;
 float Contrast = 1.06;
 float Vignette = 0.9;
 
+struct VertexInput
+{
+    float4 Position : POSITION0;
+    float4 Color : COLOR0;
+    float2 TextureCoordinates : TEXCOORD0;
+};
+
 struct VertexOutput
 {
     float4 Position : SV_POSITION;
     float4 Color : COLOR0;
     float2 TextureCoordinates : TEXCOORD0;
 };
+
+// Our own vertex shader rather than SpriteBatch's: on DesktopGL a pixel-only effect's inputs
+// didn't line up with SpriteBatch's outputs, so the uv arrived constant and the frame was flat.
+VertexOutput MainVS(VertexInput input)
+{
+    VertexOutput output;
+    output.Position = mul(input.Position, MatrixTransform);
+    output.Color = input.Color;
+    output.TextureCoordinates = input.TextureCoordinates;
+    return output;
+}
 
 float4 MainPS(VertexOutput input) : COLOR0
 {
@@ -41,6 +64,7 @@ technique Grade
 {
     pass P0
     {
+        VertexShader = compile VS_SHADERMODEL MainVS();
         PixelShader = compile PS_SHADERMODEL MainPS();
     }
 };

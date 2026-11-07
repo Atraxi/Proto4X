@@ -1,14 +1,19 @@
 // Procedural starfield, drawn as a full-screen background through FullscreenPass.
-// Pixel shader only: SpriteBatch's vertex shader supplies position, colour and uv.
+// SpriteBatch supplies the quad; the vertex shader is our own (see MainVS).
 // Three hashed star layers, each offset by the camera's ground position times its own
 // parallax factor, so near layers slide faster than far ones as the view pans.
 
 #if OPENGL
     #define SV_POSITION POSITION
+    #define VS_SHADERMODEL vs_3_0
     #define PS_SHADERMODEL ps_3_0
 #else
+    #define VS_SHADERMODEL vs_4_0_level_9_1
     #define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
+
+// Pixels to clip space, set by FullscreenPass.
+float4x4 MatrixTransform;
 
 float2 Resolution;
 float Time;
@@ -16,12 +21,30 @@ float Time;
 // Camera ground position (tiles) scaled to pixels by the game.
 float2 CameraOffset;
 
+struct VertexInput
+{
+    float4 Position : POSITION0;
+    float4 Color : COLOR0;
+    float2 TextureCoordinates : TEXCOORD0;
+};
+
 struct VertexOutput
 {
     float4 Position : SV_POSITION;
     float4 Color : COLOR0;
     float2 TextureCoordinates : TEXCOORD0;
 };
+
+// Our own vertex shader rather than SpriteBatch's: on DesktopGL a pixel-only effect's inputs
+// didn't line up with SpriteBatch's outputs, so the uv arrived constant and the frame was flat.
+VertexOutput MainVS(VertexInput input)
+{
+    VertexOutput output;
+    output.Position = mul(input.Position, MatrixTransform);
+    output.Color = input.Color;
+    output.TextureCoordinates = input.TextureCoordinates;
+    return output;
+}
 
 float Hash(float2 p)
 {
@@ -59,6 +82,7 @@ technique Starfield
 {
     pass P0
     {
+        VertexShader = compile VS_SHADERMODEL MainVS();
         PixelShader = compile PS_SHADERMODEL MainPS();
     }
 };
