@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -14,7 +15,7 @@ namespace Proto4X.Sandbox.Rendering
     /// Draws a line from a selected station to its rally point, ending in a small ring. Only shown
     /// while the station is selected, so the map isn't permanently criss-crossed with them.
     /// </summary>
-    public class RallyPointRenderer(Texture2D pixel) : ISystem, IDrawSystem
+    public class RallyPointRenderer() : ISystem, IGeometryDrawSystem
     {
         private const float MarkerRadius = 10f;
 
@@ -25,10 +26,7 @@ namespace Proto4X.Sandbox.Rendering
         ];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
-
-        public DrawSpace DrawSpace => DrawSpace.World;
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
+        public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -44,9 +42,9 @@ namespace Proto4X.Sandbox.Rendering
                         continue;
                     }
 
-                    var colour = SpriteSet.FactionColour(factionSpan[i].Id);
-                    Primitives.DrawLine(spriteBatch, pixel, positionSpan[i].Location, rallyPoint, colour);
-                    Primitives.DrawCircleOutline(spriteBatch, pixel, rallyPoint, MarkerRadius, colour, thickness: 1.5f, segments: 12);
+                    var colour = ModelSet.FactionColour(factionSpan[i].Id);
+                    GroundShapes.Line(batch.Immediate, positionSpan[i].Location, rallyPoint, colour);
+                    GroundShapes.CircleOutline(batch.Immediate, rallyPoint, MarkerRadius, colour, thickness: 1.5f, segments: 12);
                 }
             }
         }

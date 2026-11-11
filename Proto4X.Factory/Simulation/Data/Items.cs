@@ -20,11 +20,20 @@ namespace Proto4X.Factory.Simulation.Data
         MetallicChunk,
         /// <summary>Orbit-only product: its recipe carries a surface condition.</summary>
         HullSegment,
+
+        // Ship components (plans/03): made on the ground, launched to the shipyard.
+        Steel,
+        Frame,
+        ArmorPlate,
+        Engine,
+        PowerCell,
+        Processor,
+        Emitter,
     }
 
     public static class Items
     {
-        public const int Count = (int)ItemId.HullSegment + 1;
+        public const int Count = (int)ItemId.Emitter + 1;
 
         /// <summary>Joules of electrical energy a generator extracts from one unit of fuel.</summary>
         public const long CoalFuelValue = 4_000_000;
@@ -34,6 +43,7 @@ namespace Proto4X.Factory.Simulation.Data
             ItemId.IronOre or ItemId.CopperOre or ItemId.Coal or ItemId.MetallicChunk => 50,
             ItemId.Wire => 200,
             ItemId.HullSegment => 20,
+            ItemId.Frame or ItemId.ArmorPlate or ItemId.Engine or ItemId.PowerCell or ItemId.Processor or ItemId.Emitter => 50,
             ItemId.None => 0,
             _ => 100,
         };

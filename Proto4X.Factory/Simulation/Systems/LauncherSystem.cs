@@ -49,7 +49,10 @@ namespace Proto4X.Factory.Simulation.Systems
                     if (!launcher.IsLaunching)
                     {
                         demand[launcher.PowerIndex] += spec.IdleDraw;
-                        if (inventories.TotalItems(launcher.Inventory, launcher.Stacks) >= Buildings.LaunchPayload)
+                        var aboard = inventories.TotalItems(launcher.Inventory, launcher.Stacks);
+                        launcher.StalledTicks = aboard == launcher.LastCount ? launcher.StalledTicks + 1 : 0;
+                        launcher.LastCount = aboard;
+                        if (aboard >= Buildings.LaunchPayload || (aboard > 0 && launcher.StalledTicks >= Buildings.PartialLaunchTicks))
                         {
                             launcher.IsLaunching = true;
                             launcher.Progress = 0;

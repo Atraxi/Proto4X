@@ -30,7 +30,7 @@ namespace Proto4X.Sandbox.Rendering
     public class BuildMenuRenderer(
         Texture2D pixel,
         GraphicsDevice graphicsDevice,
-        SpriteSet sprites,
+        ModelSet models,
         Economy economy,
         SelectionSummarySystem selectionSummary) : ISystem, IDrawSystem
     {
@@ -80,21 +80,11 @@ namespace Proto4X.Sandbox.Rendering
             var cost = ShipBlueprints.For(command.Produces).MineralCost;
             var affordability = MathHelper.Clamp(minerals / (float)cost, 0f, 1f);
             var isAffordable = minerals >= cost;
-            var accent = SpriteSet.FactionColour(FactionId.Player);
+            var accent = ModelSet.FactionColour(FactionId.Player);
 
             Primitives.FillRectangle(spriteBatch, pixel, centre - new Vector2(SlotSize / 2f), new Vector2(SlotSize), SlotColour);
 
-            var texture = SpriteLibrary.GetTexture(ShipBlueprints.SpriteIdFor(command.Produces, FactionId.Player, sprites));
-            spriteBatch.Draw(
-                texture,
-                centre,
-                null,
-                isAffordable ? Color.White : UnaffordableTint,
-                0f,
-                new Vector2(texture.Width / 2f, texture.Height / 2f),
-                IconSize / texture.Width,
-                SpriteEffects.None,
-                0f);
+            ModelIcons.Draw(spriteBatch, pixel, models.ModelFor(command.Produces), centre, IconSize, isAffordable ? ModelSet.FactionColour(FactionId.Player) : UnaffordableTint);
 
             Primitives.DrawCircleOutline(spriteBatch, pixel, centre, RingRadius, TrackColour, thickness: 2.5f);
             Primitives.DrawArc(

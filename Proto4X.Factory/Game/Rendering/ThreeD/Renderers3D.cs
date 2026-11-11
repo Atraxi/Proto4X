@@ -349,7 +349,8 @@ namespace Proto4X.Factory.Rendering.ThreeD
     }
 
     /// <summary>The build preview: the model itself, tinted green or red and see-through.</summary>
-    public sealed class Ghost3DRenderer(Surface surface, BuildController controller) : IGeometryDrawSystem
+    /// <summary>The build cursor: a footprint plus the building, through the hologram material when it loaded.</summary>
+    public sealed class Ghost3DRenderer(Surface surface, BuildController controller, Material? hologram) : IGeometryDrawSystem
     {
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
 
@@ -360,7 +361,7 @@ namespace Proto4X.Factory.Rendering.ThreeD
                 return;
             }
 
-            var buffer = batch.Immediate;
+            var buffer = hologram is null ? batch.Immediate : batch.Custom(hologram);
             var (x, y) = controller.Hovered;
             if (controller.Tool == BuildingKind.None)
             {

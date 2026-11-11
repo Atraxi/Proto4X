@@ -79,9 +79,9 @@ namespace MonoGameLibrary
         protected abstract void OnDraw(GameTime gameTime);
     }
 
-    /// <summary>A <see cref="Core{TCamera}"/> with the flat <see cref="Camera2D"/>, for 2D games.</summary>
-    public abstract class Core(string title, int width, int height, bool fullscreen) : Core<Camera2D>(title, width, height, fullscreen)
+    /// <summary>A <see cref="Core{TCamera}"/> with an <see cref="OrbitCamera"/>: the default 3D game. Override <c>InitializeCamera</c> to set its zoom range.</summary>
+    public abstract class Core(string title, int width, int height, bool fullscreen) : Core<OrbitCamera>(title, width, height, fullscreen)
     {
-        protected override Camera2D InitializeCamera() => new();
+        protected override OrbitCamera InitializeCamera() => new();
     }
 }

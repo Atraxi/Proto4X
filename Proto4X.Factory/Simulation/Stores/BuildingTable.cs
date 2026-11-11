@@ -35,6 +35,7 @@ namespace Proto4X.Factory.Simulation.Stores
         private int[] inputStacks = new int[64];
         private RecipeId[] recipes = new RecipeId[64];
         private int[] powerNetwork = new int[64];
+        private int[] configs = new int[64];
 
         private int highWater;
         private readonly Stack<int> freeSlots = new();
@@ -69,6 +70,7 @@ namespace Proto4X.Factory.Simulation.Stores
             inputStacks[slot] = 0;
             recipes[slot] = RecipeId.None;
             powerNetwork[slot] = -1;
+            configs[slot] = 0;
             AliveCount++;
             return slot;
         }
@@ -95,6 +97,7 @@ namespace Proto4X.Factory.Simulation.Stores
             Array.Resize(ref inputStacks, size);
             Array.Resize(ref recipes, size);
             Array.Resize(ref powerNetwork, size);
+            Array.Resize(ref configs, size);
         }
 
         public BuildingKind KindOf(int slot) => kinds[slot];
@@ -122,6 +125,13 @@ namespace Proto4X.Factory.Simulation.Stores
         public RecipeId RecipeOf(int slot) => recipes[slot];
         public void SetRecipe(int slot, RecipeId recipe) => recipes[slot] = recipe;
 
+        /// <summary>
+        /// Per-kind player setting: a dock's item filter, a warehouse's blueprint, a shipyard's order.
+        /// Like the recipe, it's written from outside the tick and pulled in by the owning system.
+        /// </summary>
+        public int ConfigOf(int slot) => configs[slot];
+        public void SetConfig(int slot, int config) => configs[slot] = config;
+
         public int PowerNetworkOf(int slot) => powerNetwork[slot];
         public void SetPowerNetwork(int slot, int network) => powerNetwork[slot] = network;
 
@@ -137,6 +147,7 @@ namespace Proto4X.Factory.Simulation.Stores
                 hash = StateHash.Mix(hash, (ulong)slot);
                 hash = StateHash.Mix(hash, ((ulong)kinds[slot] << 40) | ((ulong)(uint)originX[slot] << 16) | (uint)originY[slot]);
                 hash = StateHash.Mix(hash, ((ulong)recipes[slot] << 32) | (uint)(powerNetwork[slot] + 1));
+                hash = StateHash.Mix(hash, (ulong)(uint)configs[slot]);
             }
         }
     }

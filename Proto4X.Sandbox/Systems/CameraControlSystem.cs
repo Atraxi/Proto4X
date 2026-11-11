@@ -5,23 +5,25 @@ using MonoGameLibrary.Components.Infrastructure;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Systems.Infrastructure;
 using MonoGameLibrary.UI;
+using System;
 using System.Collections.Generic;
 
 namespace Proto4X.Sandbox.Systems
 {
     /// <summary>
-    /// Arrow keys pan, the wheel zooms about the cursor, Z/X rotate. The engine camera has no
+    /// Arrow keys pan, the wheel zooms, Z/X turn, Page Up/Down tilt. The engine camera has no
     /// input bindings, so they live here.
     /// </summary>
     /// <remarks>
-    /// Everything is in screen terms: Up always moves the view towards the top of the screen, at the
-    /// same on-screen speed whatever the rotation and zoom.
+    /// Panning is in screen terms: Up always moves the view towards the top of the screen, at a
+    /// speed proportional to the distance, so it feels the same at every zoom.
     /// </remarks>
-    public class CameraControlSystem(Camera2D camera) : ISystem, IUpdateSystem
+    public class CameraControlSystem(OrbitCamera camera) : ISystem, IUpdateSystem
     {
-        private const float PanPixelsPerSecond = 600f;
-        private const float RotationDegreesPerSecond = 100f;
-        private const float ZoomStep = 1.1f;
+        private const float PanScreensPerSecond = 0.9f;
+        private const float TurnDegreesPerSecond = 90f;
+        private const float TiltDegreesPerSecond = 50f;
+        private const float ZoomStep = 1.12f;
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => [];
 
@@ -38,16 +40,20 @@ namespace Proto4X.Sandbox.Systems
             if (keyboard.IsKeyDown(Keys.Right)) pan.X += 1;
             if (pan != Vector2.Zero)
             {
-                camera.Pan(Vector2.Normalize(pan) * PanPixelsPerSecond * seconds);
+                pan = Vector2.Normalize(pan) * PanScreensPerSecond * seconds * camera.Distance;
+                var right = new Vector2(MathF.Cos(camera.Yaw), MathF.Sin(camera.Yaw));
+                var ground = right * pan.X - camera.Forward * pan.Y;
+                camera.Target += new Vector3(ground, 0f);
             }
 
-            var screenCentre = camera.Viewport.Center.ToVector2();
-            if (keyboard.IsKeyDown(Keys.Z)) camera.RotateAround(screenCentre, MathHelper.ToRadians(RotationDegreesPerSecond) * seconds);
-            if (keyboard.IsKeyDown(Keys.X)) camera.RotateAround(screenCentre, -MathHelper.ToRadians(RotationDegreesPerSecond) * seconds);
+            if (keyboard.IsKeyDown(Keys.Z)) camera.Yaw += MathHelper.ToRadians(TurnDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.X)) camera.Yaw -= MathHelper.ToRadians(TurnDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.PageUp)) camera.Pitch += MathHelper.ToRadians(TiltDegreesPerSecond) * seconds;
+            if (keyboard.IsKeyDown(Keys.PageDown)) camera.Pitch -= MathHelper.ToRadians(TiltDegreesPerSecond) * seconds;
 
             if (mouse.ScrollWheelDelta != 0)
             {
-                camera.ZoomAt(mouse.Position.ToVector2(), mouse.ScrollWheelDelta > 0 ? ZoomStep : 1f / ZoomStep);
+                camera.Distance *= mouse.ScrollWheelDelta > 0 ? 1f / ZoomStep : ZoomStep;
             }
         }
     }

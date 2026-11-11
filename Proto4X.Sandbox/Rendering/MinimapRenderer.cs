@@ -26,7 +26,7 @@ namespace Proto4X.Sandbox.Rendering
     /// because the query has to match ships and stations at once and only one AND-mask is available.
     /// It reads as "bigger things draw bigger", which is true enough to be worth the trick.
     /// </remarks>
-    public class MinimapRenderer(Texture2D pixel, GraphicsDevice graphicsDevice, Camera2D camera, Rectangle worldBounds) : ISystem, IDrawSystem
+    public class MinimapRenderer(Texture2D pixel, GraphicsDevice graphicsDevice, OrbitCamera camera, Rectangle worldBounds) : ISystem, IDrawSystem
     {
         private const float PanelWidth = 220f;
         private const float Margin = 12f;
@@ -73,7 +73,7 @@ namespace Proto4X.Sandbox.Rendering
                         pixel,
                         dotCentre - new Vector2(dotSize / 2f),
                         new Vector2(dotSize),
-                        SpriteSet.FactionColour(factionSpan[i].Id));
+                        ModelSet.FactionColour(factionSpan[i].Id));
                 }
             }
 
@@ -91,8 +91,6 @@ namespace Proto4X.Sandbox.Rendering
         /// </summary>
         private void DrawCameraOutline(SpriteBatch spriteBatch, Vector2 panelTopLeft, Vector2 panelSize, float scale, Rectangle screen)
         {
-            var screenToWorld = Matrix.Invert(camera.GetCameraTransform());
-
             ReadOnlySpan<Vector2> screenCorners =
             [
                 new(screen.Left, screen.Top),
@@ -106,7 +104,7 @@ namespace Proto4X.Sandbox.Rendering
 
             foreach (var corner in screenCorners)
             {
-                var world = Vector2.Transform(corner, screenToWorld);
+                var world = camera.ScreenToGround(corner);
                 minimum = Vector2.Min(minimum, world);
                 maximum = Vector2.Max(maximum, world);
             }

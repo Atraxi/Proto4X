@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -14,16 +15,13 @@ namespace Proto4X.Sandbox.Rendering
     /// Draws the beam between each shooter and whatever CombatSystem decided it was shooting this
     /// frame. Nothing is simulated here - <c>Weapon.FiringAt</c> is already the answer.
     /// </summary>
-    public class WeaponBeamRenderer(Texture2D pixel) : ISystem, IDrawSystem
+    public class WeaponBeamRenderer() : ISystem, IGeometryDrawSystem
     {
         private static readonly ComponentRef[] requiredComponentProviders =
             [ComponentRef.Of<Position>(), ComponentRef.Of<Faction>(), ComponentRef.Of<Weapon>()];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
-
-        public DrawSpace DrawSpace => DrawSpace.World;
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
+        public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -38,12 +36,9 @@ namespace Proto4X.Sandbox.Rendering
                         continue;
                     }
 
-                    Primitives.DrawLine(
-                        spriteBatch,
-                        pixel,
-                        positionSpan[i].Location,
+                    GroundShapes.Line(batch.Immediate, positionSpan[i].Location,
                         target,
-                        SpriteSet.FactionColour(factionSpan[i].Id),
+                        ModelSet.FactionColour(factionSpan[i].Id),
                         thickness: 1.5f);
                 }
             }

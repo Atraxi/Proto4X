@@ -17,6 +17,8 @@ namespace Proto4X.Factory
         public static readonly Color PowerGood = new(110, 220, 110);
         public static readonly Color PowerLow = new(240, 180, 60);
         public static readonly Color PowerNone = new(220, 60, 60);
+        public static readonly Color Player = new(110, 196, 255);
+        public static readonly Color Raider = new(232, 84, 72);
 
         public static Color Item(ItemId item) => item switch
         {
@@ -30,6 +32,13 @@ namespace Proto4X.Factory
             ItemId.Circuit => new Color(70, 190, 90),
             ItemId.MetallicChunk => new Color(110, 100, 130),
             ItemId.HullSegment => new Color(150, 200, 240),
+            ItemId.Steel => new Color(110, 116, 128),
+            ItemId.Frame => new Color(176, 182, 196),
+            ItemId.ArmorPlate => new Color(84, 96, 116),
+            ItemId.Engine => new Color(232, 124, 60),
+            ItemId.PowerCell => new Color(120, 230, 255),
+            ItemId.Processor => new Color(90, 200, 160),
+            ItemId.Emitter => new Color(255, 96, 128),
             _ => Color.Magenta,
         };
 
@@ -45,6 +54,11 @@ namespace Proto4X.Factory
             BuildingKind.LaunchSilo => new Color(180, 180, 200),
             BuildingKind.Receiver => new Color(120, 160, 190),
             BuildingKind.Collector => new Color(120, 100, 160),
+            BuildingKind.Warehouse => new Color(96, 104, 120),
+            BuildingKind.InputDock => new Color(80, 170, 110),
+            BuildingKind.OutputDock => new Color(210, 140, 70),
+            BuildingKind.Shipyard => new Color(130, 140, 170),
+            BuildingKind.SolarPanel => new Color(40, 72, 150),
             BuildingKind.Belt => Belt,
             _ => Color.Magenta,
         };

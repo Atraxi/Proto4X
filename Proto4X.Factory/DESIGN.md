@@ -24,18 +24,20 @@ The sim/presentation split is an **assembly boundary** on purpose. Lockstep mult
 servers and replays all require the sim to be a pure function of (state, commands, tick), and an
 assembly that can't see input or graphics is the cheapest way to keep that true.
 
-- `dotnet run -c Release --project Proto4X.Factory/Headless`: 42 checks, including conservation of
+- `dotnet run -c Release --project Proto4X.Factory/Headless`: 85 checks, including conservation of
   items, belt throughput, side-loading, curves, loops, power starvation, deconstruct/replace,
-  multi-removal integrity, recipe change, surface conditions, launch to ship, and determinism.
+  multi-removal integrity, recipe change, surface conditions, determinism, and the prototype loop
+  (warehouse ratings, live/abstract parity, ship stats, shipyard, combat, the whole loop unaided).
 - `dotnet run -c Release --project Proto4X.Factory/Headless -- bench 8000`: benchmark.
 - `dotnet run --project Proto4X.Factory/Game`: the game. **Not run by Claude.** It's build-verified
   only, so everything visual and interactive needs a first playtest.
 - Not in `Proto4X.sln` yet. To add it:
   `dotnet sln add Proto4X.Factory/Simulation Proto4X.Factory/Game Proto4X.Factory/Headless`.
 
-**Controls:** `1`–`0`, `-` pick a building · `R` rotate · `T` cycle recipe (with no tool selected,
-it re-sets the assembler under the cursor) · `Q` clears the tool · left-drag builds · right-drag
-removes · `Tab` switches surface · `F5` stamps 100 smelting modules (2,800 buildings; a debug shortcut that calls `TryPlace` directly
+**Controls:** `1`–`0`, `-`, `=` pick a building (or click the toolbar) · `R` rotate · `T` cycle recipe (with no tool selected,
+it re-sets the assembler under the cursor) · `Q` inspect: click a building for its panel · left-drag builds · right-drag
+removes · `E` enters/leaves the warehouse under the cursor · `Tab` switches surface · `F` fleet mode ·
+`B` ship designer · `F6` peaceful · `F5` stamps 100 smelting modules (2,800 buildings; a debug shortcut that calls `TryPlace` directly
 rather than going through the command queue) · `Space`
 pauses · arrows pan, the wheel zooms about the cursor, `Z`/`X` rotate (`Input/CameraController.cs`).
 Each surface remembers its own view, and on the ship the view rides along with the hull, so the deck
@@ -53,6 +55,10 @@ own factory (a debris **collector** → crusher assembler) keeps running.
 
 Recipes: smelt iron and copper, gear, wire, circuit, crush chunk, and hull segment. Hull is
 ship-only, which proves surface conditions are data.
+
+On top of that sits the **prototype loop** (warehouses → silo → orbital shipyard → designed ships →
+fleet vs. raider waves): see [plans/03-gameplay-loop.md](plans/03-gameplay-loop.md), including what
+the first cut changed from the plan and what it measured.
 
 Creative-mode simplifications: buildings are free, there's no player inventory, deconstruction
 destroys contents, and recipe changes discard the old inputs. There's one belt tier, inserters move

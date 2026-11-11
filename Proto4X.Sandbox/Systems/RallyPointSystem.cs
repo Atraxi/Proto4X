@@ -23,7 +23,7 @@ namespace Proto4X.Sandbox.Systems
     /// Rallying a miner onto an asteroid field is the useful case: it arrives, finds its move order
     /// spent, and starts mining the nearest free rock - which is exactly what you wanted.
     /// </remarks>
-    public class RallyPointSystem(Camera2D camera) : ISystem, IUpdateSystem
+    public class RallyPointSystem(OrbitCamera camera) : ISystem, IUpdateSystem
     {
         private static readonly ComponentRef[] requiredComponentProviders =
         [
@@ -41,7 +41,7 @@ namespace Proto4X.Sandbox.Systems
                 return;
             }
 
-            var rallyPoint = Vector2.Transform(mouse.Position.ToVector2(), Matrix.Invert(camera.GetCameraTransform()));
+            var rallyPoint = camera.ScreenToGround(mouse.Position.ToVector2());
 
             foreach (var archetypeChunk in archetypeChunks)
             {

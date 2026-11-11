@@ -114,8 +114,58 @@ namespace Proto4X.Factory.Simulation.Components
     public struct Generator(int inventory)
     {
         public int Inventory = inventory;
+
+        /// <summary>A solar panel: constant output, no fuel, no inventory.</summary>
+        public bool Solar;
         public long FuelEnergy;
         public int LastOffered;
+        public int PowerIndex;
+        public int PowerVersion = -1;
+    }
+
+    /// <summary>
+    /// A warehouse's exterior (plans/03). Abstract: runs its blueprint's rated cycle like an assembler
+    /// with a composite recipe. Live: does nothing but draw what its interior drew.
+    /// </summary>
+    public struct Warehouse
+    {
+        /// <summary>Blueprint id, pulled from the building table's config.</summary>
+        public int Blueprint;
+
+        /// <summary>The rating version the buffer is laid out for; a new rating relays it out.</summary>
+        public int RatingVersion;
+        public int ConfigVersion;
+
+        /// <summary>Abstract progress of each island of the blueprint, by island index.</summary>
+        public IslandProgressArray Islands;
+        public int PowerIndex;
+        public int PowerVersion;
+    }
+
+    /// <summary>One island's abstract cycle: which slice runs next (see <see cref="Warehouses.BlueprintRating.Share"/>) and how far it is.</summary>
+    public struct IslandProgress
+    {
+        public bool IsCrafting;
+        public int Progress;
+        public int Slice;
+    }
+
+    [System.Runtime.CompilerServices.InlineArray(Warehouses.BlueprintRating.MaxIslands)]
+    public struct IslandProgressArray
+    {
+        private IslandProgress first;
+    }
+
+    /// <summary>Orbit: builds the ordered design from components. The order lives in the building table's config.</summary>
+    public struct Shipyard(int inventory)
+    {
+        public int Inventory = inventory;
+        public bool IsBuilding;
+
+        /// <summary>The design being built, captured when its bill was consumed.</summary>
+        public int Design;
+        public int BuildTicks;
+        public int Progress;
         public int PowerIndex;
         public int PowerVersion = -1;
     }
@@ -127,6 +177,10 @@ namespace Proto4X.Factory.Simulation.Components
         public int Stacks = stacks;
         public bool IsLaunching;
         public int Progress;
+
+        /// <summary>Items aboard at the end of the last tick, and ticks since that changed: a part-loaded silo launches once loading stalls.</summary>
+        public int LastCount;
+        public int StalledTicks;
         public int PowerIndex;
         public int PowerVersion = -1;
     }

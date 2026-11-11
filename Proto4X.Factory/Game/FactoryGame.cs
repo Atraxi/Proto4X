@@ -9,6 +9,7 @@ using Proto4X.Factory.Input;
 using Proto4X.Factory.Rendering;
 using Proto4X.Factory.Simulation;
 using Proto4X.Factory.Simulation.Data;
+using Proto4X.Factory.UI;
 using System.Diagnostics;
 
 namespace Proto4X.Factory
@@ -20,11 +21,11 @@ namespace Proto4X.Factory
     /// <b>How multi-surface fits a single-world <see cref="Core"/>.</b> <c>Core</c> owns one
     /// <c>World</c> and its <c>Update</c>/<c>Draw</c> are sealed, so the game can't swap which world is
     /// simulated or drawn. Instead, <c>Core.World</c> is an empty "meta" world that carries only the
-    /// HUD, and every surface is a separate GameWorld owned by the universe: ticked from
-    /// <see cref="OnUpdate"/> and drawn from <see cref="OnDraw"/>, which runs just before Core's own
-    /// draw of the meta world, so the HUD lands on top.
+    /// Gui, and every surface (and the space layer) is a separate GameWorld owned by the universe:
+    /// ticked from <see cref="OnUpdate"/> and drawn from <see cref="OnDraw"/>, which runs just before
+    /// Core's own draw of the meta world, so the Gui lands on top.
     /// </remarks>
-    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, false)
+    public sealed class FactoryGame() : Core<OrbitCamera>("Factory Slice", 1280, 720, true)
     {
         private const int PlanetWidth = 240;
         private const int PlanetHeight = 180;
@@ -35,8 +36,13 @@ namespace Proto4X.Factory
         private Universe universe = null!;
         private Surface planet = null!;
         private BuildController controller = null!;
+        private FleetController fleet = null!;
         private CameraController cameraController = null!;
         private Texture2D pixel = null!;
+        private Shaders? shaders;
+        private Gui? gui;
+        private GameUi? ui;
+        private SpaceRenderer? spaceRenderer;
 
         private bool paused;
         private int stressBlocksStamped;
@@ -51,12 +57,14 @@ namespace Proto4X.Factory
         {
             universe = new Universe(SystemScheduler);
             planet = universe.AddSurface("planet", SurfaceKind.Planet, PlanetWidth, PlanetHeight);
-            var ship = universe.AddSurface("ship", SurfaceKind.Orbit, 24, 16);
-            Layouts.BuildStarterScene(planet, ship);
+            var station = universe.AddSurface("station", SurfaceKind.Orbit, 24, 16);
+            Layouts.BuildStarterScene(planet, station);
             controller = new BuildController(universe, UserInterfaceManager.Camera);
+            fleet = new FleetController(universe, UserInterfaceManager.Camera);
             cameraController = new CameraController(UserInterfaceManager.Camera, universe.Surfaces);
-            // Open looking at the starter scene.
-            cameraController.SetView(0, new Vector2(15, 8.5f));
+            // Open looking at the starter scene; the station pulled back to show the space around it.
+            cameraController.SetView(planet.Index, new Vector2(30, 10f));
+            cameraController.SetView(station.Index, new Vector2(12, 8f), 70f);
         }
 
         protected override void LoadContent()
@@ -64,20 +72,37 @@ namespace Proto4X.Factory
             pixel = new Texture2D(GraphicsDevice, 1, 1);
             pixel.SetData([Color.White]);
 
+            shaders = new Shaders(Content, GraphicsDevice);
+            style.Hologram = shaders.Hologram;
+
             foreach (var surface in universe.Surfaces)
             {
-                // World drawing is the style's; the per-surface screen overlay stays SpriteBatch.
-                style.RegisterSurface(SystemScheduler, surface, controller);
-                SystemScheduler.Add(surface.World, new SurfaceStatusRenderer(surface, controller, pixel));
+                RegisterSurface(surface);
             }
 
-            SystemScheduler.Add(World, new HudRenderer(controller, pixel, universe.Surfaces));
+            // Warehouse interiors appear when first entered.
+            universe.SurfaceAdded += RegisterSurface;
+
+            spaceRenderer = new SpaceRenderer(universe.Space, fleet);
+            SystemScheduler.Add(universe.Space.World, spaceRenderer);
+
+            gui = new Gui(PixelFont.Create(GraphicsDevice, 2));
+            ui = new GameUi(universe, gui, controller, fleet);
+            SystemScheduler.Add(World, new GuiRenderer(gui, pixel));
+        }
+
+        private void RegisterSurface(Surface surface)
+        {
+            // World drawing is the style's; the per-surface screen overlay stays SpriteBatch.
+            style.RegisterSurface(SystemScheduler, surface, controller);
+            SystemScheduler.Add(surface.World, new SurfaceStatusRenderer(surface, controller, pixel));
         }
 
         /// <summary>Releases the chunk meshes' GPU buffers. The device would on exit anyway; this keeps ownership honest.</summary>
         protected override void UnloadContent()
         {
             style.Dispose();
+            shaders?.Dispose();
             base.UnloadContent();
         }
 
@@ -99,7 +124,53 @@ namespace Proto4X.Factory
                 StampStressBlock();
             }
 
-            controller.Update(InputManager.Instance.MouseInfo.Position);
+            if (keyboard.WasKeyJustPressed(Keys.F4) && shaders is not null)
+            {
+                shaders.GradeEnabled = !shaders.GradeEnabled;
+            }
+
+            if (keyboard.WasKeyJustPressed(Keys.F6))
+            {
+                universe.Enqueue(new Command(CommandKind.SetPeaceful, -1, 0, 0, Config: universe.Space.Peaceful ? 0 : 1));
+            }
+
+            var mouse = InputManager.Instance.MouseInfo;
+            var overUi = false;
+            if (gui is not null && ui is not null)
+            {
+                if (keyboard.WasKeyJustPressed(Keys.F))
+                {
+                    if (ui.Mode == InputMode.Fleet) ui.Mode = InputMode.Build; else ui.EnterFleetMode();
+                }
+
+                if (keyboard.WasKeyJustPressed(Keys.B))
+                {
+                    ui.Mode = ui.Mode == InputMode.Designer ? InputMode.Build : InputMode.Designer;
+                }
+
+                if (ui.Mode == InputMode.Fleet && keyboard.WasKeyJustPressed(Keys.A))
+                {
+                    fleet.SelectAll();
+                }
+
+                // The Gui goes first so world input below can skip the mouse when it is over a panel.
+                gui.Begin(mouse, GraphicsDevice.Viewport.Bounds);
+                ui.Build();
+                gui.End();
+                overUi = gui.WantsMouse;
+            }
+
+            var mode = ui?.Mode ?? InputMode.Build;
+            // The designer owns R, so building only reads keys outside it.
+            if (mode != InputMode.Designer)
+            {
+                controller.Update(mouse.Position, overUi, mode == InputMode.Build);
+            }
+
+            if (mode == InputMode.Fleet)
+            {
+                fleet.Update(mouse, overUi);
+            }
 
             if (!paused)
             {
@@ -112,18 +183,35 @@ namespace Proto4X.Factory
             // After picking and the step: see CameraController for why.
             cameraController.Update(controller.ActiveSurface, gameTime);
 
+            if (spaceRenderer is not null)
+            {
+                spaceRenderer.Tick = universe.Tick;
+                spaceRenderer.FrameSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
             Window.Title = BuildStatusLine(gameTime);
         }
 
         protected override void OnDraw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(style.Background);
-            if (SpriteBatch is not null)
+            if (SpriteBatch is null || shaders is null)
             {
-                var surface = controller.Surface;
-                style.PrepareFrame(UserInterfaceManager.Camera);
-                SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
+                GraphicsDevice.Clear(style.Background);
+                return;
             }
+
+            var surface = controller.Surface;
+            var time = (float)gameTime.TotalGameTime.TotalSeconds;
+            SystemScheduler.Geometry.Time = time;
+            shaders.BeginFrame(SpriteBatch, GraphicsDevice, surface.Kind == SurfaceKind.Orbit, style.Background, UserInterfaceManager.Camera, time);
+            style.PrepareFrame(UserInterfaceManager.Camera);
+            SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, surface.World, style.WorldTransform(surface));
+            if (surface == universe.Station)
+            {
+                // Space coordinates are camera world coordinates: no transform.
+                SystemScheduler.Draw(SpriteBatch, UserInterfaceManager, universe.Space.World, Matrix.Identity);
+            }
+            shaders.EndFrame(SpriteBatch, time);
         }
 
         /// <summary>
@@ -137,7 +225,7 @@ namespace Proto4X.Factory
         /// </remarks>
         private void StampStressBlock()
         {
-            const int originX = 40;
+            const int originX = 60; // east of the starter scene
             var originY = 2 + stressBlocksStamped * StressRows * Layouts.ModuleHeight;
             if (originY + StressRows * Layouts.ModuleHeight > PlanetHeight)
             {
@@ -166,7 +254,7 @@ namespace Proto4X.Factory
                 + $" | buildings {surface.Buildings.AliveCount:N0} | belt items {surface.Belts.CountAllItems():N0}"
                 + $" | tool {controller.Tool} {controller.Direction} recipe {controller.Recipe} | ({x},{y})"
                 + $" | in flight {universe.InTransit.Count}"
-                + " | 1-0,- tools  R rotate  T recipe  Q no tool  Tab surface  F5 stress  Space pause  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
+                + " | 1-0,-,= tools  Q inspect  R rotate  T recipe  E enter/leave  Tab surface  F fleet  B designer  F6 peaceful  F5 stress  Space pause  F4 grade  Z/X turn  PgUp/PgDn tilt  F2 ortho  F3 iso";
         }
     }
 }

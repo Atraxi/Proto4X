@@ -4,10 +4,12 @@ using System;
 
 namespace MonoGameLibrary.Components
 {
-    public struct Drawable(int spriteId, Rectangle? textureRegion) : IDependsOnOtherComponents
+    /// <param name="modelId">An id from <see cref="Graphics.ModelLibrary"/>.</param>
+    /// <param name="tint">Multiplied into every tinted box of the model, e.g. a faction colour. White leaves the model as authored.</param>
+    public struct Drawable(int modelId, Color tint) : IDependsOnOtherComponents
     {
-        public int SpriteId { get; set; } = spriteId;
-        public Rectangle? TextureRegion { get; set; } = textureRegion;
+        public int ModelId { get; set; } = modelId;
+        public Color Tint { get; set; } = tint;
 
         public readonly Type[] GetComponentDependencies => [typeof(Position)];
     }

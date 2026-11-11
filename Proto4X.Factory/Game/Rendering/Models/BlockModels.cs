@@ -1,33 +1,15 @@
 using Microsoft.Xna.Framework;
+using MonoGameLibrary.Graphics;
 using Proto4X.Factory.Simulation.Data;
 using Proto4X.Factory.Simulation.Grid;
 using System;
 
 namespace Proto4X.Factory.Rendering.Models
 {
-    /// <summary>One axis-aligned box of a model, in footprint-local tiles: x east, y south, z up.</summary>
-    /// <param name="Emissive">Drawn at full brightness, unlit - glow panels, screens.</param>
-    public readonly record struct ModelBox(Vector3 Min, Vector3 Max, Color Colour, bool Emissive = false);
-
-    /// <summary>A building as a handful of coloured boxes, modelled facing east.</summary>
-    public sealed class BlockModel(int size, ModelBox[] boxes)
+    /// <summary>A building as a handful of coloured boxes, modelled facing east, in footprint-local tiles.</summary>
+    public sealed class BlockModel(int size, ModelBox[] boxes) : Model3D(boxes)
     {
         public int Size { get; } = size;
-        public ModelBox[] Boxes { get; } = boxes;
-
-        public float Height
-        {
-            get
-            {
-                var height = 0f;
-                foreach (var box in Boxes)
-                {
-                    height = MathF.Max(height, box.Max.Z);
-                }
-
-                return height;
-            }
-        }
     }
 
     /// <summary>
@@ -161,6 +143,51 @@ namespace Proto4X.Factory.Rendering.Models
                 Box(0.3f, 0.3f, 0.5f, 1.4f, 1.7f, 1.0f, Shade(collector, 1.15f)),
                 Box(1.4f, 0.4f, 0.3f, 1.98f, 1.6f, 0.9f, darkSteel),
                 Box(1.93f, 0.55f, 0.4f, 1.995f, 1.45f, 0.8f, new Color(190, 140, 255), emissive: true),
+            ]);
+
+            // A Factorissimo factory building: a big shed with a roller door and roof lights.
+            var warehouse = Palette.Building(BuildingKind.Warehouse);
+            table[(int)BuildingKind.Warehouse] = new(6,
+            [
+                Box(0.06f, 0.06f, 0f, 5.94f, 5.94f, 0.3f, darkSteel),
+                Box(0.2f, 0.2f, 0.3f, 5.8f, 5.8f, 2.2f, warehouse),
+                Box(0.1f, 0.1f, 2.2f, 5.9f, 5.9f, 2.4f, Shade(warehouse, 0.75f)),
+                Box(5.8f, 2.0f, 0.3f, 5.93f, 4.0f, 1.6f, hazard),
+                Box(1.0f, 1.0f, 2.4f, 5.0f, 1.3f, 2.46f, new Color(255, 236, 170), emissive: true),
+                Box(1.0f, 4.7f, 2.4f, 5.0f, 5.0f, 2.46f, new Color(255, 236, 170), emissive: true),
+            ]);
+
+            foreach (var (kind, light) in ((BuildingKind, Color)[])[(BuildingKind.InputDock, new Color(110, 255, 150)), (BuildingKind.OutputDock, new Color(255, 170, 80))])
+            {
+                table[(int)kind] = new(1,
+                [
+                    Box(0.08f, 0.08f, 0f, 0.92f, 0.92f, 0.22f, Palette.Building(kind)),
+                    Box(0.3f, 0.3f, 0.22f, 0.7f, 0.7f, 0.4f, darkSteel),
+                    Box(0.38f, 0.38f, 0.4f, 0.62f, 0.62f, 0.46f, light, emissive: true),
+                ]);
+            }
+
+            // A gantry over a cradle.
+            var shipyard = Palette.Building(BuildingKind.Shipyard);
+            table[(int)BuildingKind.Shipyard] = new(4,
+            [
+                Box(0.06f, 0.06f, 0f, 3.94f, 3.94f, 0.3f, darkSteel),
+                Box(1.1f, 1.1f, 0.3f, 2.9f, 2.9f, 0.6f, shipyard),
+                Box(0.2f, 0.2f, 0.3f, 0.6f, 0.6f, 2.4f, steel),
+                Box(3.4f, 0.2f, 0.3f, 3.8f, 0.6f, 2.4f, steel),
+                Box(0.2f, 3.4f, 0.3f, 0.6f, 3.8f, 2.4f, steel),
+                Box(3.4f, 3.4f, 0.3f, 3.8f, 3.8f, 2.4f, steel),
+                Box(0.2f, 0.2f, 2.4f, 3.8f, 0.6f, 2.7f, hazard),
+                Box(0.2f, 3.4f, 2.4f, 3.8f, 3.8f, 2.7f, hazard),
+                Box(1.7f, 0.6f, 2.45f, 2.3f, 3.4f, 2.55f, new Color(140, 220, 255), emissive: true),
+            ]);
+
+            table[(int)BuildingKind.SolarPanel] = new(2,
+            [
+                Box(0.85f, 0.85f, 0f, 1.15f, 1.15f, 0.6f, darkSteel),
+                Box(0.06f, 0.06f, 0.6f, 1.94f, 1.94f, 0.68f, Palette.Building(BuildingKind.SolarPanel)),
+                Box(0.06f, 0.97f, 0.68f, 1.94f, 1.03f, 0.7f, steel),
+                Box(0.97f, 0.06f, 0.68f, 1.03f, 1.94f, 0.7f, steel),
             ]);
 
             return table;

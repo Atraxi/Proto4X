@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGameLibrary.Archetypes;
 using MonoGameLibrary.Components;
 using MonoGameLibrary.Components.Infrastructure;
+using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Systems.Infrastructure;
 using Proto4X.Sandbox.Components;
 using Proto4X.Sandbox.Game;
@@ -14,7 +15,7 @@ namespace Proto4X.Sandbox.Rendering
     /// A faction-coloured health bar above anything that has taken damage. Undamaged entities draw
     /// nothing, so a healthy base doesn't look like a UI mockup.
     /// </summary>
-    public class HealthBarRenderer(Texture2D pixel) : ISystem, IDrawSystem
+    public class HealthBarRenderer() : ISystem, IGeometryDrawSystem
     {
         private const float BarWidth = 30f;
         private const float BarHeight = 3f;
@@ -24,11 +25,7 @@ namespace Proto4X.Sandbox.Rendering
             [ComponentRef.Of<Position>(), ComponentRef.Of<Health>(), ComponentRef.Of<Faction>()];
 
         public IReadOnlyList<ComponentRef> RequiredComponentProviders => requiredComponentProviders;
-
-        // Bars are positioned per entity, so they belong in the world and scale with the camera.
-        public DrawSpace DrawSpace => DrawSpace.World;
-
-        public void Draw(SpriteBatch spriteBatch, Rectangle cullingBounds, List<ArchetypeChunk> archetypeChunks)
+        public void Draw(GeometryBatch batch, in GeometryDrawContext context, List<ArchetypeChunk> archetypeChunks)
         {
             foreach (var archetypeChunk in archetypeChunks)
             {
@@ -47,8 +44,8 @@ namespace Proto4X.Sandbox.Rendering
                     var fraction = MathHelper.Clamp(health.Current / health.Maximum, 0f, 1f);
                     var topLeft = positionSpan[i].Location + new Vector2(-BarWidth / 2f, BarOffsetY);
 
-                    Primitives.FillRectangle(spriteBatch, pixel, topLeft, new Vector2(BarWidth, BarHeight), new Color(30, 30, 30));
-                    Primitives.FillRectangle(spriteBatch, pixel, topLeft, new Vector2(BarWidth * fraction, BarHeight), SpriteSet.FactionColour(factionSpan[i].Id));
+                    GroundShapes.FillRectangle(batch.Immediate, topLeft, new Vector2(BarWidth, BarHeight), new Color(30, 30, 30));
+                    GroundShapes.FillRectangle(batch.Immediate, topLeft, new Vector2(BarWidth * fraction, BarHeight), ModelSet.FactionColour(factionSpan[i].Id));
                 }
             }
         }

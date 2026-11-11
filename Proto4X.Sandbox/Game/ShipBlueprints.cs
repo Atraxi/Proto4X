@@ -63,7 +63,7 @@ namespace Proto4X.Sandbox.Game
             _ => NoCommands,
         };
 
-        public static EntityBuilder CreateMiner(Vector2 location, FactionId faction, int spriteId, Vector2? destination = null)
+        public static EntityBuilder CreateMiner(Vector2 location, FactionId faction, int modelId, Vector2? destination = null)
             => EntityBuilder.CreateEntity()
                 .With(new Position(location))
                 .With(new Motion(Vector2.Zero))
@@ -75,9 +75,9 @@ namespace Proto4X.Sandbox.Game
                 .With(new Selectable(pickRadius: 18f))
                 .With(new UnitType(UnitKind.Miner))
                 .With(new Miner(capacity: 12f, miningRatePerSecond: 6f))
-                .With(new Drawable(spriteId, null));
+                .With(new Drawable(modelId, ModelSet.FactionColour(faction)));
 
-        public static EntityBuilder CreateFighter(Vector2 location, FactionId faction, int spriteId, Vector2? destination = null)
+        public static EntityBuilder CreateFighter(Vector2 location, FactionId faction, int modelId, Vector2? destination = null)
             => EntityBuilder.CreateEntity()
                 .With(new Position(location))
                 .With(new Motion(Vector2.Zero))
@@ -87,9 +87,9 @@ namespace Proto4X.Sandbox.Game
                 .With(new Weapon(damagePerSecond: 14f, range: 150f))
                 .With(new Selectable(pickRadius: 18f))
                 .With(new UnitType(UnitKind.Fighter))
-                .With(new Drawable(spriteId, null));
+                .With(new Drawable(modelId, ModelSet.FactionColour(faction)));
 
-        public static EntityBuilder CreateStation(Vector2 location, FactionId faction, int spriteId)
+        public static EntityBuilder CreateStation(Vector2 location, FactionId faction, int modelId)
             => EntityBuilder.CreateEntity()
                 .With(new Position(location))
                 .With(new Faction(faction))
@@ -102,29 +102,22 @@ namespace Proto4X.Sandbox.Game
                 .With(new UnitType(UnitKind.Station))
                 // 18/s repair against a fighter's 14 dps: one raider is a nuisance, nine are a siege.
                 .With(new Station(rallyDistance: 70f, repairPerSecond: 18f))
-                .With(new Drawable(spriteId, null));
+                .With(new Drawable(modelId, ModelSet.FactionColour(faction)));
 
-        public static EntityBuilder CreateAsteroid(Vector2 location, int spriteId)
+        public static EntityBuilder CreateAsteroid(Vector2 location, int modelId)
             => EntityBuilder.CreateEntity()
                 .With(new Position(location))
                 .With(new Gatherable(10))
-                .With(new Drawable(spriteId, null));
+                .With(new Drawable(modelId, Color.White));
 
-        public static EntityBuilder CreateUnit(UnitKind kind, Vector2 location, FactionId faction, SpriteSet sprites, Vector2? destination = null) => kind switch
+        public static EntityBuilder CreateUnit(UnitKind kind, Vector2 location, FactionId faction, ModelSet models, Vector2? destination = null) => kind switch
         {
-            UnitKind.Miner => CreateMiner(location, faction, sprites.MinerSpriteFor(faction), destination),
-            UnitKind.Fighter => CreateFighter(location, faction, sprites.FighterSpriteFor(faction), destination),
+            UnitKind.Miner => CreateMiner(location, faction, models.MinerModel, destination),
+            UnitKind.Fighter => CreateFighter(location, faction, models.FighterModel, destination),
             // Stations have no Motion or MoveOrder, so a rally destination is meaningless for them.
-            UnitKind.Station => CreateStation(location, faction, sprites.StationSpriteFor(faction)),
+            UnitKind.Station => CreateStation(location, faction, models.StationModel),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not a buildable unit kind"),
         };
 
-        public static int SpriteIdFor(UnitKind kind, FactionId faction, SpriteSet sprites) => kind switch
-        {
-            UnitKind.Miner => sprites.MinerSpriteFor(faction),
-            UnitKind.Fighter => sprites.FighterSpriteFor(faction),
-            UnitKind.Station => sprites.StationSpriteFor(faction),
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Has no sprite"),
-        };
     }
 }

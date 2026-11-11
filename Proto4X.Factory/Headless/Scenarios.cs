@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Proto4X.Factory.Headless
 {
     /// <summary>Behavioural checks of the simulation. Each builds a small layout, runs it, and asserts on the outcome.</summary>
-    public static class Scenarios
+    public static partial class Scenarios
     {
         private static int failures;
         private static int passes;
@@ -26,8 +26,8 @@ namespace Proto4X.Factory.Headless
             Run("removing several same-archetype entities in one tick", MultiRemovalIntegrity);
             Run("recipe change pulled in by the crafter", RecipeChange);
             Run("surface conditions gate placement and recipes", SurfaceConditions);
-            Run("launch reaches the ship's receiver", LaunchToShip);
             Run("same commands, same state hash", Determinism);
+            RunLoopScenarios();
 
             Console.WriteLine();
             Console.WriteLine($"{passes} checks passed, {failures} failed");
@@ -63,12 +63,13 @@ namespace Proto4X.Factory.Headless
             }
         }
 
-        private static (Universe Universe, Surface Planet, Probe Probe) NewPlanet(int width = 64, int height = 48, bool hashing = false)
+        /// <remarks>Assemblers only build inside warehouses on a planet, so the crafting checks pass <see cref="SurfaceKind.Orbit"/>: a deck.</remarks>
+        private static (Universe Universe, Surface Planet, Probe Probe) NewPlanet(int width = 64, int height = 48, bool hashing = false, SurfaceKind kind = SurfaceKind.Planet)
         {
             var scheduler = new SystemScheduler();
             var universe = new Universe(scheduler, hashing);
-            var planet = universe.AddSurface("planet", SurfaceKind.Planet, width, height);
-            planet.FillTiles(0, 0, width, height, TileKind.Ground);
+            var planet = universe.AddSurface("planet", kind, width, height);
+            planet.FillTiles(0, 0, width, height, kind == SurfaceKind.Planet ? TileKind.Ground : TileKind.Foundation);
             var probe = new Probe();
             probe.Attach(scheduler, planet);
             return (universe, planet, probe);
@@ -136,7 +137,7 @@ namespace Proto4X.Factory.Headless
 
         private static void AssemblerMakesGears()
         {
-            var (universe, planet, probe) = NewPlanet();
+            var (universe, planet, probe) = NewPlanet(kind: SurfaceKind.Orbit);
             planet.TryPlace(BuildingKind.Chest, 10, 11, Direction.East);
             Layouts.Fill(planet, 10, 11, ItemId.IronPlate, 100);
             planet.TryPlace(BuildingKind.Inserter, 11, 11, Direction.East);
@@ -383,7 +384,7 @@ namespace Proto4X.Factory.Headless
 
         private static void RecipeChange()
         {
-            var (universe, planet, probe) = NewPlanet();
+            var (universe, planet, probe) = NewPlanet(kind: SurfaceKind.Orbit);
             planet.TryPlace(BuildingKind.Chest, 10, 11, Direction.East);
             Layouts.Fill(planet, 10, 11, ItemId.CopperPlate, 100);
             planet.TryPlace(BuildingKind.Inserter, 11, 11, Direction.East);
@@ -412,30 +413,18 @@ namespace Proto4X.Factory.Headless
             planet.FillTiles(0, 0, 32, 32, TileKind.Ground);
             ship.FillTiles(4, 4, 10, 10, TileKind.Foundation);
 
-            Check(planet.TryPlace(BuildingKind.Assembler, 2, 2, Direction.North, RecipeId.HullSegment) == PlacementResult.RecipeNotAllowedHere, "hull recipe refused on a planet");
+            var interior = universe.AddSurface("interior", SurfaceKind.Interior, 16, 16);
+            interior.FillTiles(0, 0, 16, 16, TileKind.Foundation);
+            Check(planet.TryPlace(BuildingKind.Assembler, 2, 2, Direction.North, RecipeId.Gear) == PlacementResult.WrongSurface, "assemblers refused on open planet ground (warehouses only)");
+            Check(interior.TryPlace(BuildingKind.Assembler, 2, 2, Direction.North, RecipeId.Gear) == PlacementResult.Placed, "assemblers allowed inside a warehouse");
+            Check(interior.TryPlace(BuildingKind.Assembler, 6, 2, Direction.North, RecipeId.HullSegment) == PlacementResult.RecipeNotAllowedHere, "hull recipe refused inside a warehouse");
+            Check(planet.TryPlace(BuildingKind.Warehouse, 20, 2, Direction.North) == PlacementResult.Placed, "warehouses build on a planet");
+            Check(ship.TryPlace(BuildingKind.Warehouse, 5, 9, Direction.North) == PlacementResult.WrongSurface, "warehouses don't build on the station");
             Check(ship.TryPlace(BuildingKind.Assembler, 5, 5, Direction.North, RecipeId.HullSegment) == PlacementResult.Placed, "hull recipe allowed on the ship");
             Check(ship.TryPlace(BuildingKind.Belt, 1, 1, Direction.North) == PlacementResult.WrongTerrain, "nothing builds off the ship's deck");
             Check(planet.TryPlace(BuildingKind.Collector, 10, 10, Direction.North) == PlacementResult.WrongSurface, "collectors are ship-only");
             Check(ship.TryPlace(BuildingKind.LaunchSilo, 9, 9, Direction.North) == PlacementResult.WrongSurface, "silos are planet-only");
             Check(planet.TryPlace(BuildingKind.Drill, 20, 20, Direction.North) == PlacementResult.NoOreUnderneath, "drills need ore");
-        }
-
-        private static void LaunchToShip()
-        {
-            var scheduler = new SystemScheduler();
-            var universe = new Universe(scheduler);
-            var planet = universe.AddSurface("planet", SurfaceKind.Planet, 48, 48);
-            var ship = universe.AddSurface("ship", SurfaceKind.Orbit, 32, 32);
-            Layouts.BuildStarterScene(planet, ship);
-
-            RunTicks(universe, 60 * 60 * 3);
-
-            var gearsOnShip = CountEverywhere(ship, ItemId.Gear);
-            var ironOnShip = CountEverywhere(ship, ItemId.IronOre);
-            Console.WriteLine($"   gears on the ship after 3 min: {gearsOnShip}; crushed ore made on board: {ironOnShip}; ship drifted to {ship.Frame.Position}");
-            Check(gearsOnShip >= Buildings.LaunchPayload, "at least one payload of gears landed");
-            Check(gearsOnShip % Buildings.LaunchPayload == 0 || universe.InTransit.Count == 0, "payloads land whole");
-            Check(ironOnShip > 0, "the ship's own collector line ran while it moved");
         }
 
         private static void Determinism()
